@@ -44,7 +44,7 @@ export function createEngine(config = {}) {
   return {
     scrapeListing: (url, page, options) => scrapeListing(url, page, withConfig(options)),
     scrapePost: (url, options) => scrapePost(url, withConfig(options)),
-    scrapeLinks: (links, options) => scrapeLinks(links, withConfig(options)),
+    scrapeLinks: (urls, options) => scrapeLinks(urls, withConfig(options)),
     scrapeFile: (url, options) => scrapeFile(url, withConfig(options)),
     resolve: (url, options) => resolve(url, withConfig(options)),
   };
