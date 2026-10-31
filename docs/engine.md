@@ -115,6 +115,8 @@ Wide survey (2026-10-31: 3 listing pages and 20 posts per site, all four sites):
 
 ## Open
 
+- Load: no limit on requests at once, as no site has answered 429 or stalled under load. When one
+  does, `retry` follows its `Retry-After`; nothing is added before that.
 - On-demand scrape: decided when that feature is built.
 
 ## Plan
