@@ -32,6 +32,26 @@ export function fetchHtml(url, options) {
 }
 
 /**
+ * Fetches a JSON answer, such as a site's search API's.
+ *
+ * @param {string} url
+ * @param {RequestOptions} [options]
+ * @returns {Promise<unknown>} The parsed JSON.
+ * @throws {EngineError} As fetchHtml; and `unrecognized` for an answer that is not JSON (a challenge
+ *   page). Its TypeError, and the caller's reason on cancellation, as fetchHtml.
+ */
+export function fetchJson(url, options) {
+  return request(url, 'GET', options, async (response) => {
+    const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new EngineError('unrecognized', 'The answer is not JSON', { url });
+    }
+  });
+}
+
+/**
  * Follows a URL's redirects and returns where they end, without reading that page: it can be the
  * file itself (a HEAD request asks for no body).
  *
@@ -48,8 +68,10 @@ export function followRedirects(url, options) {
 }
 
 /**
- * @typedef {{ fetch?: typeof fetch, timeoutMs?: number, signal?: AbortSignal }} RequestOptions
- *   `signal`: the caller's own cancellation, on top of the timeout.
+ * @typedef {{ fetch?: typeof fetch, timeoutMs?: number, signal?: AbortSignal,
+ *   headers?: Record<string, string> }} RequestOptions
+ *   `signal`: the caller's own cancellation, on top of the timeout. `headers`: on top of the
+ *   engine's, for a site that asks for more (HDHub4u's search API answers 403 without a Referer).
  */
 
 /**
@@ -63,7 +85,7 @@ export function followRedirects(url, options) {
  * @param {(response: Response) => Promise<T>} read
  * @returns {Promise<T>}
  */
-async function request(url, method, { fetch: fetchFn = fetch, timeoutMs = 8000, signal } = {}, read) {
+async function request(url, method, { fetch: fetchFn = fetch, timeoutMs = 8000, signal, headers } = {}, read) {
   // A typo such as "hhttps://" parses as a URL with another scheme; no site was asked.
   const { protocol } = new URL(url);
   if (protocol !== 'https:' && protocol !== 'http:') throw new TypeError(`Not a web URL: ${url}`);
@@ -72,7 +94,7 @@ async function request(url, method, { fetch: fetchFn = fetch, timeoutMs = 8000, 
     const response = await fetchFn(url, {
       method,
       redirect: 'follow',
-      headers: HEADERS,
+      headers: { ...HEADERS, ...headers },
       signal: signal ? AbortSignal.any([timeout, signal]) : timeout,
     });
     if (!response.ok) {

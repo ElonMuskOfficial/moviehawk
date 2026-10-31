@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { EngineError } from '../../src/engine/errors.js';
-import { fetchHtml, followRedirects, retry } from '../../src/engine/http.js';
+import { fetchHtml, fetchJson, followRedirects, retry } from '../../src/engine/http.js';
 
 const URL_A = 'https://hubcloud.ist/drive/abc';
 
@@ -117,6 +117,21 @@ describe('fetchHtml', () => {
       await assert.rejects(fetchHtml(notWeb, { fetch: fetchFn }), TypeError);
     }
     assert.equal(requests.length, 0);
+  });
+});
+
+describe('fetchJson', () => {
+  it('returns the parsed JSON, with the headers a site asks for on top of the engine\'s', async () => {
+    const { fetchFn, requests } = answer(200, '{"found":1}');
+
+    assert.deepEqual(await fetchJson(URL_A, { fetch: fetchFn, headers: { Referer: 'https://new10.hdhub4u.cl/' } }), { found: 1 });
+    assert.equal(requests[0].init.headers.Referer, 'https://new10.hdhub4u.cl/');
+    assert.match(requests[0].init.headers['User-Agent'], /^Mozilla\/5\.0/);
+  });
+
+  it('is unrecognized for an answer that is not JSON, such as a challenge page', async () => {
+    const { fetchFn } = answer(200, '<html><title>Just a moment...</title></html>');
+    await rejectsWith(fetchJson(URL_A, { fetch: fetchFn }), 'unrecognized');
   });
 });
 

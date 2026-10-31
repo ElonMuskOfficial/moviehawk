@@ -4,6 +4,7 @@
  *
  *   const engine = createEngine({ domains });
  *   engine.scrapeListing(siteUrl, page) → its posts' cards: URL, title, poster
+ *   engine.searchPosts(siteUrl, query, page) → the cards of the posts that match
  *   engine.scrapePost(postUrl)          → the post and its links
  *   engine.scrapeLinks(urls)            → the files the links' URLs lead to
  *   engine.scrapeFile(fileUrl)          → the file's name and size
@@ -16,6 +17,7 @@ import { resolve, scrapeFile } from './files.js';
 import { scrapeLinks } from './links.js';
 import { scrapeListing } from './listings.js';
 import { scrapePost } from './posts.js';
+import { searchPosts } from './searches.js';
 
 export { EngineError } from './errors.js';
 
@@ -44,6 +46,7 @@ export function createEngine(config = {}) {
   const withConfig = (options) => ({ ...options, ...config });
   return {
     scrapeListing: (url, page, options) => scrapeListing(url, page, withConfig(options)),
+    searchPosts: (url, query, page, options) => searchPosts(url, query, page, withConfig(options)),
     scrapePost: (url, options) => scrapePost(url, withConfig(options)),
     scrapeLinks: (urls, options) => scrapeLinks(urls, withConfig(options)),
     scrapeFile: (url, options) => scrapeFile(url, withConfig(options)),

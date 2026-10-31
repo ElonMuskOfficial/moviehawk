@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { scrapeHdHub4uListing, scrapeHdHub4uPost } from '../../../src/engine/providers/hdhub4u.js';
+import { scrapeHdHub4uListing, scrapeHdHub4uPost, searchHdHub4u } from '../../../src/engine/providers/hdhub4u.js';
 
 const MOVIE_URL = 'https://new10.hdhub4u.cl/wrong-turn-2003-hindi-bluray-full-movie/';
-// Live pages (2026-10-31): a movie, a series that links TMDB instead of IMDb, and listing page 2.
+// Live pages (2026-10-31): a movie, a series that links TMDB instead of IMDb, and listing page 2;
+// and the search API's answer for "mirzapur".
 const fixture = (name) => readFileSync(new URL(`../../fixtures/hdhub4u-${name}.html`, import.meta.url), 'utf8');
 const answer = (body, status = 200) => ({ fetch: async () => new Response(body, { status }) });
 const hostnamesOf = (links) => links.map(({ url }) => new URL(url).hostname);
@@ -106,5 +107,56 @@ describe('scrapeHdHub4uListing', () => {
   it('is unrecognized for a page without posts', async () => {
     const url = 'https://new10.hdhub4u.cl/page/2/';
     await assert.rejects(scrapeHdHub4uListing(url, answer('<ul class="category-links"><a href="/category/x/">X</a></ul>')), { code: 'unrecognized', url });
+  });
+});
+
+describe('searchHdHub4u', () => {
+  const SITE = 'https://new10.hdhub4u.cl';
+  const searchAnswer = readFileSync(new URL('../../fixtures/hdhub4u-search.json', import.meta.url), 'utf8');
+  // A fake API: it answers with `body` and records the requests.
+  const api = (body) => {
+    const requests = [];
+    return { requests, fetch: async (url, init) => { requests.push({ url: new URL(url), init }); return new Response(body); } };
+  };
+
+  it('gives the cards of the matching posts, as the search page shows them', async () => {
+    const { posts, hasNextPage } = await searchHdHub4u(SITE, 'mirzapur', 1, api(searchAnswer));
+
+    assert.equal(posts.length, 6);
+    assert.deepEqual(posts[0], {
+      url: 'https://new10.hdhub4u.cl/mirzapur-the-movie-2026-ds4k-webrip-hindi-full-movie/',
+      title: 'Mirzapur: The Movie (2026) DS4K EXTENDED WEB-DL [Hindi DD5.1] 4K 1080p 720p & 480p [x264/10Bit-HEVC] | Full Movie',
+      posterUrl: 'https://image.tmdb.org/t/p/w500/nIre9WOH2oa5I6tJxUhovNIupWD.jpg',
+    });
+    assert.equal(hasNextPage, false);
+  });
+
+  it('asks the API as the search page does, with the site as Referer', async () => {
+    const options = api(searchAnswer);
+
+    await searchHdHub4u(SITE, 'the boys', 2, options);
+
+    const [{ url, init }] = options.requests;
+    assert.equal(url.origin + url.pathname, 'https://search.pingora.fyi/collections/post/documents/search');
+    assert.deepEqual([url.searchParams.get('q'), url.searchParams.get('page'), url.searchParams.get('limit')], ['the boys', '2', '15']);
+    assert.equal(init.headers.Referer, 'https://new10.hdhub4u.cl/');
+  });
+
+  it('tells whether a next page follows, by how many posts match', async () => {
+    const answerOf = (found, hits) => JSON.stringify({ found, page: 1, hits: Array.from({ length: hits }, () => ({ document: { permalink: `${SITE}/a/`, post_title: 'A' } })) });
+    // 176 posts are 12 pages of 15: 11 full ones, and 11 posts on page 12.
+    assert.equal((await searchHdHub4u(SITE, 'love', 11, api(answerOf(176, 15)))).hasNextPage, true);
+    assert.equal((await searchHdHub4u(SITE, 'love', 12, api(answerOf(176, 11)))).hasNextPage, false);
+    assert.equal((await searchHdHub4u(SITE, 'love', 12, api(answerOf(180, 15)))).hasNextPage, false);
+  });
+
+  it('gives no posts when nothing matches, and is notFound for a page after the last', async () => {
+    const none = JSON.stringify({ found: 0, page: 1, hits: [] });
+    assert.deepEqual(await searchHdHub4u(SITE, 'zzzqqqxxx', 1, api(none)), { posts: [], hasNextPage: false });
+    await assert.rejects(searchHdHub4u(SITE, 'love', 99, api(JSON.stringify({ found: 176, page: 99, hits: [] }))), { code: 'notFound' });
+  });
+
+  it('is unrecognized for an answer without its hits', async () => {
+    await assert.rejects(searchHdHub4u(SITE, 'love', 1, api('{"message":"Forbidden"}')), { code: 'unrecognized' });
   });
 });

@@ -49,6 +49,7 @@ has a global `File`).
 | Function | Reads | Returns |
 |---|---|---|
 | `scrapeListing(url, page)` | a listing page of the site `url` is on (1 request) | `{ posts, hasNextPage }`: each card's `{ url, title, posterUrl }` |
+| `searchPosts(url, query, page)` | a page of the site's search, as its search box asks it (1 request) | `{ posts, hasNextPage }`, as `scrapeListing` |
 | `scrapePost(url)` | a post page (1 request) | `{ post, links }` |
 | `scrapeLinks(urls)` | the gateway pages the links' URLs lead to, until each reaches a host | `{ files, failures }` |
 | `scrapeFile(url)` | a file's page on its host (1 request) | `{ filename, sizeBytes }` |

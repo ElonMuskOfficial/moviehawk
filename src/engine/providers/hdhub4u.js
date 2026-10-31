@@ -1,10 +1,11 @@
 /**
- * HDHub4u (new10.hdhub4u.cl): its post pages (/<slug>/) and listing pages (/, /page/<n>/).
+ * HDHub4u (new10.hdhub4u.cl): its post pages (/<slug>/), listing pages (/, /page/<n>/), and the
+ * search API its search page asks.
  */
 import * as cheerio from 'cheerio';
 import { EngineError } from '../errors.js';
 import { lineOf, lineStartOf, linkOf, textOf } from '../html.js';
-import { fetchHtml } from '../http.js';
+import { fetchHtml, fetchJson } from '../http.js';
 import { jsonLdOf } from '../json-ld.js';
 
 /** @typedef {import('./index.js').Post} Post
@@ -118,4 +119,50 @@ export async function scrapeHdHub4uListing(url, options) {
   }));
   if (posts.length === 0) throw new EngineError('unrecognized', 'No posts on the HDHub4u listing page', { url });
   return { posts, hasNextPage: $('.pagination a.next[href]').length > 0 };
+}
+
+// HDHub4u's search page (/search.html) asks this API from the browser, 15 posts a page (live,
+// 2026-10-31). The engine asks it as the page does, without the page's analytics tag, so the
+// site's "popular searches" do not count the engine's.
+const SEARCH_API = 'https://search.pingora.fyi/collections/post/documents/search';
+const SEARCH_PAGE_SIZE = 15;
+
+/**
+ * Searches HDHub4u's posts as its search page does. The API answers 403 without the site as
+ * Referer.
+ *
+ * @param {string} siteUrl - On HDHub4u's current domain.
+ * @param {string} query
+ * @param {number} page - From 1.
+ * @param {import('../http.js').RequestOptions} [options]
+ * @returns {Promise<{ posts: PostCard[], hasNextPage: boolean }>} `posts`: newest first, as the
+ *   page sorts them; none when nothing matches. `hasNextPage`: whether the API has more posts than
+ *   the pages up to this one hold.
+ * @throws {EngineError} `notFound` for a page after the last; `unrecognized` for an answer without
+ *   its hits; and fetchJson's errors.
+ */
+export async function searchHdHub4u(siteUrl, query, page, options) {
+  const api = new URL(SEARCH_API);
+  const params = {
+    q: query,
+    query_by: 'post_title,category,stars,director,imdb_id',
+    query_by_weights: '4,2,2,2,4',
+    sort_by: 'sort_by_date:desc',
+    limit: SEARCH_PAGE_SIZE,
+    highlight_fields: 'none',
+    use_cache: 'true',
+    page,
+  };
+  for (const [name, value] of Object.entries(params)) api.searchParams.set(name, String(value));
+  const answer = await fetchJson(api.href, { ...options, headers: { ...options?.headers, Referer: `${new URL(siteUrl).origin}/` } });
+  if (!Array.isArray(answer?.hits) || typeof answer.found !== 'number') {
+    throw new EngineError('unrecognized', 'No hits in the HDHub4u search answer', { url: api.href });
+  }
+  if (answer.hits.length === 0 && page > 1) {
+    throw new EngineError('notFound', `HDHub4u's search says page ${page} does not exist`, { url: api.href });
+  }
+  return {
+    posts: answer.hits.map(({ document }) => ({ url: document.permalink, title: document.post_title, posterUrl: document.post_thumbnail ?? null })),
+    hasNextPage: page * SEARCH_PAGE_SIZE < answer.found,
+  };
 }

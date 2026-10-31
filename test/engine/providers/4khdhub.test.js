@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { scrape4kHdHubListing, scrape4kHdHubPost } from '../../../src/engine/providers/4khdhub.js';
+import { scrape4kHdHubListing, scrape4kHdHubPost, search4kHdHub } from '../../../src/engine/providers/4khdhub.js';
 
 const MOVIE_URL = 'https://4khdhub.one/addicted-movie-7869/';
-// Live pages (2026-10-31): a movie, a series (season packs and episodes), and listing page 2.
+// Live pages (2026-10-31): a movie, a series (season packs and episodes), listing page 2, and the
+// search page for "dexter".
 const fixture = (name) => readFileSync(new URL(`../../fixtures/4khdhub-${name}.html`, import.meta.url), 'utf8');
 const answer = (body, status = 200) => ({ fetch: async () => new Response(body, { status }) });
 
@@ -97,5 +98,37 @@ describe('scrape4kHdHubListing', () => {
   it('is unrecognized for a page without posts', async () => {
     const url = 'https://4khdhub.one/page/2/';
     await assert.rejects(scrape4kHdHubListing(url, answer('<nav><a href="/category/movies/">Movies</a></nav>')), { code: 'unrecognized', url });
+  });
+});
+
+describe('search4kHdHub', () => {
+  const SITE = 'https://4khdhub.one';
+  // A fake site: it answers with `body` and records the requests.
+  const site = (body) => {
+    const requests = [];
+    return { requests, fetch: async (url) => { requests.push(url); return new Response(body); } };
+  };
+
+  it('gives the cards of the matching posts, from the search page', async () => {
+    const { posts, hasNextPage } = await search4kHdHub(SITE, 'dexter', 1, site(fixture('search')));
+
+    assert.equal(posts.length, 3);
+    assert.equal(posts[0].title, 'Dexter');
+    assert.match(posts[0].url, /^https:\/\/4khdhub\.one\/dexter-/);
+    assert.equal(hasNextPage, false);
+  });
+
+  it('asks the search page as the search box does: "/?s=", then "/page/<n>/?s="', async () => {
+    const options = site(fixture('search'));
+    await search4kHdHub(SITE, 'the boys & girls', 1, options);
+    await assert.rejects(search4kHdHub(SITE, 'dexter', 2, options), { code: 'notFound' });
+    assert.deepEqual(options.requests, ['https://4khdhub.one/?s=the+boys+%26+girls', 'https://4khdhub.one/page/2/?s=dexter']);
+  });
+
+  it('gives no posts when nothing matches, and is unrecognized for a page without the grid', async () => {
+    // Live (2026-10-31): an empty grid, and "Oops! No results Found".
+    const none = '<div class="card-grid"></div><p>Oops! No results Found</p><div class="pagination"><a class="pagination-item active">1</a></div>';
+    assert.deepEqual(await search4kHdHub(SITE, 'zzzqqqxxx', 1, site(none)), { posts: [], hasNextPage: false });
+    await assert.rejects(search4kHdHub(SITE, 'love', 1, site('<html><title>Just a moment...</title></html>')), { code: 'unrecognized' });
   });
 });

@@ -3,8 +3,8 @@
  * by a label of the URL's hostname (urls.js): new10.hdhub4u.cl is HDHub4u.
  */
 import { hasLabel, webUrlOf } from '../urls.js';
-import { scrape4kHdHubListing, scrape4kHdHubPost } from './4khdhub.js';
-import { scrapeHdHub4uListing, scrapeHdHub4uPost } from './hdhub4u.js';
+import { scrape4kHdHubListing, scrape4kHdHubPost, search4kHdHub } from './4khdhub.js';
+import { scrapeHdHub4uListing, scrapeHdHub4uPost, searchHdHub4u } from './hdhub4u.js';
 
 /**
  * @typedef {{ provider: string, url: string, title: string, year: number | null,
@@ -15,10 +15,10 @@ import { scrapeHdHub4uListing, scrapeHdHub4uPost } from './hdhub4u.js';
  */
 
 // Each provider's id is also the hostname label that identifies it. `post` reads one post page,
-// `listing` one listing page.
+// `listing` one listing page, `search` one page of the site's search results.
 const PROVIDERS = [
-  { id: 'hdhub4u', post: scrapeHdHub4uPost, listing: scrapeHdHub4uListing },
-  { id: '4khdhub', post: scrape4kHdHubPost, listing: scrape4kHdHubListing },
+  { id: 'hdhub4u', post: scrapeHdHub4uPost, listing: scrapeHdHub4uListing, search: searchHdHub4u },
+  { id: '4khdhub', post: scrape4kHdHubPost, listing: scrape4kHdHubListing, search: search4kHdHub },
 ];
 
 /**

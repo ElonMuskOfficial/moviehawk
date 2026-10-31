@@ -1,7 +1,8 @@
 /**
- * 4KHDHub (4khdhub.one): its post pages (/<slug>-<movie|series>-<id>/) and listing pages (/,
- * /page/<n>/). Every file is one block on a post page (`.download-item` for a movie or a season
- * pack, `.episode-download-item` for an episode) with its buttons.
+ * 4KHDHub (4khdhub.one): its post pages (/<slug>-<movie|series>-<id>/), listing pages (/,
+ * /page/<n>/) and search pages (/?s=<query>). Every file is one block on a post page
+ * (`.download-item` for a movie or a season pack, `.episode-download-item` for an episode) with its
+ * buttons.
  */
 import * as cheerio from 'cheerio';
 import { EngineError } from '../errors.js';
@@ -52,8 +53,8 @@ export async function scrape4kHdHubPost(url, options) {
   };
 }
 
-// A listing page's number in its URL: "/page/2/" is 2, "/" is 1.
-const LISTING_PAGE = /^\/page\/(\d+)\/?$/;
+// A page's number in its URL: "/page/2/" is 2, "/" is 1 (listing and search pages alike).
+const PAGE_NUMBER = /^\/page\/(\d+)\/?$/;
 
 /**
  * Reads one 4KHDHub listing page: its grid of posts. A page after the last answers HTTP 200,
@@ -72,17 +73,51 @@ const LISTING_PAGE = /^\/page\/(\d+)\/?$/;
 export async function scrape4kHdHubListing(url, options) {
   const page = await fetchHtml(url, options);
   const $ = cheerio.load(page.html, { baseURI: page.url });
-  const requested = Number(LISTING_PAGE.exec(new URL(url).pathname)?.[1] ?? 1);
+  const cards = cardsOf($, url);
+  if (cards.posts.length === 0) throw new EngineError('unrecognized', 'No posts on the 4KHDHub listing page', { url });
+  return cards;
+}
+
+/**
+ * Searches 4KHDHub's posts as its search box does: its own search page, "/?s=dexter", then
+ * "/page/2/?s=dexter", with the listing's grid and pagination.
+ *
+ * @param {string} siteUrl - On 4KHDHub's current domain.
+ * @param {string} query
+ * @param {number} page - From 1.
+ * @param {import('../http.js').RequestOptions} [options]
+ * @returns {Promise<{ posts: PostCard[], hasNextPage: boolean }>} As scrape4kHdHubListing; no
+ *   posts when nothing matches (the page shows an empty grid and "Oops! No results Found").
+ * @throws {EngineError} `notFound` for a page after the last; `unrecognized` for a page without
+ *   the grid (a challenge page, a changed layout); and fetchHtml's errors.
+ */
+export async function search4kHdHub(siteUrl, query, page, options) {
+  const url = new URL(page === 1 ? '/' : `/page/${page}/`, siteUrl);
+  url.searchParams.set('s', query);
+  const fetched = await fetchHtml(url.href, options);
+  const $ = cheerio.load(fetched.html, { baseURI: fetched.url });
+  if ($('.card-grid').length === 0) throw new EngineError('unrecognized', 'No results grid on the 4KHDHub search page', { url: url.href });
+  return cardsOf($, url.href);
+}
+
+/**
+ * The cards of a listing or search page, and whether a next page follows.
+ *
+ * @returns {{ posts: PostCard[], hasNextPage: boolean }}
+ * @throws {EngineError} `notFound` when the page is not the one asked for: 4KHDHub answers a page
+ *   after the last as the last.
+ */
+function cardsOf($, url) {
+  const requested = Number(PAGE_NUMBER.exec(new URL(url).pathname)?.[1] ?? 1);
   const current = Number(textOf($('.pagination .pagination-item.active').first()));
   if (current && current !== requested) {
-    throw new EngineError('notFound', `4KHDHub says listing page ${requested} does not exist (its last is ${current})`, { url });
+    throw new EngineError('notFound', `4KHDHub says page ${requested} does not exist (its last is ${current})`, { url });
   }
   const posts = $('.card-grid a[href]').toArray().map((card) => ({
     url: $(card).prop('href'),
     title: textOf($(card).find('.movie-card-title').first()),
     posterUrl: $(card).find('img[src]').first().prop('src') ?? null,
   }));
-  if (posts.length === 0) throw new EngineError('unrecognized', 'No posts on the 4KHDHub listing page', { url });
   return { posts, hasNextPage: $('.pagination a.pagination-next[href]').length > 0 };
 }
 
