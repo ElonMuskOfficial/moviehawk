@@ -64,7 +64,7 @@ export async function fetchHtml(url, { fetch: fetchFn = fetch, timeoutMs = 8000,
  * @template T
  * @param {() => Promise<T>} fn
  * @param {{ attempts?: number, delayMs?: number, signal?: AbortSignal }} [options] `signal` also
- *   ends a wait between tries.
+ *   ends a wait between tries, with the caller's own reason.
  * @returns {Promise<T>}
  * @throws {TypeError} When `attempts` is not a whole number of at least 1: NaN would never end the
  *   loop.
@@ -77,7 +77,8 @@ export async function retry(fn, { attempts = 3, delayMs = 1000, signal } = {}) {
     } catch (error) {
       const retriable = error instanceof EngineError && !FINAL_CODES.has(error.code);
       if (!retriable || attempt >= attempts) throw error;
-      await sleep(delayMs * 4 ** (attempt - 1), undefined, { signal });
+      // Cancelled while waiting: the caller's own reason, as fetchHtml gives it.
+      await sleep(delayMs * 4 ** (attempt - 1), undefined, { signal }).catch(() => { throw signal.reason; });
     }
   }
 }

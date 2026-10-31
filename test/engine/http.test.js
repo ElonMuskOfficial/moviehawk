@@ -181,12 +181,13 @@ describe('retry', () => {
     assert.ok(performance.now() - start >= 95);
   });
 
-  it('stops waiting between tries when the caller cancels', async () => {
+  it('stops waiting between tries when the caller cancels, with the caller\'s reason', async () => {
     const { fn, calls } = failing(['transient', 'transient']);
     const controller = new AbortController();
-    setTimeout(() => controller.abort(), 10);
+    const reason = new DOMException('The deadline passed', 'TimeoutError');
+    setTimeout(() => controller.abort(reason), 10);
 
-    await assert.rejects(retry(fn, { delayMs: 10000, signal: controller.signal }), { name: 'AbortError' });
+    await assert.rejects(retry(fn, { delayMs: 10000, signal: controller.signal }), (error) => error === reason);
     assert.equal(calls(), 1);
   });
 });
