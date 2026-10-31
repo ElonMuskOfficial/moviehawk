@@ -19,13 +19,13 @@ const MAX_GATEWAYS = 5;
  */
 
 /**
- * Follows links to the files they lead to: every file once (found by its host and externalId),
- * in the order of the links. Give it all of
- * a post's links, or only those of one option (4KHDHub's HubCloud and HubDrive buttons lead to one
- * file, which it gives once). A link that is neither a gateway nor a file on a known host is
- * skipped. Every URL is moved to its site's current domain before it is read, files too.
+ * Follows links to the files they lead to: every file once (found by its host and externalId), in
+ * the order of the links (4KHDHub's HubCloud and HubDrive buttons lead to one file, which it gives
+ * once). A link that is neither a gateway nor a file on a known host is skipped. Every URL is moved
+ * to its site's current domain before it is read, files too.
  *
- * @param {string[]} links - The URLs of scrapePost's links, or of a gateway's.
+ * @param {import('./providers/index.js').PostLink[]} links - A post's links as scrapePost gives
+ *   them, all or some.
  * @param {import('./http.js').RequestOptions & {
  *   domains?: Record<string, string>,
  *   onEvent?: (event: EngineEvent) => void,
@@ -49,10 +49,10 @@ export async function scrapeLinks(links, { domains = {}, onEvent = () => {}, ...
   };
 
   // `order`: the link's position, page by page, so files keep the links' order although pages load
-  // at once.
-  const follow = async (link, order) => {
-    const parsed = webUrlOf(link);
-    if (!parsed) return report('skipped', link, 'not a web URL');
+  // at once. `target`: a link's URL, or one a gateway page gave.
+  const follow = async (target, order) => {
+    const parsed = webUrlOf(target);
+    if (!parsed) return report('skipped', target, 'not a web URL');
     const url = onCurrentDomain(parsed, domains);
     const gateway = gatewayOf(url);
     if (gateway) {
@@ -61,13 +61,13 @@ export async function scrapeLinks(links, { domains = {}, onEvent = () => {}, ...
       readPages.add(url);
       let next;
       try {
-        ({ links: next } = await retry(() => gateway.expand(url, options)));
+        ({ urls: next } = await retry(() => gateway.expand(url, options)));
       } catch (error) {
         if (!(error instanceof EngineError)) throw error;
         return fail(error);
       }
-      report('gateway', url, `${gateway.label}: ${next.length} links`);
-      await Promise.all(next.map((nextLink, i) => follow(nextLink, [...order, i])));
+      report('gateway', url, `${gateway.label}: ${next.length} URLs`);
+      await Promise.all(next.map((nextUrl, i) => follow(nextUrl, [...order, i])));
       return;
     }
     const host = hostOf(url);
@@ -80,7 +80,7 @@ export async function scrapeLinks(links, { domains = {}, onEvent = () => {}, ...
     report('file', url, host);
   };
 
-  await Promise.all(links.map((link, i) => follow(link, [i])));
+  await Promise.all(links.map(({ url }, i) => follow(url, [i])));
   const files = [...found.values()].sort((a, b) => compareOrder(a.order, b.order)).map(({ file }) => file);
   return { files, failures };
 }

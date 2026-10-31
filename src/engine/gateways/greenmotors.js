@@ -43,14 +43,14 @@ function destinationOf(html) {
  *
  * @param {string} url - On GreenMotors' current domain (greenmotors.club costs an extra redirect).
  * @param {import('../http.js').RequestOptions} [options]
- * @returns {Promise<{ links: string[] }>} The one destination.
+ * @returns {Promise<{ urls: string[] }>} The one destination.
  * @throws {EngineError} `notFound` when GreenMotors says the link is dead, `unrecognized` for a page
  *   without a destination, and fetchHtml's errors.
  */
 export async function expandGreenMotors(url, options) {
   const { html } = await fetchHtml(url, options);
   const destination = destinationOf(html);
-  if (destination) return { links: [destination] };
+  if (destination) return { urls: [destination] };
   if (DEAD_LINK.test(html)) throw new EngineError('notFound', 'GreenMotors says the link is dead', { url });
   throw new EngineError('unrecognized', 'No destination on the GreenMotors page', { url });
 }

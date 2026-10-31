@@ -13,23 +13,23 @@ const answer = (body, { status = 200, url = URL_HL } = {}) => ({
     return response;
   },
 });
-const linksOf = async (name) => (await expandHubLinks(URL_HL, answer(fixture(name)))).links;
+const urlsOf = async (name) => (await expandHubLinks(URL_HL, answer(fixture(name)))).urls;
 
 describe('expandHubLinks', () => {
   it('returns every link in the content, in page order', async () => {
     // An episode page: one line per quality, "Drive | Instant | Direct".
-    const links = await linksOf('episode-lines');
-    assert.equal(links.length, 15);
-    assert.deepEqual(links.slice(0, 3), [
+    const urls = await urlsOf('episode-lines');
+    assert.equal(urls.length, 15);
+    assert.deepEqual(urls.slice(0, 3), [
       'https://hubdrive.bar/file/1765030262',
       'https://hubcdn.wiki/file/mOmAgdn51xTUPurcnZ1gg9LZB',
       'https://hubcloud.ist/drive/lgfzf1cpxyqfo1l',
     ]);
-    assert.equal((await linksOf('episode-drives')).length, 7);
+    assert.equal((await urlsOf('episode-drives')).length, 7);
   });
 
   it('reads links shown as logos without text', async () => {
-    assert.deepEqual(await linksOf('logos'), [
+    assert.deepEqual(await urlsOf('logos'), [
       'https://hubcloud.ist/drive/aiiikkiqbe8qae4',
       'https://hubdrive.bar/file/2330045630',
       'https://gofile.io/d/v7ipQif',
@@ -37,21 +37,21 @@ describe('expandHubLinks', () => {
   });
 
   it('returns links to hosts the engine does not know, and torrents, as they are', async () => {
-    const legacy = await linksOf('legacy-hosts');
+    const legacy = await urlsOf('legacy-hosts');
     assert.equal(legacy.length, 23);
     assert.equal(legacy[0], 'https://uploadbaz.me/n4riqrhm43qd');
-    const [torrent] = await linksOf('torrent-only');
+    const [torrent] = await urlsOf('torrent-only');
     assert.match(torrent, /^magnet:\?xt=urn:btih:91e696cc/);
   });
 
   it('leads nowhere from a removed page, without failing', async () => {
-    assert.deepEqual(await linksOf('removed'), []);
+    assert.deepEqual(await urlsOf('removed'), []);
   });
 
   it('resolves relative links against the page\'s address after redirects', async () => {
     const page = '<div class="entry-content"><a href="/archives/2">Instant</a></div>';
-    const { links } = await expandHubLinks('https://hblinks.pro/archives/1', answer(page, { url: 'https://hblinks.lol/archives/1' }));
-    assert.deepEqual(links, ['https://hblinks.lol/archives/2']);
+    const { urls } = await expandHubLinks('https://hblinks.pro/archives/1', answer(page, { url: 'https://hblinks.lol/archives/1' }));
+    assert.deepEqual(urls, ['https://hblinks.lol/archives/2']);
   });
 
   it('is unrecognized for a page without the content area', async () => {

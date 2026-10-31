@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { scrapeLinks } from '../../src/engine/links.js';
 import { scrapePost } from '../../src/engine/posts.js';
 
 const POST_URL = 'https://new10.hdhub4u.cl/show-2026/';
@@ -38,6 +39,15 @@ describe('scrapePost', () => {
       { url: 'https://hubdrive.bar/file/9', label: 'Link 5' },
     ]);
     assert.deepEqual(options.requests, [POST_URL]);
+  });
+
+  it('gives links that scrapeLinks takes as they are', async () => {
+    const options = web({ [POST_URL]: hdHub4uPost('https://hubcloud.ist/drive/a') });
+
+    const { links } = await scrapePost(POST_URL, options);
+    const { files } = await scrapeLinks(links, options);
+
+    assert.deepEqual(files.map(({ externalId }) => externalId), ['a']);
   });
 
   it('reads the post on its site\'s current domain', async () => {

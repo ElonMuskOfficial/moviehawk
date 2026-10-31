@@ -16,7 +16,7 @@ const DELETED = /^(?:File not found|The file has been deleted)\b/i;
  *
  * @param {string} url - On HubDrive's current domain (older posts link hubdrive.live, which is gone).
  * @param {import('../http.js').RequestOptions} [options]
- * @returns {Promise<{ links: string[] }>} A file page: its server buttons' links; none when the file
+ * @returns {Promise<{ urls: string[] }>} A file page: its server buttons' URLs; none when the file
  *   has no server (an answer, not a failure). A pack page: its rows' file pages.
  * @throws {EngineError} `notFound` for HubDrive's deleted page; `unrecognized` for a file page
  *   without the file's details (a challenge page) or a pack without rows; and fetchHtml's errors.
@@ -27,12 +27,12 @@ export async function expandHubDrive(url, options) {
   if ($('h1, h2, h3, h4, h5, h6').toArray().some((heading) => DELETED.test($(heading).text().trim()))) {
     throw new EngineError('notFound', 'HubDrive says the file is gone', { url });
   }
-  const linksOf = (selector) => $(selector).toArray().map((a) => $(a).prop('href'));
+  const urlsOf = (selector) => $(selector).toArray().map((a) => $(a).prop('href'));
 
   if (new URL(page.url).pathname.startsWith('/packs/')) {
-    const links = linksOf('.pack-clean-file a.pack-clean-link');
-    if (links.length === 0) throw new EngineError('unrecognized', 'No files on the HubDrive pack page', { url });
-    return { links };
+    const urls = urlsOf('.pack-clean-file a.pack-clean-link');
+    if (urls.length === 0) throw new EngineError('unrecognized', 'No files on the HubDrive pack page', { url });
+    return { urls };
   }
   // A real file page states the file's size; a challenge page has a title but no details.
   if (!$('tr').toArray().some((row) => /File Size/i.test($(row).text()))) {
@@ -40,5 +40,5 @@ export async function expandHubDrive(url, options) {
   }
   // Each server is a button inside a heading ("[HubCloud Server]", "Telegram File"). The card's
   // other links are an ad and "Copy Link".
-  return { links: linksOf('.card-body :is(h1, h2, h3, h4, h5, h6) a[href]') };
+  return { urls: urlsOf('.card-body :is(h1, h2, h3, h4, h5, h6) a[href]') };
 }
