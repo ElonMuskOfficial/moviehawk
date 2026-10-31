@@ -8,7 +8,8 @@ import { EngineError } from '../errors.js';
 import { fetchHtml } from '../http.js';
 import { jsonLdOf } from '../json-ld.js';
 
-/** @typedef {import('./index.js').Post} Post */
+/** @typedef {import('./index.js').Post} Post
+ * @typedef {import('./index.js').PostLink} PostLink */
 
 /**
  * Reads one 4KHDHub post page. 4KHDHub finds a post by the number at the end of its URL; for a
@@ -17,8 +18,9 @@ import { jsonLdOf } from '../json-ld.js';
  *
  * @param {string} url - On 4KHDHub's current domain.
  * @param {import('../http.js').RequestOptions} [options]
- * @returns {Promise<{ post: Post, links: string[] }>} `links`: the buttons of every block, in page
- *   order. The page states no publication date and no IMDb id.
+ * @returns {Promise<{ post: Post, links: PostLink[] }>} `links`: the buttons of every block, in page
+ *   order; a button's label names its server only ("Download HubCloud"). The page states no
+ *   publication date and no IMDb id.
  * @throws {EngineError} `notFound` for 4KHDHub's answer to a missing post; `unrecognized` for a
  *   page without the post's title (a challenge page, a changed layout); and fetchHtml's errors.
  */
@@ -43,7 +45,8 @@ export async function scrape4kHdHubPost(url, options) {
       posterUrl: media?.image ?? null,
       publishedAt: null,
     },
-    links: $('.download-item a[href], .episode-download-item a[href]').toArray().map((a) => $(a).prop('href')),
+    links: $('.download-item a[href], .episode-download-item a[href]').toArray()
+      .map((a) => ({ url: $(a).prop('href'), label: $(a).text().replace(/\s+/g, ' ').trim() })),
   };
 }
 

@@ -25,7 +25,7 @@ const MAX_GATEWAYS = 5;
  * file, which it gives once). A link that is neither a gateway nor a file on a known host is
  * skipped. Every URL is moved to its site's current domain before it is read, files too.
  *
- * @param {string[]} links - As scrapePost gives them.
+ * @param {string[]} links - The URLs of scrapePost's links, or of a gateway's.
  * @param {import('./http.js').RequestOptions & {
  *   domains?: Record<string, string>,
  *   onEvent?: (event: EngineEvent) => void,

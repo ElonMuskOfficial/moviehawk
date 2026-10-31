@@ -30,7 +30,7 @@ scrape all use it.
 | `provider` | source site | `hdhub4u` |
 | `post` | one page of a provider | The Furious |
 | `listing` | page that lists posts | `/page/2/` |
-| `link` | URL on a page, destination not yet known | a post's button |
+| `link` | URL on a page, destination not yet known; a post's has its `label` too | `{ url, label }`: a post's button |
 | `gateway` | page that leads further | GreenMotors, HUBLinks, HubDrive |
 | `host` | site a file is on | `hubcloud` |
 | `file` | one file on a host | `{ host, externalId, url }` |

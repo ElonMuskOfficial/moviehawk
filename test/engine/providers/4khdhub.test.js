@@ -26,8 +26,8 @@ describe('scrape4kHdHubPost', () => {
   it('gives every block\'s buttons, in page order', async () => {
     const { links } = await scrape4kHdHubPost(MOVIE_URL, answer(fixture('movie')));
 
-    assert.equal(links.length, 2);
-    for (const url of links) assert.match(url, /^https:\/\/greenmotors\.club\/\?id=/);
+    assert.deepEqual(links.map(({ label }) => label), ['Download HubCloud', 'Download HubDrive']);
+    for (const { url } of links) assert.match(url, /^https:\/\/greenmotors\.club\/\?id=/);
   });
 
   it('reads a series: its year from startDate, and the buttons of its packs and episodes', async () => {
@@ -45,7 +45,7 @@ describe('scrape4kHdHubPost', () => {
 
     const { links } = await scrape4kHdHubPost(MOVIE_URL, answer(page));
 
-    assert.deepEqual(links, ['https://greenmotors.club/?id=e1', 'https://greenmotors.club/?id=pack']);
+    assert.deepEqual(links.map(({ url }) => url), ['https://greenmotors.club/?id=e1', 'https://greenmotors.club/?id=pack']);
   });
 
   it('is notFound for 4KHDHub\'s answer to a post it does not have', async () => {

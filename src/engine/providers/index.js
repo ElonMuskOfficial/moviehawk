@@ -10,6 +10,8 @@ import { scrapeHdHub4uListing, scrapeHdHub4uPost } from './hdhub4u.js';
  * @typedef {{ provider: string, url: string, title: string, year: number | null,
  *   imdbId: string | null, posterUrl: string | null, publishedAt: string | null }} Post
  *   `url`: the post's address after redirects; `publishedAt`: ISO 8601, UTC.
+ * @typedef {{ url: string, label: string }} PostLink
+ *   `label`: the link's text on the page, such as "720p x264 [850MB]" or "Download HubCloud".
  */
 
 // Each provider's id is also the hostname label that identifies it. `post` reads one post page,

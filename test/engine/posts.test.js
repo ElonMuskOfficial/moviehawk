@@ -6,7 +6,7 @@ const POST_URL = 'https://new10.hdhub4u.cl/show-2026/';
 
 // A post page shaped like HDHub4u's (2026-10-31), small enough to read in a test.
 const hdHub4uPost = (...links) => `<h1 class="page-title"><span class="material-text">Show (2026)</span></h1>
-  <main class="page-body">${links.map((link) => `<a href="${link}">Download</a>`).join('')}</main>`;
+  <main class="page-body">${links.map((link, i) => `<a href="${link}">Link ${i}</a>`).join('')}</main>`;
 
 // A fake web: each URL answers with its page, or with an HTTP status; it records every request.
 function web(pages) {
@@ -32,7 +32,11 @@ describe('scrapePost', () => {
     const { post, links } = await scrapePost(POST_URL, options);
 
     assert.equal(post.title, 'Show (2026)');
-    assert.deepEqual(links, ['https://greenmotors.cc/?id=a', 'https://hubcdn.club/file/cdn1', 'https://hubdrive.bar/file/9']);
+    assert.deepEqual(links, [
+      { url: 'https://greenmotors.cc/?id=a', label: 'Link 0' },
+      { url: 'https://hubcdn.club/file/cdn1', label: 'Link 3' },
+      { url: 'https://hubdrive.bar/file/9', label: 'Link 5' },
+    ]);
     assert.deepEqual(options.requests, [POST_URL]);
   });
 

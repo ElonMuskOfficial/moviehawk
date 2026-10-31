@@ -14,8 +14,8 @@ import { onCurrentDomain, webUrlOf } from './urls.js';
  * @param {string} url - A post page, on any of its site's domains.
  * @param {import('./http.js').RequestOptions & { domains?: Record<string, string> }} [options]
  *   `domains`: as for onCurrentDomain (urls.js).
- * @returns {Promise<{ post: import('./providers/index.js').Post, links: string[] }>}
- *   `links`: the post's links to a gateway or a known host, in page order; none can be a glitch of
+ * @returns {Promise<{ post: import('./providers/index.js').Post, links: import('./providers/index.js').PostLink[] }>}
+ *   `links`: the post's links to a gateway or a known host, in page order, with their labels; none can be a glitch of
  *   the site. The others (the site's own pages, WhatsApp, IMDb, screenshots) are left out.
  * @throws {EngineError} `unsupported` for a URL on no site the engine reads, and the provider's
  *   errors.
@@ -28,5 +28,5 @@ export async function scrapePost(url, { domains = {}, ...options } = {}) {
   const provider = providerOf(parsed.href);
   if (!provider) throw new EngineError('unsupported', 'The engine does not read posts of this site', { url });
   const { post, links } = await retry(() => provider.post(onCurrentDomain(parsed, domains), options));
-  return { post, links: links.filter((link) => gatewayOf(link) || hostOf(link)) };
+  return { post, links: links.filter(({ url: link }) => gatewayOf(link) || hostOf(link)) };
 }
