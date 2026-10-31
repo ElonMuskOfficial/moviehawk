@@ -5,6 +5,8 @@
  * "https://t.me/hubcloudreport" is not HubCloud. A label, not a whole domain, because the domains
  * rotate (hubcloud.ist, hubcloud.foo, dl.hubcloud.link, ...) while the label stays.
  */
+import { EngineError } from '../errors.js';
+import { scrapeHubCloud } from './hubcloud.js';
 
 // A file id is a plain token of letters, digits, _ and -. HubCloud shows a deleted file's search
 // page at "/drive/search-recover.php", which has the shape of a file URL but names no file.
@@ -20,8 +22,10 @@ const pathId = (...prefixes) => (url) => {
 
 // Each host's id is also the hostname label that identifies it. Shapes seen on live posts
 // (2026-10-31, 37 posts across both sites' catalogs, and the 206,000 HubCloud files stored by then).
+// `scrapeFile`: the reader of the host's file page, for a host whose page states the file's name
+// and size.
 const HOSTS = [
-  { id: 'hubcloud', externalId: pathId('drive', 'video') },
+  { id: 'hubcloud', externalId: pathId('drive', 'video'), scrapeFile: scrapeHubCloud },
   { id: 'hubcdn', externalId: pathId('file') },
   // Older posts link "gofile.io/?c=<id>".
   { id: 'gofile', externalId: (url) => pathId('d')(url) ?? (url.pathname === '/' ? fileId(url.searchParams.get('c')) : null) },
@@ -70,4 +74,19 @@ export function hostOf(url) {
 export function externalIdOf(url) {
   const found = findHost(url);
   return found ? found.host.externalId(found.parsed) : null;
+}
+
+/**
+ * Reads a file's page on its host: the file's name and size, as the page states them.
+ *
+ * @param {string} url - On the host's current domain.
+ * @param {Parameters<typeof scrapeHubCloud>[1]} [options] As for fetchHtml.
+ * @returns {Promise<{ filename: string, sizeBytes: number }>}
+ * @throws {EngineError} `unsupported` for a URL on a host whose page the engine does not read, and
+ *   the host reader's errors.
+ */
+export async function scrapeFile(url, options) {
+  const read = findHost(url)?.host.scrapeFile;
+  if (!read) throw new EngineError('unsupported', 'The engine does not read file pages of this host', { url });
+  return read(url, options);
 }
