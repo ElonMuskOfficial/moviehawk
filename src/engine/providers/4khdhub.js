@@ -62,8 +62,10 @@ const LISTING_PAGE = /^\/page\/(\d+)\/?$/;
  *
  * @param {string} url - Such as "https://4khdhub.one/page/2/".
  * @param {import('../http.js').RequestOptions} [options]
- * @returns {Promise<{ posts: PostCard[] }>} In page order. A movie's card title has no year,
- *   "Act of Valor", where its post page has "Act of Valor (2012)".
+ * @returns {Promise<{ posts: PostCard[], hasNextPage: boolean }>} `posts`: in page order. A
+ *   movie's card title has no year, "Act of Valor", where its post page has "Act of Valor (2012)".
+ *   `hasNextPage`: whether the pagination links a next page (live, 2026-10-31: every page but the
+ *   last, 407).
  * @throws {EngineError} `notFound` for a page after the last; `unrecognized` for a page without
  *   posts; and fetchHtml's errors.
  */
@@ -81,7 +83,7 @@ export async function scrape4kHdHubListing(url, options) {
     posterUrl: $(card).find('img[src]').first().prop('src') ?? null,
   }));
   if (posts.length === 0) throw new EngineError('unrecognized', 'No posts on the 4KHDHub listing page', { url });
-  return { posts };
+  return { posts, hasNextPage: $('.pagination a.pagination-next[href]').length > 0 };
 }
 
 /**

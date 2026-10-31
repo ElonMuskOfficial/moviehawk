@@ -101,8 +101,10 @@ function fileOf($, a) {
  *
  * @param {string} url - Such as "https://new10.hdhub4u.cl/page/2/".
  * @param {import('../http.js').RequestOptions} [options]
- * @returns {Promise<{ posts: PostCard[] }>} In page order. A card's title is its caption, the
- *   post's title; its image is the poster, smaller than on the post page (w342, not w400).
+ * @returns {Promise<{ posts: PostCard[], hasNextPage: boolean }>} `posts`: in page order. A card's
+ *   title is its caption, the post's title; its image is the poster, smaller than on the post page
+ *   (w342, not w400). `hasNextPage`: whether the pagination links a next page (live, 2026-10-31:
+ *   every page but the last, 971).
  * @throws {EngineError} `unrecognized` for a page without posts, and fetchHtml's errors
  *   (`notFound`: HDHub4u answers a page after the last with HTTP 404).
  */
@@ -115,5 +117,5 @@ export async function scrapeHdHub4uListing(url, options) {
     posterUrl: $(card).find('img[src]').first().prop('src') ?? null,
   }));
   if (posts.length === 0) throw new EngineError('unrecognized', 'No posts on the HDHub4u listing page', { url });
-  return { posts };
+  return { posts, hasNextPage: $('.pagination a.next[href]').length > 0 };
 }

@@ -95,6 +95,14 @@ describe('scrapeHdHub4uListing', () => {
     assert.equal(posts.at(-1).url, 'https://new10.hdhub4u.cl/ali-g-who-iz-i-2026-webrip-hindi-full-movie/');
   });
 
+  it('tells whether a next page follows, by the next link of the pagination', async () => {
+    assert.equal((await scrapeHdHub4uListing('https://new10.hdhub4u.cl/page/2/', answer(fixture('listing')))).hasNextPage, true);
+    // The last page (live, 2026-10-31: 971) links the previous page, and no next one.
+    const last = '<ul class="recent-movies"><li><figcaption><a href="/a/"><p>A</p></a></figcaption></li></ul>'
+      + '<ul class="pagination"><li><a class="prev page-numbers" href="/page/970/">Previous</a></li><li><span aria-current="page" class="page-numbers current">971</span></li></ul>';
+    assert.equal((await scrapeHdHub4uListing('https://new10.hdhub4u.cl/page/971/', answer(last))).hasNextPage, false);
+  });
+
   it('is unrecognized for a page without posts', async () => {
     const url = 'https://new10.hdhub4u.cl/page/2/';
     await assert.rejects(scrapeHdHub4uListing(url, answer('<ul class="category-links"><a href="/category/x/">X</a></ul>')), { code: 'unrecognized', url });

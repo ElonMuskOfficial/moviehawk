@@ -78,6 +78,14 @@ describe('scrape4kHdHubListing', () => {
     assert.equal(posts.at(-1).url, 'https://4khdhub.one/a-couple-of-lies-aka-bytet-series-8462/');
   });
 
+  it('tells whether a next page follows, by the next link of the pagination', async () => {
+    assert.equal((await scrape4kHdHubListing('https://4khdhub.one/page/2/', answer(fixture('listing')))).hasNextPage, true);
+    // The last page (live, 2026-10-31: 407) links the previous page, and no next one.
+    const last = '<div class="card-grid"><a href="/a-movie-1/"><h3 class="movie-card-title">A</h3></a></div>'
+      + '<div class="pagination"><a href="/page/406/" class="pagination-item pagination-previous"></a><a class="pagination-item active">407</a></div>';
+    assert.equal((await scrape4kHdHubListing('https://4khdhub.one/page/407/', answer(last))).hasNextPage, false);
+  });
+
   it('is notFound for a page after the last, which 4KHDHub answers as its last', async () => {
     // Live (2026-10-31): /page/408/ has no posts, and its pagination marks 407 as the current page.
     const page = '<div class="card-grid"></div><div class="pagination"><a href="/page/1/" class="pagination-item">1</a><a class="pagination-item active">407</a></div>';

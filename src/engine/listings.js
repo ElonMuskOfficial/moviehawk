@@ -8,16 +8,18 @@ import { onCurrentDomain, webUrlOf } from './urls.js';
 
 /**
  * Reads one listing page (1 request; retried). Both providers number them the same way: page 1 is
- * "/", page n is "/page/<n>/". To read a whole catalog, read pages 1, 2, 3… until `notFound`.
+ * "/", page n is "/page/<n>/". To read a whole catalog, read pages 1, 2, 3… while `hasNextPage`.
  *
  * @param {string} url - Any URL on the provider's site, such as "https://new10.hdhub4u.cl", on any
  *   of its domains.
  * @param {number} [page] - From 1.
  * @param {import('./http.js').RequestOptions & { domains?: Record<string, string> }} [options]
  *   `domains`: as for onCurrentDomain (urls.js).
- * @returns {Promise<{ posts: import('./providers/index.js').PostCard[] }>} The page's posts, in
- *   page order, as their cards show them: `{ url, title, posterUrl }`. Pages can share posts
- *   (HDHub4u's page 1 lists those of its pages 2 to 6 too).
+ * @returns {Promise<{ posts: import('./providers/index.js').PostCard[], hasNextPage: boolean }>}
+ *   `posts`: the page's posts, in page order, as their cards show them: `{ url, title, posterUrl }`;
+ *   as many as the page has (HDHub4u: 85 on page 1, 15 on the others). Pages can share posts
+ *   (HDHub4u's page 1 lists those of its pages 2 to 6 too). `hasNextPage`: whether the page's
+ *   pagination links a next one.
  * @throws {EngineError} `notFound` for a page after the last; `unsupported` for a URL on no site
  *   the engine reads; and the provider's errors.
  * @throws {TypeError} For a string that is not a web URL, or a page that is not a whole number
