@@ -21,8 +21,8 @@ describe('scrapeFile on HubCloud', () => {
     });
   });
 
-  it('reads sizes in binary units, KB to TB', async () => {
-    const cases = [['12.5 KB', 12800], ['265.62 MB', 278522757], ['2 GB', 2 * 1024 ** 3], ['1.5 TB', 1.5 * 1024 ** 4], ['7.63gb', Math.round(7.63 * 1024 ** 3)]];
+  it('reads sizes in binary units, KB to GB', async () => {
+    const cases = [['12.5 KB', 12800], ['265.62 MB', 278522757], ['2 GB', 2 * 1024 ** 3]];
     for (const [size, bytes] of cases) {
       assert.equal((await scrapeFile(URL_HC, answer(pageWith('a.mkv', size)))).sizeBytes, bytes, size);
     }
@@ -34,6 +34,7 @@ describe('scrapeFile on HubCloud', () => {
       pageWith('', '1.2 GB'),
       pageWith('a.mkv', ''),
       pageWith('a.mkv', '1.2 GiB'),
+      pageWith('a.mkv', '1.2 gb'),
       '<p>404 ! File Not Found</p>', // HubCloud's deleted page, but with HTTP 200: never seen live
     ];
     for (const page of pages) {

@@ -21,7 +21,7 @@ const pathId = (...prefixes) => (url) => {
 };
 
 // Each host's id is also the hostname label that identifies it. Shapes seen on live posts
-// (2026-10-31, 37 posts across both sites' catalogs, and the 206,000 HubCloud files stored by then).
+// (2026-10-31, 37 posts across both sites' catalogs, and the 206,598 HubCloud files stored by then).
 // `scrapeFile`: the reader of the host's file page, for a host whose page states the file's name
 // and size.
 const HOSTS = [
@@ -80,7 +80,7 @@ export function externalIdOf(url) {
  * Reads a file's page on its host: the file's name and size, as the page states them.
  *
  * @param {string} url - On the host's current domain.
- * @param {Parameters<typeof scrapeHubCloud>[1]} [options] As for fetchHtml.
+ * @param {Parameters<typeof import('../http.js').fetchHtml>[1]} [options]
  * @returns {Promise<{ filename: string, sizeBytes: number }>}
  * @throws {EngineError} `unsupported` for a URL on a host whose page the engine does not read, and
  *   the host reader's errors.

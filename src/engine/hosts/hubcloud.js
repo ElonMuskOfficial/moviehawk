@@ -8,8 +8,8 @@ import { fetchHtml } from '../http.js';
 
 // HubCloud states sizes in binary units ("265.62 MB" is 278,522,757 bytes). The 206,598 files
 // stored by 2026-10-31 are 2 MB to 278 GB; a subtitle or an image is in KB.
-const UNITS = { KB: 1024, MB: 1024 ** 2, GB: 1024 ** 3, TB: 1024 ** 4 };
-const SIZE = /^(\d+(?:\.\d+)?)\s*(KB|MB|GB|TB)$/i;
+const UNITS = { KB: 1024, MB: 1024 ** 2, GB: 1024 ** 3 };
+const SIZE = /^(\d+(?:\.\d+)?)\s*(KB|MB|GB)$/;
 
 /**
  * Reads a HubCloud file page. A deleted file answers HTTP 404 ("404 ! File Not Found"), which
@@ -27,5 +27,5 @@ export async function scrapeHubCloud(url, options) {
   const filename = $('.card-header').first().text().trim();
   const [, amount, unit] = SIZE.exec($('#size').first().text().trim()) ?? [];
   if (!filename || !unit) throw new EngineError('unrecognized', 'No file name or size on the HubCloud page', { url });
-  return { filename, sizeBytes: Math.round(Number(amount) * UNITS[unit.toUpperCase()]) };
+  return { filename, sizeBytes: Math.round(Number(amount) * UNITS[unit]) };
 }
