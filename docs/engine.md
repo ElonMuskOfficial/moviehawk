@@ -66,8 +66,9 @@ has a global `File`).
   site's own pages); none can be a glitch of the site. A link's `label` is what the page says it
   is. A button that states its file is labelled with its own text (HDHub4u's `720p x264 [850MB]`).
   A button that names only its server is labelled with what the page says of its file and then
-  the button: HDHub4u's episode lines (`EPiSODE 1 720p · Drive`), 4KHDHub's blocks
-  (`Addicted (1080p WEB-DL H264 AVC) 7 GB English WEB-DL · Download HubCloud`).
+  the button: HDHub4u's episode lines (`EPiSODE 1 720p · Drive`, `EPiSODE 1 · WATCH`), 4KHDHub's
+  blocks (`Addicted (1080p WEB-DL H264 AVC) 7 GB English WEB-DL · Download HubCloud`). A movie's
+  players (`WATCH`, `PLAYER-2`) name no file.
 - `scrapeLinks` follows a link through at most 5 gateways in a row (live: 3 at most), reads each
   gateway page once, and reads all pages at once, with no limit: the sites answered 1,088
   requests at once (5 series together) with HTTP 200 only (2026-10-31). Each page is retried.

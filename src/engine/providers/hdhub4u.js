@@ -14,6 +14,8 @@ import { jsonLdOf } from '../json-ld.js';
 // "MobLand (Season 2) ..." (live, 2026-10-31: 15 of 15 movies, 6 of 6 series).
 const YEAR = /\((\d{4})\)/;
 const IMDB_TITLE = /^\/title\/(tt\d+)\//;
+// An episode's download button, first in its line: "EPiSODE 1 | WATCH".
+const EPISODE = /^EPiSODE \d+$/i;
 
 // The post's IMDb id, from the one link in the box of its ratings: IMDb's title page
 // ("www.imdb.com/title/tt0295700/reference/?ref_=fn_t_1"), or TMDB's for a title IMDb does not
@@ -69,8 +71,8 @@ export async function scrapeHdHub4uPost(url, options) {
  * What the page says of a button's file when the button shares its line with others. A series
  * lists each episode as a heading and then a line per quality:
  * "EPiSODE 1", then "720p – Drive | Instant | WATCH" and "1080p – Drive | Instant" (live,
- * 2026-10-31: 480 links of 38 posts). A button alone in its heading ("720p x264 [850MB]") states its
- * file itself.
+ * 2026-10-31: 480 links of 38 posts); or each episode as a line, "EPiSODE 1 | WATCH". A button
+ * alone in its heading ("720p x264 [850MB]") states its file itself.
  *
  * @returns {string} Such as "EPiSODE 1 720p"; empty when the line names no file ("WATCH | PLAYER-2").
  */
@@ -88,8 +90,12 @@ function fileOf($, a) {
     }
   }
   // The line's text before its first button, without the dash after it: "720p –" is "720p".
-  const quality = textBefore(line[0], line.find('a[href]')[0]).replace(/\s+/g, ' ').replace(/[\s–-]+$/, '').trim();
-  return [episode, quality].filter(Boolean).join(' ');
+  const first = line.find('a[href]').first();
+  const quality = textBefore(line[0], first[0]).replace(/\s+/g, ' ').replace(/[\s–-]+$/, '').trim();
+  if (episode || quality) return [episode, quality].filter(Boolean).join(' ');
+  // A line of its own episode: "EPiSODE 1 | WATCH" (live: 102 lines on 46 posts); its players are the
+  // episode's. A line of players only, "WATCH | PLAYER-2", names no file.
+  return first[0] !== a && EPISODE.test(textOf(first)) ? textOf(first) : '';
 }
 
 /** The text of `node` that comes before `stop`, one of its descendants. */

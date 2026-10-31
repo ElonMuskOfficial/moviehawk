@@ -50,16 +50,17 @@ describe('scrapeHdHub4uPost', () => {
     ]);
   });
 
-  it('labels with its own text a button whose line or heading names no file', async () => {
-    // Shapes of live posts (2026-10-31): an episode line right under the ": DOWNLOAD LINKS :" box,
-    // and a link in the post's prose.
+  it('labels a line\'s players with its episode, and a link in prose with its own text', async () => {
+    // Shapes of live posts (2026-10-31): an episode's line right under the ": DOWNLOAD LINKS :" box,
+    // a movie's players, and a link in the post's prose.
     const page = `<h1 class="page-title"><span class="material-text">Show</span></h1><main class="page-body">
       <div>: DOWNLOAD LINKS :</div><h3><a href="https://greenmotors.club/?id=1">EPiSODE 1</a> | <a href="https://hubstream.art/#a">WATCH</a></h3>
+      <hr><h4><a href="https://hdstream4u.com/file/b">WATCH</a> | <a href="https://hubstream.art/#c">PLAYER-2</a></h4>
       <p>Download Show in Hindi <a href="https://greenmotors.club/?id=2">HDHub4u</a></p></main>`;
 
     const { links } = await scrapeHdHub4uPost(MOVIE_URL, answer(page));
 
-    assert.deepEqual(links.map(({ label }) => label), ['EPiSODE 1', 'WATCH', 'HDHub4u']);
+    assert.deepEqual(links.map(({ label }) => label), ['EPiSODE 1', 'EPiSODE 1 · WATCH', 'WATCH', 'PLAYER-2', 'HDHub4u']);
   });
 
   it('has no year and no IMDb id for a series that links TMDB in IMDb\'s box', async () => {
