@@ -13,7 +13,7 @@ scrape all use it.
   functions below, each with that config, so no call can read dead domains for lack of `domains`.
   A call's own options are `signal`, and `onEvent` for `scrapeLinks`.
 - `scrapeLinks` returns every file it reaches (HubCloud, HubCDN, GoFile, ...), each once.
-- The engine gives one function per layer of the sites (listing, post, links, file); the consumer
+- The engine gives one function per layer of the sites (listing, search, post, links, file); the consumer
   makes its own flow from them: the crawler follows every link of a post, another consumer only the ones its user picks.
 - The engine states only what the site said. What a consumer does with a result is its own
   business.
@@ -79,7 +79,7 @@ has a global `File`).
   requests at once (5 series together) with HTTP 200 only (2026-10-31). Each page is retried.
 - `domains`: the current domain of each site whose domain rotates, by its hostname label
   (`{ hblinks: 'https://hblinks.lol' }`); every URL is moved to it before it is read.
-- Nothing found is an empty result (`files: []`), not an error.
+- Nothing found is an empty result (`files: []`, a search's `posts: []`), not an error.
 - `onEvent({ type, url, detail })`: what happened to each link, for logs.
 - `EngineError.code`, by what the site said:
   - `notFound`: the site said it is gone: HTTP 404 or 410, or the host's own "not found" page;
@@ -162,7 +162,9 @@ running until the engine is done and the consumers use it.
    moving each URL to its current domain before it is fetched.
 9. `scrapeListing` (`src/engine/listings.js`): page 1 is `/`, page n `/page/<n>/`; `notFound`
    after the last page on both sites (HDHub4u: HTTP 404; 4KHDHub: its pagination marks another
-   page as the current one).
+   page as the current one). `searchPosts` (`src/engine/searches.js`): 4KHDHub's search page
+   (`/?s=<query>`), HDHub4u's search API; the same `{ posts, hasNextPage }`, and `notFound`
+   after the last page.
 10. `createEngine` (`src/engine/index.js`), the one entry. `scrapeFile` and `resolve`
     (`src/engine/files.js`) move a stored file to its host's current domain (hubcloud.foo →
     hubcloud.ist) and retry, like the other functions.

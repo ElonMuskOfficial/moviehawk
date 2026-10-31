@@ -161,7 +161,8 @@ export async function searchHdHub4u(siteUrl, query, page, options) {
     throw new EngineError('unrecognized', 'No hits in the HDHub4u search answer', { url: api.href });
   }
   if (answer.hits.length === 0 && page > 1) {
-    throw new EngineError('notFound', `HDHub4u's search says page ${page} does not exist`, { url: api.href });
+    const last = Math.ceil(answer.found / SEARCH_PAGE_SIZE) || 1;
+    throw new EngineError('notFound', `HDHub4u says page ${page} does not exist (its last is ${last})`, { url: api.href });
   }
   return {
     posts: answer.hits.map(({ document }) => ({

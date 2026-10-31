@@ -161,7 +161,10 @@ describe('searchHdHub4u', () => {
   it('gives no posts when nothing matches, and is notFound for a page after the last', async () => {
     const none = JSON.stringify({ found: 0, page: 1, hits: [] });
     assert.deepEqual(await searchHdHub4u(SITE, 'zzzqqqxxx', 1, api(none)), { posts: [], hasNextPage: false });
-    await assert.rejects(searchHdHub4u(SITE, 'love', 99, api(JSON.stringify({ found: 176, page: 99, hits: [] }))), { code: 'notFound' });
+    await assert.rejects(searchHdHub4u(SITE, 'love', 99, api(JSON.stringify({ found: 176, page: 99, hits: [] }))), {
+      code: 'notFound',
+      message: 'HDHub4u says page 99 does not exist (its last is 12)',
+    });
   });
 
   it('is unrecognized for an answer without its hits', async () => {

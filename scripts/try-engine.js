@@ -5,7 +5,7 @@
  */
 import { createEngine } from '../src/engine/index.js';
 
-const SITE_URL = 'https://new10.hdhub4u.cl'; // or 'https://4khdhub.one'
+const SITE_URL = 'https://4khdhub.one'; // or 'https://new10.hdhub4u.cl'
 const PAGE = 1; // of the listing or the search, from 1; a page after the last is notFound
 
 // The current domain of each site whose domain rotates (2026-10-31).
@@ -45,7 +45,7 @@ links.forEach(({ label }, i) => console.log(`  ${i}: ${label}`));
 // The URL of the link to follow, such as one of step 1's: links[1].url.
 const url = 'https://hblinks.lol/archives/121857';
 console.log(`\nFollowing ${url}`);
-const { files, failures } = await engine.scrapeLinks([url]);
+const { files } = await engine.scrapeLinks([url]);
 console.log(`${files.length} files:`, files);
 
 // Step 3: the downloads of the selected file, such as one of step 2's: files[0].url (HubCloud only).
