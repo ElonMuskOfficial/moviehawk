@@ -13,6 +13,9 @@ const LIVE = [
   ['https://gofile.io/d/U551pXPn', 'gofile', 'U551pXPn'],
   ['https://hdstream4u.com/file/pmmjzrfsn4c9', 'hdstream4u', 'pmmjzrfsn4c9'],
   ['https://hubstream.art/#3ywqve', 'hubstream', '3ywqve'],
+  ['https://vidaraa.cc/e/WFwz7q5riBgD', 'vidaraa', 'WFwz7q5riBgD'],
+  ['https://play4u.org/series/tt29625288/s-01/ep-01', 'play4u', 'tt29625288/s-01/ep-01'],
+  ['https://play4u.org/series/tt29625288/s-01/', 'play4u', 'tt29625288/s-01'],
   ['https://new3.multicloudlinks.com/view/sh6ob8', 'multicloudlinks', 'sh6ob8'],
   ['https://new.multicloudlinks.com/player.php/?v=ncp0ta', 'multicloudlinks', 'ncp0ta'],
 ];
@@ -56,6 +59,7 @@ describe('hostOf and externalIdOf', () => {
       'https://hubstream.art/',
       'https://gofile.io/d/',
       'https://new.multicloudlinks.com/player.php/',
+      'https://play4u.org/',
     ];
     for (const url of noFile) {
       assert.notEqual(hostOf(url), null, url);

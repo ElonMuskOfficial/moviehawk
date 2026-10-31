@@ -29,6 +29,10 @@ const HOSTS = [
   { id: 'gofile', externalId: (url) => pathId('d')(url) ?? (url.pathname === '/' ? fileId(url.searchParams.get('c')) : null) },
   { id: 'hdstream4u', externalId: pathId('file') },
   { id: 'hubstream', externalId: (url) => fileId(url.hash.slice(1)) },
+  { id: 'vidaraa', externalId: pathId('e') },
+  // A player of IMDb's titles: it names no file, so its id is the title's, season's and episode's
+  // ("/series/tt29625288/s-01/ep-01").
+  { id: 'play4u', externalId: (url) => /^\/series\/(tt\d+\/s-\d+(?:\/ep-\d+)?)\/?$/.exec(url.pathname)?.[1] ?? null },
   // Its player ("/player.php/?v=<id>") and its download page ("/view/<id>") name the same file.
   { id: 'multicloudlinks', externalId: (url) => pathId('view')(url) ?? (/^\/player\.php\/?$/.test(url.pathname) ? fileId(url.searchParams.get('v')) : null) },
 ];
