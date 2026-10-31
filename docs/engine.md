@@ -67,6 +67,33 @@ has a global `File`).
   retried: `notFound`, `unsupported`, and a request the caller cancelled (`signal`), which is
   passed on as it is, not as an `EngineError`.
 
+## Sources
+
+The engine is built for more than one source from the start: a new source is new modules
+(provider, gateways, hosts), never an edit of the pipeline.
+
+| Source | Status |
+|---|---|
+| HDHub4u, 4KHDHub | Today's sources |
+| Vegamovies (`new1.vegamovies.lease`), RogMovies (`rogmovies.im`) | Coming. First look on 2026-10-31 (4 posts) |
+
+First look at Vegamovies and RogMovies:
+
+- Both are WordPress sites on one template: posts at `/download-<slug>/`, the body in
+  `.post-content`, an IMDb link. They link each other.
+- Every download button leads to a NexDrive page (`nexdrive.beer/genxfm<number>/`), a gateway:
+  one page per quality, or per quality and server on series.
+- A NexDrive page lists the hosts of the file, or of every episode: VCloud (`vcloud.beer/<id>`),
+  VegaDrive (`one.vegadrive.app/s/<id>`), G-Direct (`fastdl.beer/embed.php?download=<id>`),
+  Filepress (`filebee.xyz/file/<id>`); zip packs also GoFile, 1fichier, VikingFile, MegaUp.
+- VCloud's and VegaDrive's pages state the filename and size, like HubCloud's. G-Direct's page
+  says only "redirecting...". Filepress did not answer.
+- So the route has the same shape as HDHub4u's (post → gateway → host): piece 8 follows the links a
+  gateway returns until they reach a host, with a depth limit, instead of a fixed list of steps.
+
+To check in a wide survey before pieces 7 and 8: more posts and layouts of both sites, whether
+one provider module serves both, and the hosts' pages.
+
 ## Open
 
 - 4KHDHub: two blocks with different languages can lead to one file. Check this live.
@@ -94,8 +121,10 @@ running until the engine is done and the consumers use it.
 5. `scrapeFile`: HubCloud's file page.
 6. `resolve`: HubCloud's download page and the 10Gbps redirects. Only HubCloud: no consumer
    needs another host resolved yet; one is added when a consumer does.
-7. Providers: HDHub4u and 4KHDHub post and listing pages.
-8. `scrapePost`: following the links, each file once, `failures`, `onEvent`.
+7. Providers: HDHub4u and 4KHDHub post and listing pages; first a wide survey of Vegamovies and
+   RogMovies, so pieces 7 and 8 are designed from all four sites.
+8. `scrapePost`: following the links each gateway returns until they reach a host, each file once,
+   `failures`, `onEvent`.
 9. `scrapeListing`.
 10. `createEngine` and `src/engine/index.js`.
 11. Live check on both sites: the new engine's results against `master`'s.
