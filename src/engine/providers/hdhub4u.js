@@ -4,7 +4,7 @@
 import * as cheerio from 'cheerio';
 import { EngineError } from '../errors.js';
 import { fetchHtml } from '../http.js';
-import { jsonLdOf } from './json-ld.js';
+import { jsonLdOf } from '../json-ld.js';
 
 /** @typedef {import('./index.js').Post} Post */
 /** @typedef {import('./index.js').PostLink} PostLink */
