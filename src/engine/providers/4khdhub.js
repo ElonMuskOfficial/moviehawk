@@ -9,12 +9,13 @@ import { EngineError } from '../errors.js';
 import { fetchHtml } from '../http.js';
 import { jsonLdOf } from './json-ld.js';
 
-/** @typedef {import('./hdhub4u.js').Post} Post */
+/** @typedef {import('./index.js').Post} Post */
+/** @typedef {import('./index.js').PostLink} PostLink */
 
-// The languages badge is told apart from the others (size, source, codec) by its colour, the one
+// The languages badge is told apart from the others (size, source, codec) by its color, the one
 // thing that marks a badge's kind (live, 2026-10-31: 785 of 785 blocks have one, and it names
 // languages only).
-const LANGUAGES_COLOUR = '#0d9488';
+const LANGUAGES_COLOR = '#0d9488';
 
 /**
  * Reads one 4KHDHub post page. 4KHDHub finds a post by the number at the end of its URL; for a
@@ -23,7 +24,7 @@ const LANGUAGES_COLOUR = '#0d9488';
  *
  * @param {string} url - On 4KHDHub's current domain.
  * @param {import('../http.js').RequestOptions} [options]
- * @returns {Promise<{ post: Post, links: Array<{ url: string, statedLanguages: string | null }> }>}
+ * @returns {Promise<{ post: Post, links: PostLink[] }>}
  *   `links`: the buttons of every block, in page order; `statedLanguages`: as the block's badge
  *   states them ("Hindi, English"). The page states no publication date and no IMDb id.
  * @throws {EngineError} `notFound` for 4KHDHub's answer to a missing post; `unrecognized` for a
@@ -55,7 +56,7 @@ export async function scrape4kHdHubPost(url, options) {
       // An episode's languages are stated once, for its season.
       statedLanguages: $(a).closest('.download-item, .season-item').find('.badge').toArray()
         .map((badge) => $(badge))
-        .find((badge) => badge.css('background-color') === LANGUAGES_COLOUR)?.text().trim() ?? null,
+        .find((badge) => badge.css('background-color') === LANGUAGES_COLOR)?.text().trim() ?? null,
     })),
   };
 }
@@ -66,7 +67,7 @@ export async function scrape4kHdHubPost(url, options) {
  *
  * @param {string} url - Such as "https://4khdhub.one/page/2/".
  * @param {import('../http.js').RequestOptions} [options]
- * @returns {Promise<{ postUrls: string[] }>} In page order.
+ * @returns {Promise<{ postUrls: string[] }>} In page order (each card links its post once).
  * @throws {EngineError} `unrecognized` for a page without posts, and fetchHtml's errors.
  */
 export async function scrape4kHdHubListing(url, options) {

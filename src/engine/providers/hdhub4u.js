@@ -6,11 +6,8 @@ import { EngineError } from '../errors.js';
 import { fetchHtml } from '../http.js';
 import { jsonLdOf } from './json-ld.js';
 
-/**
- * @typedef {{ provider: string, url: string, title: string, year: number | null,
- *   imdbId: string | null, posterUrl: string | null, publishedAt: string | null }} Post
- *   `url`: the post's address after redirects; `publishedAt`: ISO 8601, UTC.
- */
+/** @typedef {import('./index.js').Post} Post */
+/** @typedef {import('./index.js').PostLink} PostLink */
 
 // A movie's title states its year, "Wrong Turn (2003) BluRay ..."; a series' does not,
 // "MobLand (Season 2) ..." (live, 2026-10-31: 15 of 15 movies, 6 of 6 series).
@@ -31,7 +28,7 @@ function imdbIdOf(href) {
  *
  * @param {string} url - On HDHub4u's current domain.
  * @param {import('../http.js').RequestOptions} [options]
- * @returns {Promise<{ post: Post, links: Array<{ url: string, statedLanguages: null }> }>}
+ * @returns {Promise<{ post: Post, links: PostLink[] }>}
  *   `links`: every link in the post's body, in page order, as the page gives them (gateways, hosts,
  *   screenshots, IMDb); HDHub4u states no languages per link.
  * @throws {EngineError} `unrecognized` for a page without the post's title (a challenge page, a

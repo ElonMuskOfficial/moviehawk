@@ -7,7 +7,7 @@ const MOVIE_URL = 'https://4khdhub.one/addicted-movie-7869/';
 // Live pages (2026-10-31): a movie, a series (season packs and episodes), and listing page 2.
 const fixture = (name) => readFileSync(new URL(`../../fixtures/4khdhub-${name}.html`, import.meta.url), 'utf8');
 const answer = (body, status = 200) => ({ fetch: async () => new Response(body, { status }) });
-const badge = (text, colour) => `<span class="badge" style="background-color: ${colour}; color: white;">${text}</span>`;
+const badge = (text, color) => `<span class="badge" style="background-color: ${color}; color: white;">${text}</span>`;
 
 describe('scrape4kHdHubPost', () => {
   it('reads a movie post: title, year and poster; the page states no date and no IMDb id', async () => {
