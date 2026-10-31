@@ -17,21 +17,22 @@ const answer = (body, url, status = 200) => ({
 
 describe('expandHubDrive', () => {
   it('returns a file page\'s server buttons, without its ad and "Copy Link"', async () => {
-    const { urls } = await expandHubDrive(FILE_URL, answer(fixture('file'), FILE_URL));
-    assert.equal(urls.length, 2);
-    assert.equal(urls[0], 'https://hubcloud.ist/drive/e0ueeuiluu8pire');
-    assert.match(urls[1], /^https:\/\/hubcloud\.ist\/tg\/go\?id=/);
+    const { links } = await expandHubDrive(FILE_URL, answer(fixture('file'), FILE_URL));
+    assert.equal(links.length, 2);
+    assert.equal(links[0].url, 'https://hubcloud.ist/drive/e0ueeuiluu8pire');
+    assert.match(links[1].url, /^https:\/\/hubcloud\.ist\/tg\/go\?id=/);
+    assert.deepEqual(links.map(({ label }) => label), ['[HubCloud Server]', 'Telegram File']);
   });
 
   it('leads nowhere from a real file page without servers, without failing', async () => {
     const page = '<table><tr><td>File Size</td><td>1.2 GB</td></tr></table><div class="card-body"><h5>Movie.mkv</h5></div>';
-    assert.deepEqual(await expandHubDrive(FILE_URL, answer(page, FILE_URL)), { urls: [] });
+    assert.deepEqual(await expandHubDrive(FILE_URL, answer(page, FILE_URL)), { links: [] });
   });
 
   it('returns a pack\'s rows as file pages, in page order', async () => {
-    const { urls } = await expandHubDrive(PACK_URL, answer(fixture('pack'), PACK_URL));
-    assert.equal(urls.length, 9);
-    assert.deepEqual(urls.slice(0, 2), ['https://hubdrive.bar/file/51828476429', 'https://hubdrive.bar/file/6957876604']);
+    const { links } = await expandHubDrive(PACK_URL, answer(fixture('pack'), PACK_URL));
+    assert.equal(links.length, 9);
+    assert.deepEqual(links.slice(0, 2).map(({ url }) => url), ['https://hubdrive.bar/file/51828476429', 'https://hubdrive.bar/file/6957876604']);
   });
 
   it('is notFound on HubDrive\'s deleted pages', async () => {

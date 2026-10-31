@@ -24,8 +24,7 @@ const MAX_GATEWAYS = 5;
  * once). A link that is neither a gateway nor a file on a known host is skipped. Every URL is moved
  * to its site's current domain before it is read, files too.
  *
- * @param {import('./providers/index.js').PostLink[]} links - A post's links as scrapePost gives
- *   them, all or some.
+ * @param {import('./html.js').Link[]} links - A post's links as scrapePost gives them, all or some.
  * @param {import('./http.js').RequestOptions & {
  *   domains?: Record<string, string>,
  *   onEvent?: (event: EngineEvent) => void,
@@ -49,10 +48,10 @@ export async function scrapeLinks(links, { domains = {}, onEvent = () => {}, ...
   };
 
   // `order`: the link's position, page by page, so files keep the links' order although pages load
-  // at once. `target`: a link's URL, or one a gateway page gave.
-  const follow = async (target, order) => {
-    const parsed = webUrlOf(target);
-    if (!parsed) return report('skipped', target, 'not a web URL');
+  // at once.
+  const follow = async (link, order) => {
+    const parsed = webUrlOf(link.url);
+    if (!parsed) return report('skipped', link.url, 'not a web URL');
     const url = onCurrentDomain(parsed, domains);
     const gateway = gatewayOf(url);
     if (gateway) {
@@ -61,13 +60,13 @@ export async function scrapeLinks(links, { domains = {}, onEvent = () => {}, ...
       readPages.add(url);
       let next;
       try {
-        ({ urls: next } = await retry(() => gateway.expand(url, options)));
+        ({ links: next } = await retry(() => gateway.expand(url, options)));
       } catch (error) {
         if (!(error instanceof EngineError)) throw error;
         return fail(error);
       }
-      report('gateway', url, `${gateway.label}: ${next.length} URLs`);
-      await Promise.all(next.map((nextUrl, i) => follow(nextUrl, [...order, i])));
+      report('gateway', url, `${gateway.label}: ${next.length} links`);
+      await Promise.all(next.map((nextLink, i) => follow(nextLink, [...order, i])));
       return;
     }
     const host = hostOf(url);
@@ -80,7 +79,7 @@ export async function scrapeLinks(links, { domains = {}, onEvent = () => {}, ...
     report('file', url, host);
   };
 
-  await Promise.all(links.map(({ url }, i) => follow(url, [i])));
+  await Promise.all(links.map((link, i) => follow(link, [i])));
   const files = [...found.values()].sort((a, b) => compareOrder(a.order, b.order)).map(({ file }) => file);
   return { files, failures };
 }

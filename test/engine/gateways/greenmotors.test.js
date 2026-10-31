@@ -21,12 +21,12 @@ const pageWith = (config) => {
 
 describe('expandGreenMotors', () => {
   it('decodes the destination of a live page', async () => {
-    assert.deepEqual(await expandGreenMotors(URL_GM, answer(LIVE_PAGE)), { urls: ['https://hubcloud.ist/drive/nank1rqnnhdohh0'] });
+    assert.deepEqual(await expandGreenMotors(URL_GM, answer(LIVE_PAGE)), { links: [{ url: 'https://hubcloud.ist/drive/nank1rqnnhdohh0', label: null }] });
   });
 
   it('returns a destination that is another GreenMotors link as it is', async () => {
     const page = pageWith({ o: Buffer.from('https://greenmotors.cc/?id=next').toString('base64') });
-    assert.deepEqual(await expandGreenMotors(URL_GM, answer(page)), { urls: ['https://greenmotors.cc/?id=next'] });
+    assert.deepEqual(await expandGreenMotors(URL_GM, answer(page)), { links: [{ url: 'https://greenmotors.cc/?id=next', label: null }] });
   });
 
   it('is notFound when GreenMotors says the link is dead', async () => {

@@ -3,11 +3,12 @@
  */
 import * as cheerio from 'cheerio';
 import { EngineError } from '../errors.js';
+import { linkOf } from '../html.js';
 import { fetchHtml } from '../http.js';
 import { jsonLdOf } from '../json-ld.js';
 
 /** @typedef {import('./index.js').Post} Post
- * @typedef {import('./index.js').PostLink} PostLink */
+ * @typedef {import('../html.js').Link} Link */
 
 // A movie's title states its year, "Wrong Turn (2003) BluRay ..."; a series' does not,
 // "MobLand (Season 2) ..." (live, 2026-10-31: 15 of 15 movies, 6 of 6 series).
@@ -28,7 +29,7 @@ function imdbIdOf(href) {
  *
  * @param {string} url - On HDHub4u's current domain.
  * @param {import('../http.js').RequestOptions} [options]
- * @returns {Promise<{ post: Post, links: PostLink[] }>} `links`: every link in the post's body, in
+ * @returns {Promise<{ post: Post, links: Link[] }>} `links`: every link in the post's body, in
  *   page order, as the page gives them (gateways, hosts, screenshots, IMDb). A quality button's
  *   label states its file ("720p x264 [850MB]"); an episode line's, only its server ("Drive").
  * @throws {EngineError} `unrecognized` for a page without the post's title (a challenge page, a
@@ -54,8 +55,7 @@ export async function scrapeHdHub4uPost(url, options) {
       posterUrl: body.find('img[src]').first().prop('src') ?? null,
       publishedAt: datePublished ? new Date(datePublished).toISOString() : null,
     },
-    links: body.find('a[href]').toArray()
-      .map((a) => ({ url: $(a).prop('href'), label: $(a).text().replace(/\s+/g, ' ').trim() })),
+    links: body.find('a[href]').toArray().map((a) => linkOf($, a)),
   };
 }
 

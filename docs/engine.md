@@ -30,7 +30,7 @@ scrape all use it.
 | `provider` | source site | `hdhub4u` |
 | `post` | one page of a provider | The Furious |
 | `listing` | page that lists posts | `/page/2/` |
-| `link` | a post's link: its URL (destination not yet known) and its text on the page | `{ url, label }` |
+| `link` | a link on a page: its URL (destination not yet known) and its text | `{ url, label }` |
 | `gateway` | page that leads further | GreenMotors, HUBLinks, HubDrive |
 | `host` | site a file is on | `hubcloud` |
 | `file` | one file on a host | `{ host, externalId, url }` |
@@ -141,14 +141,14 @@ running until the engine is done and the consumers use it.
 2. Fetching: timeout, `signal`, retry.
 3. Hosts: which host a URL belongs to (`hostOf`), and its `externalId` (`externalIdOf`).
 4. Gateways: GreenMotors, HUBLinks, HubDrive file and pack. Each reads one page and returns
-   `{ urls }`.
+   `{ links }`.
 5. `scrapeFile`: HubCloud's file page.
 6. `resolve`: HubCloud's download page and the 10Gbps redirects. Only HubCloud: no consumer
    needs another host resolved yet; one is added when a consumer does.
 7. Providers: HDHub4u and 4KHDHub post and listing pages, after a wide survey of all four sites.
    Vegamovies and RogMovies come with NexDrive and VCloud.
 8. `scrapePost` (`src/engine/posts.js`) and `scrapeLinks` (`src/engine/links.js`): following the
-   URLs each gateway returns until they reach a host, each file once, `failures`, `onEvent`;
+   links each gateway returns until they reach a host, each file once, `failures`, `onEvent`;
    moving each URL to its current domain before it is fetched.
 9. `scrapeListing`.
 10. `createEngine` and `src/engine/index.js`.

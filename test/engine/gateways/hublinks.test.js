@@ -13,14 +13,14 @@ const answer = (body, { status = 200, url = URL_HL } = {}) => ({
     return response;
   },
 });
-const urlsOf = async (name) => (await expandHubLinks(URL_HL, answer(fixture(name)))).urls;
+const urlsOf = async (name) => (await expandHubLinks(URL_HL, answer(fixture(name)))).links.map(({ url }) => url);
 
 describe('expandHubLinks', () => {
   it('returns every link in the content, in page order', async () => {
     // An episode page: one line per quality, "Drive | Instant | Direct".
-    const urls = await urlsOf('episode-lines');
-    assert.equal(urls.length, 15);
-    assert.deepEqual(urls.slice(0, 3), [
+    const links = await urlsOf('episode-lines');
+    assert.equal(links.length, 15);
+    assert.deepEqual(links.slice(0, 3), [
       'https://hubdrive.bar/file/1765030262',
       'https://hubcdn.wiki/file/mOmAgdn51xTUPurcnZ1gg9LZB',
       'https://hubcloud.ist/drive/lgfzf1cpxyqfo1l',
@@ -28,7 +28,9 @@ describe('expandHubLinks', () => {
     assert.equal((await urlsOf('episode-drives')).length, 7);
   });
 
-  it('reads links shown as logos without text', async () => {
+  it('reads links shown as logos without text, without a label', async () => {
+    const { links } = await expandHubLinks(URL_HL, answer(fixture('logos')));
+    assert.deepEqual(links.map(({ label }) => label), [null, null, null]);
     assert.deepEqual(await urlsOf('logos'), [
       'https://hubcloud.ist/drive/aiiikkiqbe8qae4',
       'https://hubdrive.bar/file/2330045630',
@@ -50,8 +52,8 @@ describe('expandHubLinks', () => {
 
   it('resolves relative links against the page\'s address after redirects', async () => {
     const page = '<div class="entry-content"><a href="/archives/2">Instant</a></div>';
-    const { urls } = await expandHubLinks('https://hblinks.pro/archives/1', answer(page, { url: 'https://hblinks.lol/archives/1' }));
-    assert.deepEqual(urls, ['https://hblinks.lol/archives/2']);
+    const { links } = await expandHubLinks('https://hblinks.pro/archives/1', answer(page, { url: 'https://hblinks.lol/archives/1' }));
+    assert.deepEqual(links.map(({ url }) => url), ['https://hblinks.lol/archives/2']);
   });
 
   it('is unrecognized for a page without the content area', async () => {
