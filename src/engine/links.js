@@ -33,9 +33,13 @@ const MAX_GATEWAYS = 5;
  * @returns {Promise<{ files: HostFile[], failures: EngineError[] }>} `failures`: every page that did
  *   not lead on, such as a dead GreenMotors link (`notFound`) or a stalled HubDrive (`transient`);
  *   the files of every other link are there.
+ * @throws {TypeError} For a link that is not `{ url, label }`, such as a bare URL string: it would
+ *   be skipped as if the page linked nothing.
  * @throws {unknown} The caller's own reason, as it is, when the caller cancels (`signal`).
  */
 export async function scrapeLinks(links, { domains = {}, onEvent = () => {}, ...options } = {}) {
+  const notLink = links.find((link) => typeof link?.url !== 'string');
+  if (notLink !== undefined) throw new TypeError(`Not a link { url, label }: ${JSON.stringify(notLink)}`);
   // Gateway pages, each read once (a post links some twice), for the link that reaches it first:
   // its files take that link's place.
   const readPages = new Set();

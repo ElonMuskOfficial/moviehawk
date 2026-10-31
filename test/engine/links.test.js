@@ -123,6 +123,14 @@ describe('scrapeLinks', () => {
     ]);
   });
 
+  it('is a TypeError for a link that is not { url, label }, without a request', async () => {
+    const options = web({});
+    for (const links of [['https://hubdrive.bar/file/7'], [null], [{ label: 'Drive' }]]) {
+      await assert.rejects(scrapeLinks(links, options), TypeError);
+    }
+    assert.deepEqual(options.requests, []);
+  });
+
   it('passes the caller\'s cancellation on as it is', async () => {
     const controller = new AbortController();
     const reason = new DOMException('The user left', 'AbortError');
