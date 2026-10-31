@@ -29,8 +29,8 @@ export async function scrapeFile(url, { domains = {}, ...options } = {}) {
 }
 
 /**
- * Resolves a file into its downloads (3 requests and more; retried): the file's page, its
- * download page, and the redirects to the file. Downloads expire within minutes or hours;
+ * Resolves a file into its downloads (2 or 3 requests; retried): the file's page, its download
+ * page, and 10Gbps's redirects to the file, when the page has that server. Downloads expire within minutes or hours;
  * scrapeFile's answer does not.
  *
  * @param {string} url - As for scrapeFile.

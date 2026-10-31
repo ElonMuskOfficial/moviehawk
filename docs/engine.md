@@ -53,7 +53,7 @@ has a global `File`).
 | `scrapePost(url)` | a post page (1 request) | `{ post, links }` |
 | `scrapeLinks(urls)` | the gateway pages the links' URLs lead to, until each reaches a host | `{ files, failures }` |
 | `scrapeFile(url)` | a file's page on its host (1 request) | `{ filename, sizeBytes }` |
-| `resolve(url)` | the file's page, its download page, then the redirects to the file (3 requests) | `{ filename, sizeBytes, downloads }` |
+| `resolve(url)` | the file's page, its download page, then 10Gbps's redirects to the file (2 or 3 requests) | `{ filename, sizeBytes, downloads }` |
 
 - `scrape*` reads a page and returns what it states, which does not expire. `resolve` follows
   redirects to make `downloads`, which expire within minutes or hours. A different job, so a

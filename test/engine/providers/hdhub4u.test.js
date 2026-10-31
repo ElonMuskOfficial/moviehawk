@@ -84,7 +84,7 @@ describe('scrapeHdHub4uPost', () => {
 });
 
 describe('scrapeHdHub4uListing', () => {
-  it('gives each card of the grid once, in page order: URL, title and poster', async () => {
+  it('gives the cards of the grid, in page order: URL, title and poster', async () => {
     const { posts } = await scrapeHdHub4uListing('https://new10.hdhub4u.cl/page/2/', answer(fixture('listing')));
 
     assert.equal(posts.length, 15);
