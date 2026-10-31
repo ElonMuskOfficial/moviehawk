@@ -19,7 +19,7 @@ const FINAL_CODES = new Set(['notFound', 'unsupported']);
  * a host sometimes sends its headers and then stalls.
  *
  * @param {string} url
- * @param {{ fetch?: typeof fetch, timeoutMs?: number, signal?: AbortSignal, headers?: Record<string, string> }} [options]
+ * @param {{ fetch?: typeof fetch, timeoutMs?: number, signal?: AbortSignal }} [options]
  *   `signal`: the caller's own cancellation, on top of the timeout.
  * @returns {Promise<{ html: string, url: string }>} `url`: the page's address after redirects.
  * @throws {EngineError} `notFound` on HTTP 404 or 410; `transient` on any other HTTP error, a
@@ -28,7 +28,7 @@ const FINAL_CODES = new Set(['notFound', 'unsupported']);
  *   not of the site.
  * @throws {unknown} The caller's own reason, as it is, when the caller cancels (`signal`).
  */
-export async function fetchHtml(url, { fetch: fetchFn = fetch, timeoutMs = 8000, signal, headers } = {}) {
+export async function fetchHtml(url, { fetch: fetchFn = fetch, timeoutMs = 8000, signal } = {}) {
   // A typo such as "hhttps://" parses as a URL with another scheme; no site was asked.
   const { protocol } = new URL(url);
   if (protocol !== 'https:' && protocol !== 'http:') throw new TypeError(`Not a web URL: ${url}`);
@@ -36,7 +36,7 @@ export async function fetchHtml(url, { fetch: fetchFn = fetch, timeoutMs = 8000,
   try {
     const response = await fetchFn(url, {
       redirect: 'follow',
-      headers: { ...HEADERS, ...headers },
+      headers: HEADERS,
       signal: signal ? AbortSignal.any([timeout, signal]) : timeout,
     });
     if (!response.ok) {

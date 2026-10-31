@@ -39,16 +39,15 @@ describe('fetchHtml', () => {
     assert.deepEqual(page, { html: '<h1>File</h1>', url: 'https://hubcloud.ist/drive/abc?moved' });
   });
 
-  it('asks as a browser, following redirects, and adds the caller\'s headers', async () => {
+  it('asks as a browser, following redirects', async () => {
     const { fetchFn, requests } = answer(200);
 
-    await fetchHtml(URL_A, { fetch: fetchFn, headers: { Referer: 'https://gamerxyt.com/' } });
+    await fetchHtml(URL_A, { fetch: fetchFn });
 
     const { init } = requests[0];
     assert.equal(init.redirect, 'follow');
     assert.match(init.headers['User-Agent'], /^Mozilla\/5\.0 /);
     assert.match(init.headers.Accept, /^text\/html/);
-    assert.equal(init.headers.Referer, 'https://gamerxyt.com/');
   });
 
   it('is notFound on HTTP 404 and 410: the site said the page is gone', async () => {
