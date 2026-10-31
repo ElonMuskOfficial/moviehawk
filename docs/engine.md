@@ -1,6 +1,6 @@
 # Engine
 
-**Status:** being built on the branch `engine`: pieces 1 to 8 are done.
+**Status:** being built on the branch `engine`: pieces 1 to 9 are done.
 
 The engine takes a URL, scrapes it and returns the result. The crawler, API, bot and on-demand
 scrape all use it.
@@ -44,7 +44,7 @@ has a global `File`).
 
 | Function | Reads | Returns |
 |---|---|---|
-| `scrapeListing(provider, page)` | a listing page | post URLs |
+| `scrapeListing(url, page)` | a listing page of the site `url` is on (1 request) | `{ postUrls }` |
 | `scrapePost(url)` | a post page (1 request) | `{ post, links }` |
 | `scrapeLinks(links)` | the gateway pages the links lead to, until each reaches a host | `{ files, failures }` |
 | `scrapeFile(url)` | a file's page on its host (1 request) | `{ filename, sizeBytes }` |
@@ -155,7 +155,9 @@ running until the engine is done and the consumers use it.
 8. `scrapePost` (`src/engine/posts.js`) and `scrapeLinks` (`src/engine/links.js`): following the
    links each gateway returns until they reach a host, each file once, `failures`, `onEvent`;
    moving each URL to its current domain before it is fetched.
-9. `scrapeListing`.
+9. `scrapeListing` (`src/engine/listings.js`): page 1 is `/`, page n `/page/<n>/`; `notFound`
+   after the last page on both sites (HDHub4u: HTTP 404; 4KHDHub: its pagination marks another
+   page as the current one).
 10. `createEngine` and `src/engine/index.js`.
 11. Live check on both sites: the new engine's results against `master`'s.
 

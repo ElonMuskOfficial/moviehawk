@@ -74,6 +74,14 @@ describe('scrape4kHdHubListing', () => {
     assert.equal(postUrls.at(-1), 'https://4khdhub.one/a-couple-of-lies-aka-bytet-series-8462/');
   });
 
+  it('is notFound for a page after the last, which 4KHDHub answers as its last', async () => {
+    // Live (2026-10-31): /page/408/ has no posts, and its pagination marks 407 as the current page.
+    const page = '<div class="card-grid"></div><div class="pagination"><a href="/page/1/" class="pagination-item">1</a><a class="pagination-item active">407</a></div>';
+    const url = 'https://4khdhub.one/page/408/';
+
+    await assert.rejects(scrape4kHdHubListing(url, answer(page)), { code: 'notFound', url });
+  });
+
   it('is unrecognized for a page without posts', async () => {
     const url = 'https://4khdhub.one/page/2/';
     await assert.rejects(scrape4kHdHubListing(url, answer('<nav><a href="/category/movies/">Movies</a></nav>')), { code: 'unrecognized', url });

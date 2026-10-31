@@ -52,18 +52,28 @@ export async function scrape4kHdHubPost(url, options) {
   };
 }
 
+// A listing page's number in its URL: "/page/2/" is 2, "/" is 1.
+const LISTING_PAGE = /^\/page\/(\d+)\/?$/;
+
 /**
- * Reads one 4KHDHub listing page: its grid of posts. A page after the last answers as the last
- * page (live, 2026-10-31: /page/99999/ is page 407).
+ * Reads one 4KHDHub listing page: its grid of posts. A page after the last answers HTTP 200, without
+ * posts, and its pagination marks the last page as the current one (live, 2026-10-31: /page/408/
+ * and /page/99999/ both mark 407).
  *
  * @param {string} url - Such as "https://4khdhub.one/page/2/".
  * @param {import('../http.js').RequestOptions} [options]
  * @returns {Promise<{ postUrls: string[] }>} In page order (each card links its post once).
- * @throws {EngineError} `unrecognized` for a page without posts, and fetchHtml's errors.
+ * @throws {EngineError} `notFound` for a page after the last; `unrecognized` for a page without
+ *   posts; and fetchHtml's errors.
  */
 export async function scrape4kHdHubListing(url, options) {
   const page = await fetchHtml(url, options);
   const $ = cheerio.load(page.html, { baseURI: page.url });
+  const requested = Number(LISTING_PAGE.exec(new URL(url).pathname)?.[1] ?? 1);
+  const current = Number(textOf($('.pagination .pagination-item.active').first()));
+  if (current && current !== requested) {
+    throw new EngineError('notFound', `4KHDHub has no listing page ${requested}; its last is ${current}`, { url });
+  }
   const postUrls = $('.card-grid a[href]').toArray().map((a) => $(a).prop('href'));
   if (postUrls.length === 0) throw new EngineError('unrecognized', 'No posts on the 4KHDHub listing page', { url });
   return { postUrls };

@@ -112,7 +112,8 @@ function textBefore(node, stop) {
 
 /**
  * Reads one HDHub4u listing page: its grid of posts. The page's other links are categories and
- * the site's own pages.
+ * the site's own pages. Page 1 lists about as many posts as pages 2 to 6, which list 15 each, so
+ * pages share posts (live, 2026-10-31: 85 posts on page 1, 14 of page 2's on it).
  *
  * @param {string} url - Such as "https://new10.hdhub4u.cl/page/2/".
  * @param {import('../http.js').RequestOptions} [options]
