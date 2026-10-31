@@ -131,6 +131,14 @@ describe('searchHdHub4u', () => {
     assert.equal(hasNextPage, false);
   });
 
+  it('gives every post on the site\'s domain, as the search page links it', async () => {
+    // The answer keeps the domain each post was published on: 5 of its 6 are on new2.hdhub4u.free.
+    const { posts } = await searchHdHub4u(SITE, 'mirzapur', 1, api(searchAnswer));
+
+    assert.deepEqual(new Set(posts.map(({ url }) => new URL(url).origin)), new Set([SITE]));
+    assert.equal(posts[1].url, 'https://new10.hdhub4u.cl/mirzapur-the-movie-2026-hindi-telugu-orgs-v2-hdtc-full-movie/');
+  });
+
   it('asks the API as the search page does, with the site as Referer', async () => {
     const options = api(searchAnswer);
 

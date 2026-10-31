@@ -136,8 +136,10 @@ const SEARCH_PAGE_SIZE = 15;
  * @param {number} page - From 1.
  * @param {import('../http.js').RequestOptions} [options]
  * @returns {Promise<{ posts: PostCard[], hasNextPage: boolean }>} `posts`: newest first, as the
- *   page sorts them; none when nothing matches. `hasNextPage`: whether the API has more posts than
- *   the pages up to this one hold.
+ *   page sorts them; none when nothing matches. A post's URL is its permalink's path on the site's
+ *   domain, as the page links it: the API keeps the domain a post was published on
+ *   ("new2.hdhub4u.free", live 2026-10-31: 5 of 6 for "mirzapur"). `hasNextPage`: whether the API
+ *   has more posts than the pages up to this one hold.
  * @throws {EngineError} `notFound` for a page after the last; `unrecognized` for an answer without
  *   its hits; and fetchJson's errors.
  */
@@ -162,7 +164,11 @@ export async function searchHdHub4u(siteUrl, query, page, options) {
     throw new EngineError('notFound', `HDHub4u's search says page ${page} does not exist`, { url: api.href });
   }
   return {
-    posts: answer.hits.map(({ document }) => ({ url: document.permalink, title: document.post_title, posterUrl: document.post_thumbnail ?? null })),
+    posts: answer.hits.map(({ document }) => ({
+      url: new URL(new URL(document.permalink).pathname, siteUrl).href,
+      title: document.post_title,
+      posterUrl: document.post_thumbnail ?? null,
+    })),
     hasNextPage: page * SEARCH_PAGE_SIZE < answer.found,
   };
 }
