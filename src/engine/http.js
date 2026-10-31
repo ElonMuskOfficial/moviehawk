@@ -11,8 +11,9 @@ const HEADERS = {
   Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
 };
 
-// Codes that another try cannot change: the site already answered, or the URL is not ours.
-const FINAL_CODES = new Set(['notFound', 'unsupported']);
+// Failures another try can change: the site did not answer, or answered a challenge page.
+const RETRIED = new Set(['transient', 'unrecognized']);
+const ATTEMPTS = 3;
 
 /**
  * Fetches a page's HTML, following redirects. `timeoutMs` covers the whole page, body included:
@@ -23,8 +24,6 @@ const FINAL_CODES = new Set(['notFound', 'unsupported']);
  * @returns {Promise<{ html: string, url: string }>} `url`: the page's address after redirects.
  * @throws {EngineError} `notFound` on HTTP 404 or 410; `transient` on any other HTTP error, a
  *   network error or the timeout.
- * @throws {TypeError} For a string that is not a web (http or https) URL: a mistake of the caller,
- *   not of the site.
  * @throws {unknown} The caller's own reason, as it is, when the caller cancels (`signal`).
  */
 export function fetchHtml(url, options) {
@@ -38,7 +37,7 @@ export function fetchHtml(url, options) {
  * @param {RequestOptions} [options]
  * @returns {Promise<unknown>} The parsed JSON.
  * @throws {EngineError} As fetchHtml; and `unrecognized` for an answer that is not JSON (a challenge
- *   page). Its TypeError, and the caller's reason on cancellation, as fetchHtml.
+ *   page). The caller's reason on cancellation, as fetchHtml.
  */
 export function fetchJson(url, options) {
   return request(url, 'GET', options, async (response) => {
@@ -58,7 +57,7 @@ export function fetchJson(url, options) {
  * @param {string} url
  * @param {RequestOptions} [options]
  * @returns {Promise<string>} The address after redirects.
- * @throws {EngineError} As fetchHtml; and its TypeError, and the caller's reason on cancellation.
+ * @throws {EngineError} As fetchHtml; and the caller's reason on cancellation.
  */
 export function followRedirects(url, options) {
   return request(url, 'HEAD', options, async (response) => {
@@ -86,9 +85,6 @@ export function followRedirects(url, options) {
  * @returns {Promise<T>}
  */
 async function request(url, method, { fetch: fetchFn = fetch, timeoutMs = 8000, signal, headers } = {}, read) {
-  // A typo such as "hhttps://" parses as a URL with another scheme; no site was asked.
-  const { protocol } = new URL(url);
-  if (protocol !== 'https:' && protocol !== 'http:') throw new TypeError(`Not a web URL: ${url}`);
   const timeout = AbortSignal.timeout(timeoutMs);
   try {
     const response = await fetchFn(url, {
@@ -111,29 +107,26 @@ async function request(url, method, { fetch: fetchFn = fetch, timeoutMs = 8000, 
 }
 
 /**
- * Runs `fn` until it succeeds, up to `attempts` times, waiting `delayMs` before the second try
- * and four times as long before each next one (1 s, then 4 s). The hosts stall for several seconds
+ * Runs `fn` until it succeeds, up to 3 times, waiting `delayMs` before the second try and four
+ * times as long before the third (1 s, then 4 s). The hosts stall for several seconds
  * under load (10.7 s measured, 2026-10-29), so a quick second try tends to meet the same stall.
  *
  * Only an EngineError that another try could change is retried: `transient` and `unrecognized`
- * (a challenge page often passes on the next try). Anything else is thrown at once: `notFound`
- * and `unsupported`, the caller's cancellation, and errors that are bugs.
+ * (a challenge page often passes on the next try). Anything else is thrown at once: `notFound`,
+ * the caller's cancellation, and errors that are bugs.
  *
  * @template T
  * @param {() => Promise<T>} fn
- * @param {{ attempts?: number, delayMs?: number }} [options]
+ * @param {{ delayMs?: number }} [options]
  * @returns {Promise<T>}
- * @throws {TypeError} When `attempts` is not a whole number of at least 1: NaN would never end the
- *   loop.
  */
-export async function retry(fn, { attempts = 3, delayMs = 1000 } = {}) {
-  if (!Number.isInteger(attempts) || attempts < 1) throw new TypeError(`attempts must be a whole number of at least 1: ${attempts}`);
+export async function retry(fn, { delayMs = 1000 } = {}) {
   for (let attempt = 1; ; attempt++) {
     try {
       return await fn();
     } catch (error) {
-      const retriable = error instanceof EngineError && !FINAL_CODES.has(error.code);
-      if (!retriable || attempt >= attempts) throw error;
+      const retriable = error instanceof EngineError && RETRIED.has(error.code);
+      if (!retriable || attempt === ATTEMPTS) throw error;
       await sleep(delayMs * 4 ** (attempt - 1));
     }
   }

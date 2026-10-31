@@ -109,15 +109,6 @@ describe('fetchHtml', () => {
 
     await assert.rejects(fetchHtml(URL_A, { fetch: stall, signal: controller.signal }), (error) => error === reason);
   });
-
-  it('throws a TypeError for a string that is not a web URL, without a request', async () => {
-    const { fetchFn, requests } = answer(200);
-
-    for (const notWeb of ['hubcloud drive abc', 'hhttps://hubcloud.ist/drive/abc', 'magnet:?xt=urn:btih:abc']) {
-      await assert.rejects(fetchHtml(notWeb, { fetch: fetchFn }), TypeError);
-    }
-    assert.equal(requests.length, 0);
-  });
 });
 
 describe('fetchJson', () => {
@@ -168,19 +159,17 @@ describe('retry', () => {
     assert.equal(calls(), 3);
   });
 
-  it('gives up after `attempts` tries with the last error', async () => {
+  it('gives up after 3 tries with the last error', async () => {
     const { fn, calls } = failing(['transient', 'transient', 'transient', 'transient']);
 
-    await assert.rejects(retry(fn, { attempts: 3, delayMs: 1 }), { code: 'transient' });
+    await assert.rejects(retry(fn, { delayMs: 1 }), { code: 'transient' });
     assert.equal(calls(), 3);
   });
 
-  it('does not try again when another try cannot change the answer', async () => {
-    for (const code of ['notFound', 'unsupported']) {
-      const { fn, calls } = failing([code]);
-      await assert.rejects(retry(fn, { delayMs: 1 }), { code });
-      assert.equal(calls(), 1);
-    }
+  it('does not try again when the site said the page is gone', async () => {
+    const { fn, calls } = failing(['notFound']);
+    await assert.rejects(retry(fn, { delayMs: 1 }), { code: 'notFound' });
+    assert.equal(calls(), 1);
   });
 
   it('does not try again after an error that is not an EngineError (a bug, or a cancellation)', async () => {
@@ -190,14 +179,6 @@ describe('retry', () => {
 
     await assert.rejects(retry(fn, { delayMs: 1 }), (error) => error === bug);
     assert.equal(calls, 1);
-  });
-
-  it('refuses a number of attempts that would never end the loop, before any try', async () => {
-    for (const attempts of [NaN, Infinity, 0, 2.5, '3']) {
-      const { fn, calls } = failing(['transient']);
-      await assert.rejects(retry(fn, { attempts }), TypeError);
-      assert.equal(calls(), 0);
-    }
   });
 
   it('waits delayMs, then four times as long', async () => {
