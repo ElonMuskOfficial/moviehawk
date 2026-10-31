@@ -29,7 +29,7 @@ const link = {
   url: 'https://greenmotors.club/?id=cUk4cEpVbFU1NW8yUVR1ZVFUM3phNm5QS2Z3TTdCSkVpS1pqdjdkTHQ5bDlqUGNSMTVIWDk5d05BZDVIa3R2QkRla3o2ektFaFhld2Y4NWhJZTgvZzZLNTZaN2lndkpMNTJWcXBONzFDdjg9',
   label: null,
 };
-console.log(`\nFollowing ${link}`);
+console.log(`\nFollowing ${link.url}`);
 const { files, failures } = await engine.scrapeLinks([link]);
 console.log(`${files.length} files:`, files);
 console.log(`${failures.length} failures:`, failures.map(({ code, url, message }) => ({ code, url, message })));
