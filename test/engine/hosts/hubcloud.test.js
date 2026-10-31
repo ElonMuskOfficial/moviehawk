@@ -1,52 +1,16 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { resolveHubCloud, scrapeHubCloud } from '../../../src/engine/hosts/hubcloud.js';
+import { resolveHubCloud } from '../../../src/engine/hosts/hubcloud.js';
 
 const URL_HC = 'https://hubcloud.ist/drive/lgfzf1cpxyqfo1l';
 // Live pages (2026-10-31): a /drive/ and a /video/ file; the first one's download page, and
 // another file's download page with more servers.
 const fixture = (name) => readFileSync(new URL(`../../fixtures/hubcloud-${name}.html`, import.meta.url), 'utf8');
 const answer = (body, status = 200) => ({ fetch: async () => new Response(body, { status }) });
-const pageWith = (filename, size) => `<div class="card-header">${filename}</div><ul><li>File Size<i id="size">${size}</i></li></ul>`;
-
-describe('scrapeHubCloud', () => {
-  it('reads the file\'s name and size from live pages', async () => {
-    assert.deepEqual(await scrapeHubCloud(URL_HC, answer(fixture('file'))), {
-      filename: 'The.Terminal.List.Dark.Wolf.S01E01.480p.WEB-DL.Hindi-English.ESub.x264-HDHub4u.Ms.mkv',
-      sizeBytes: 278522757, // 265.62 MB, as stored for this file on 2026-10-28
-    });
-    assert.deepEqual(await scrapeHubCloud('https://hubcloud.ist/video/0f9100t1nvzvvyc', answer(fixture('video'))), {
-      filename: 'Blackout.2024.480p.Hindi.WEB-DL.ESub.x264-HDHub4u.Tv.mkv',
-      sizeBytes: Math.round(415.41 * 1024 ** 2),
-    });
-  });
-
-  it('reads sizes in binary units, KB to GB', async () => {
-    const cases = [['12.5 KB', 12800], ['265.62 MB', 278522757], ['2 GB', 2 * 1024 ** 3]];
-    for (const [size, bytes] of cases) {
-      assert.equal((await scrapeHubCloud(URL_HC, answer(pageWith('a.mkv', size)))).sizeBytes, bytes, size);
-    }
-  });
-
-  it('is unrecognized for a page without the file\'s name or a size it can read', async () => {
-    const pages = [
-      '<html><title>Just a moment...</title><body>Checking your browser</body></html>',
-      pageWith('', '1.2 GB'),
-      pageWith('a.mkv', ''),
-      pageWith('a.mkv', '1.2 GiB'),
-      pageWith('a.mkv', '1.2 gb'),
-      '<p>404 ! File Not Found</p>', // HubCloud's deleted page, but with HTTP 200: never seen live
-    ];
-    for (const page of pages) {
-      await assert.rejects(scrapeHubCloud(URL_HC, answer(page)), { code: 'unrecognized', url: URL_HC });
-    }
-  });
-
-  it('is notFound when HubCloud answers HTTP 404, as it does for a deleted file', async () => {
-    await assert.rejects(scrapeHubCloud(URL_HC, answer('404 ! File Not Found', 404)), { code: 'notFound', status: 404 });
-  });
-});
+// A file page shaped like the live ones, with its download link.
+const pageWith = (filename, size) => `<div class="card-header">${filename}</div><ul><li>File Size<i id="size">${size}</i></li></ul>`
+  + '<a id="download" class="btn btn-primary" href="https://gamerxyt.com/hubcloud.php?id=a">Download Here</a>';
 
 // The 10Gbps button redirects to an ad page whose `link` is the file's URL (live, 2026-10-31).
 const FILE_URL = 'https://video-downloads.googleusercontent.com/ADGPM2kG1c2DPsrJ6hovnnpZWm';
@@ -58,14 +22,14 @@ function redirectedTo(url, status = 200) {
   return response;
 }
 
-// A fake fetch for resolve: each site answers with its live page; `tenGbps` answers the 10Gbps
+// A fake fetch: each site answers with its live page (`filePage`, `downloadPage`); `tenGbps` answers the 10Gbps
 // button's redirects.
-function sites({ downloadPage = fixture('download'), tenGbps = async () => redirectedTo(AD_PAGE) } = {}) {
+function sites({ filePage = fixture('file'), downloadPage = fixture('download'), tenGbps = async () => redirectedTo(AD_PAGE) } = {}) {
   const requests = [];
   const fetchFn = async (url, init) => {
     const { hostname } = new URL(url);
     requests.push([hostname, init.method]);
-    if (hostname === 'hubcloud.ist') return new Response(fixture('file'));
+    if (hostname === 'hubcloud.ist') return new Response(filePage);
     if (hostname === 'gamerxyt.com') return new Response(downloadPage);
     if (hostname === 'gpdl.hubcloud.ist') return tenGbps();
     throw new Error(`No fake answer for ${url}`);
@@ -93,6 +57,34 @@ describe('resolveHubCloud', () => {
     assert.deepEqual(options.requests, [['hubcloud.ist', 'GET'], ['gamerxyt.com', 'GET'], ['gpdl.hubcloud.ist', 'HEAD']]);
   });
 
+  it('reads a /video/ file page too, whose download link has no id', async () => {
+    const resolved = await resolveHubCloud('https://hubcloud.ist/video/0f9100t1nvzvvyc', sites({ filePage: fixture('video') }));
+
+    assert.equal(resolved.filename, 'Blackout.2024.480p.Hindi.WEB-DL.ESub.x264-HDHub4u.Tv.mkv');
+    assert.equal(resolved.sizeBytes, Math.round(415.41 * 1024 ** 2));
+  });
+
+  it('reads sizes in binary units, KB to GB', async () => {
+    const cases = [['12.5 KB', 12800], ['265.62 MB', 278522757], ['2 GB', 2 * 1024 ** 3]];
+    for (const [size, bytes] of cases) {
+      assert.equal((await resolveHubCloud(URL_HC, sites({ filePage: pageWith('a.mkv', size) }))).sizeBytes, bytes, size);
+    }
+  });
+
+  it('is unrecognized for a file page without the file\'s name or a size it can read', async () => {
+    const pages = [
+      '<html><title>Just a moment...</title><body>Checking your browser</body></html>',
+      pageWith('', '1.2 GB'),
+      pageWith('a.mkv', ''),
+      pageWith('a.mkv', '1.2 GiB'),
+      pageWith('a.mkv', '1.2 gb'),
+      '<p>404 ! File Not Found</p>', // HubCloud's deleted page, but with HTTP 200: never seen live
+    ];
+    for (const page of pages) {
+      await assert.rejects(resolveHubCloud(URL_HC, answer(page)), { code: 'unrecognized', url: URL_HC });
+    }
+  });
+
   it('gives every server button in page order, and only the buttons', async () => {
     const resolved = await resolveHubCloud(URL_HC, sites({ downloadPage: fixture('download-servers') }));
 
@@ -113,6 +105,7 @@ describe('resolveHubCloud', () => {
       button('Download Part 1 [ZipDisk Server]', 'https://ddl2.example/1.zip'),
       button('Download Part 2 [ZipDisk Server]', 'https://ddl2.example/2.zip'),
       button('Download [Buzz Server]', 'https://buzz.example/f/a'),
+      button('Download [PixelServer:2]', 'https://pixeldrain.example/u/a'), // a /video/ file's
       button('Download [NewCloud Server]', 'https://new.example/a'),
     ].join('')}</div>`;
 
@@ -123,6 +116,7 @@ describe('resolveHubCloud', () => {
       ['zipdisk', 'direct', 'Download Part 1 [ZipDisk Server]'],
       ['zipdisk', 'direct', 'Download Part 2 [ZipDisk Server]'],
       ['buzz', 'page', 'Download [Buzz Server]'],
+      ['pixeldrain', 'page', 'Download [PixelServer:2]'],
       ['other', 'page', 'Download [NewCloud Server]'],
     ]);
   });
@@ -149,7 +143,8 @@ describe('resolveHubCloud', () => {
   });
 
   it('is unrecognized for a file page without its download link, or a download page without servers', async () => {
-    await assert.rejects(resolveHubCloud(URL_HC, answer(pageWith('a.mkv', '1.2 GB'))), {
+    const withoutLink = '<div class="card-header">a.mkv</div><ul><li>File Size<i id="size">1.2 GB</i></li></ul>';
+    await assert.rejects(resolveHubCloud(URL_HC, answer(withoutLink)), {
       code: 'unrecognized', url: URL_HC, message: 'No link to the download page on the HubCloud page',
     });
     const challenge = '<title>Just a moment...</title><div class="card-body"><h2><a href="https://one.one.one.one">VPN</a></h2></div>';

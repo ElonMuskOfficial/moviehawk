@@ -52,14 +52,13 @@ has a global `File`).
 | `searchPosts(url, query, page)` | a page of the site's search, as its search box asks it (1 request) | `{ posts, hasNextPage }`, as `scrapeListing` |
 | `scrapePost(url)` | a post page (1 request) | `{ post, links }` |
 | `scrapeLinks(urls)` | the gateway pages the links' URLs lead to, until each reaches a host | `{ files, failures }` |
-| `scrapeFile(url)` | a file's page on its host (1 request) | `{ filename, sizeBytes }` |
 | `resolve(url)` | the file's page, its download page, then 10Gbps's redirects to the file (2 or 3 requests) | `{ filename, sizeBytes, downloads }` |
 
 - `scrape*` reads a page and returns what it states, which does not expire. `resolve` follows
   redirects to make `downloads`, which expire within minutes or hours. A different job, so a
   different verb ("link resolver").
-- `resolve` reads the file page with the same parser as `scrapeFile`. No flag that switches one
-  function between the two jobs.
+- No `scrapeFile` (the file's name and size alone): no consumer needs it yet, and a link's label
+  states the size already (`720p x264 [850MB]`). It comes back when the crawler stores files.
 - `download.kind`: `direct` when its URL answers with the file itself (FSL, FSLv2, ZipDisk,
   Download File, and 10Gbps once followed), `page` when it is a page that leads to it (PixelDrain,
   Buzz, Telegram, Watch Online, a server not known yet: `other`). `label` is the button's text.
@@ -153,7 +152,7 @@ running until the engine is done and the consumers use it.
 3. Hosts: which host a URL belongs to (`hostOf`), and its `externalId` (`externalIdOf`).
 4. Gateways: GreenMotors, HUBLinks, HubDrive file and pack. Each reads one page and returns
    `{ links }`.
-5. `scrapeFile`: HubCloud's file page.
+5. HubCloud's file page: the file's name and size, and the link to its download page.
 6. `resolve`: HubCloud's download page and the 10Gbps redirects. Only HubCloud: no consumer
    needs another host resolved yet; one is added when a consumer does.
 7. Providers: HDHub4u and 4KHDHub post and listing pages, after a wide survey of all four sites.
@@ -166,9 +165,9 @@ running until the engine is done and the consumers use it.
    page as the current one). `searchPosts` (`src/engine/searches.js`): 4KHDHub's search page
    (`/?s=<query>`), HDHub4u's search API; the same `{ posts, hasNextPage }`, and `notFound`
    after the last page.
-10. `createEngine` (`src/engine/index.js`), the one entry. `scrapeFile` and `resolve`
-    (`src/engine/files.js`) move a stored file to its host's current domain (hubcloud.foo →
-    hubcloud.ist) and retry, like the other functions.
+10. `createEngine` (`src/engine/index.js`), the one entry. `resolve` (`src/engine/files.js`)
+    moves a stored file to its host's current domain (hubcloud.foo →
+    hubcloud.ist) and retries, like the other functions.
 11. Live check on both sites: the new engine's results against `master`'s.
 
 After that, the consumers (crawler, API, bot) move to the engine.

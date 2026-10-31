@@ -7,13 +7,12 @@
  *   engine.searchPosts(siteUrl, query, page) → the cards of the posts that match
  *   engine.scrapePost(postUrl)          → the post and its links
  *   engine.scrapeLinks(urls)            → the files the links' URLs lead to
- *   engine.scrapeFile(fileUrl)          → the file's name and size
- *   engine.resolve(fileUrl)             → its downloads
+ *   engine.resolve(fileUrl)             → the file's name, size and downloads
  *
  * Every function throws EngineError. The engine keeps no state of its own: the config it is made
  * with is all it knows, and it never changes it.
  */
-import { resolve, scrapeFile } from './files.js';
+import { resolve } from './files.js';
 import { scrapeLinks } from './links.js';
 import { scrapeListing } from './listings.js';
 import { scrapePost } from './posts.js';
@@ -49,7 +48,6 @@ export function createEngine(config = {}) {
     searchPosts: (url, query, page, options) => searchPosts(url, query, page, withConfig(options)),
     scrapePost: (url, options) => scrapePost(url, withConfig(options)),
     scrapeLinks: (urls, options) => scrapeLinks(urls, withConfig(options)),
-    scrapeFile: (url, options) => scrapeFile(url, withConfig(options)),
     resolve: (url, options) => resolve(url, withConfig(options)),
   };
 }

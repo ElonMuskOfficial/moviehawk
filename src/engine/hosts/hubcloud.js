@@ -1,7 +1,7 @@
 /**
  * HubCloud's file page (hubcloud.ist/drive/<id>, /video/<id>): the file's name and size, as the
- * page states them in its file card; and its download page (gamerxyt.com/hubcloud.php), which
- * lists the file's servers.
+ * page states them in its file card, and the link to its download page (gamerxyt.com/hubcloud.php),
+ * which lists the file's servers.
  */
 import * as cheerio from 'cheerio';
 import { EngineError } from '../errors.js';
@@ -25,7 +25,8 @@ const SERVERS = [
   { server: 'fslv2', kind: 'direct', pattern: /^Download \[FSLv2 Server\]$/ },
   { server: 'worker', kind: 'direct', pattern: /^Download File \[\d+(?:\.\d+)? (?:KB|MB|GB)\]$/ },
   { server: 'zipdisk', kind: 'direct', pattern: /^Download (?:Part \d+ )?\[ZipDisk Server\]$/ },
-  { server: 'pixeldrain', kind: 'page', pattern: /^Download \[PixelServer : \d+\]$/ },
+  // "[PixelServer : 2]", and "[PixelServer:2]" on a /video/ file's page (live, 2026-10-31).
+  { server: 'pixeldrain', kind: 'page', pattern: /^Download \[PixelServer\s*:\s*\d+\]$/ },
   { server: 'buzz', kind: 'page', pattern: /^Download \[Buzz Server\]$/ },
   { server: 'telegram', kind: 'page', pattern: /^Download From Telegram$/ },
   { server: 'watch', kind: 'page', pattern: /^Watch Online$/ },
@@ -36,37 +37,25 @@ const SERVERS = [
 const FILE_PARAM = 'link';
 
 /**
- * Reads a HubCloud file page. A deleted file answers HTTP 404 ("404 ! File Not Found"), which
- * fetchHtml makes `notFound`.
- *
- * @param {string} url - On HubCloud's current domain (stored files keep older ones: hubcloud.foo, ...).
- * @param {import('../http.js').RequestOptions} [options]
- * @returns {Promise<{ filename: string, sizeBytes: number }>}
- * @throws {EngineError} `unrecognized` for a page without the file's name or a size it can read (a
- *   challenge page, a changed layout), and fetchHtml's errors.
- */
-export async function scrapeHubCloud(url, options) {
-  const { html } = await fetchHtml(url, options);
-  return detailsOf(cheerio.load(html), url);
-}
-
-/**
  * Reads a HubCloud file page, then its download page, and returns every server button, in page
  * order. 10Gbps's link is followed to the file; when that fails, the button's own link is given,
  * as a page (in a browser it leads to the file, through the ad page).
  *
- * @param {string} url - As for scrapeHubCloud.
+ * @param {string} url - On HubCloud's current domain (stored files keep older ones: hubcloud.foo, ...).
  * @param {import('../http.js').RequestOptions} [options]
  * @returns {Promise<{ filename: string, sizeBytes: number, downloads: Download[] }>}
- * @throws {EngineError} scrapeHubCloud's errors; `unrecognized` for a file page without the link
- *   to its download page, or a download page without servers (a challenge page: every live page
- *   had one or more); and fetchHtml's errors for the download page.
+ * @throws {EngineError} `unrecognized` for a file page without the file's name, a size it can read
+ *   or the link to its download page, or a download page without servers (a challenge page, a
+ *   changed layout: every live page had one or more); and fetchHtml's errors (`notFound`: a
+ *   deleted file answers HTTP 404, "404 ! File Not Found").
  */
 export async function resolveHubCloud(url, options) {
   const filePage = await fetchHtml(url, options);
   const $file = cheerio.load(filePage.html, { baseURI: filePage.url });
   const details = detailsOf($file, url);
-  const downloadUrl = $file('#download').prop('href');
+  // The link to the download page is the file card's one primary button: `#download` on a
+  // /drive/ page, without the id on a /video/ page (live, 2026-10-31: 40 of 40 and 8 of 8).
+  const downloadUrl = $file('a.btn-primary[href]').first().prop('href');
   if (!downloadUrl) throw new EngineError('unrecognized', 'No link to the download page on the HubCloud page', { url });
 
   const downloadPage = await fetchHtml(downloadUrl, options);

@@ -3,7 +3,7 @@
  * host is matched by a label of the URL's hostname (urls.js).
  */
 import { hasLabel, webUrlOf } from '../urls.js';
-import { resolveHubCloud, scrapeHubCloud } from './hubcloud.js';
+import { resolveHubCloud } from './hubcloud.js';
 
 // A file id is a plain token of letters, digits, _ and -. HubCloud shows a deleted file's search
 // page at "/drive/search-recover.php", which has the shape of a file URL but names no file.
@@ -19,10 +19,9 @@ const pathId = (...prefixes) => (url) => {
 
 // Each host's id is also the hostname label that identifies it. Shapes seen on live posts
 // (2026-10-31, 37 posts across both sites' catalogs, and the 206,598 HubCloud files stored by then).
-// `scrapeFile`: the reader of the host's file page, for a host whose page states the file's name
-// and size. `resolve`: the reader of its download servers, for a host a consumer needs resolved.
+// `resolve`: the reader of the host's download servers, for a host a consumer needs resolved.
 const HOSTS = [
-  { id: 'hubcloud', externalId: pathId('drive', 'video'), scrapeFile: scrapeHubCloud, resolve: resolveHubCloud },
+  { id: 'hubcloud', externalId: pathId('drive', 'video'), resolve: resolveHubCloud },
   { id: 'hubcdn', externalId: pathId('file') },
   // Older posts link "gofile.io/?c=<id>".
   { id: 'gofile', externalId: (url) => pathId('d')(url) ?? (url.pathname === '/' ? fileId(url.searchParams.get('c')) : null) },
