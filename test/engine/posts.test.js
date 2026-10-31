@@ -137,26 +137,6 @@ describe('scrapePost', () => {
     assert.deepEqual(failures.map(({ code, url }) => [code, url]), [['unrecognized', 'https://hblinks.lol/archives/6']]);
   });
 
-  it('reads at most 6 pages at once', async () => {
-    let active = 0;
-    let most = 0;
-    const links = Array.from({ length: 20 }, (_, i) => `https://hubdrive.bar/file/${i}`);
-    const options = web({ [POST_URL]: hdHub4uPost(...links) });
-    const fetchPost = options.fetch;
-    options.fetch = async (url) => {
-      if (url === POST_URL) return fetchPost(url);
-      most = Math.max(most, ++active);
-      await new Promise((resolve) => setTimeout(resolve, 5));
-      active--;
-      return new Response(hubDrive(`https://hubcloud.ist/drive/${url.split('/').at(-1)}`));
-    };
-
-    const { files } = await scrapePost(POST_URL, options);
-
-    assert.equal(files.length, 20);
-    assert.equal(most, 6);
-  });
-
   it('reports what happened to each link', async () => {
     const events = [];
     const options = web({

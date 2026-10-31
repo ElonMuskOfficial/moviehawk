@@ -13,9 +13,6 @@ import { hasLabel, webUrlOf } from './urls.js';
 // leads to itself under new URLs cannot keep it busy. Live, a link passes at most 3
 // (GreenMotors → HUBLinks → HubDrive → HubCloud, 2026-10-31: 1,122 pages of 14 posts).
 const MAX_GATEWAYS = 5;
-// Pages requested at once for one post: a series links up to 280 buttons, which the gateways
-// would answer with stalls and HTTP 429 if they all came at once.
-const CONCURRENCY = 6;
 
 /**
  * @typedef {{ host: string, externalId: string, url: string, statedLanguages: string | null }} HostFile
@@ -53,7 +50,6 @@ export async function scrapePost(url, { domains = {}, onEvent = () => {}, ...opt
   if (!provider) throw new EngineError('unsupported', 'The engine does not read posts of this site', { url });
   const { post, links } = await retry(() => provider.post(onCurrentDomain(postUrl, domains), options));
 
-  const limit = createLimiter(CONCURRENCY);
   // Gateway pages, each read once (a post links some twice), for the link that reaches it first:
   // its files take that link's place and languages.
   const readPages = new Set();
@@ -77,7 +73,7 @@ export async function scrapePost(url, { domains = {}, onEvent = () => {}, ...opt
       readPages.add(linkUrl);
       let next;
       try {
-        ({ links: next } = await limit(() => retry(() => gateway.expand(linkUrl, options))));
+        ({ links: next } = await retry(() => gateway.expand(linkUrl, options)));
       } catch (error) {
         if (!(error instanceof EngineError)) throw error;
         failures.push(error);
@@ -125,28 +121,4 @@ function onCurrentDomain(url, domains) {
 function compareOrder(a, b) {
   for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return a[i] - b[i];
   return a.length - b.length;
-}
-
-/**
- * Runs at most `max` of the functions given to it at once; the others wait their turn.
- *
- * @param {number} max
- * @returns {<T>(fn: () => Promise<T>) => Promise<T>}
- */
-function createLimiter(max) {
-  let active = 0;
-  const waiting = [];
-  const next = () => {
-    if (active >= max || waiting.length === 0) return;
-    active++;
-    const { fn, resolve, reject } = waiting.shift();
-    fn().then(resolve, reject).finally(() => {
-      active--;
-      next();
-    });
-  };
-  return (fn) => new Promise((resolve, reject) => {
-    waiting.push({ fn, resolve, reject });
-    next();
-  });
 }

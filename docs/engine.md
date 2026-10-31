@@ -62,7 +62,8 @@ has a global `File`).
   `linkCount` is the number of the post's links to a gateway or a known host: 0 can be a glitch of
   the site.
 - `scrapePost` follows a link through at most 5 gateways in a row (live: 3 at most), reads each
-  gateway page once, and reads at most 6 pages at once. Each page is retried.
+  gateway page once, and reads all pages at once, with no limit: the sites answered 1,088
+  requests at once (5 series together) with HTTP 200 only (2026-10-31). Each page is retried.
 - `domains`: the current domain of each site whose domain rotates, by its hostname label
   (`{ hblinks: 'https://hblinks.lol' }`); every URL is moved to it before it is read.
 - Nothing found is an empty result (`files: []`), not an error.
