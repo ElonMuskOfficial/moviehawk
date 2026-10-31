@@ -28,6 +28,13 @@ describe('expandHubLinks', () => {
     assert.equal((await urlsOf('episode-drives')).length, 7);
   });
 
+  it('labels a line\'s buttons with the line\'s quality, and a button alone with its own text', async () => {
+    const labelsOf = async (name) => (await expandHubLinks(URL_HL, answer(fixture(name)))).links.map(({ label }) => label);
+
+    assert.deepEqual((await labelsOf('episode-lines')).slice(0, 4), ['480p · Drive', '480p · Instant', '480p · Direct', '720p 10Bit HEVC · Drive']);
+    assert.deepEqual((await labelsOf('episode-drives')).slice(0, 2), ['Episode 1 – 7.2GB', 'Episode 2 – 5.8GB']);
+  });
+
   it('reads links shown as logos without text, without a label', async () => {
     const { links } = await expandHubLinks(URL_HL, answer(fixture('logos')));
     assert.deepEqual(links.map(({ label }) => label), [null, null, null]);

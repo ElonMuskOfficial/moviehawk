@@ -4,7 +4,7 @@
  */
 import * as cheerio from 'cheerio';
 import { EngineError } from '../errors.js';
-import { linkOf } from '../html.js';
+import { lineOf, lineStartOf, linkOf } from '../html.js';
 import { fetchHtml } from '../http.js';
 
 // The archive's own content. The rest of the page is the site's navigation.
@@ -28,5 +28,7 @@ export async function expandHubLinks(url, options) {
   const content = $(CONTENT).first();
   // Without it every page would seem to lead nowhere, as if all its files were gone.
   if (content.length === 0) throw new EngineError('unrecognized', 'No content area on the HUBLinks page', { url });
-  return { links: content.find('a[href]').toArray().map((a) => linkOf($, a)) };
+  // An episode's page lists a line per quality, "480p – Drive | Instant | Direct" (live, 2026-10-31:
+  // 16 of 70 pages); the others are one file's hosts, as logos.
+  return { links: content.find('a[href]').toArray().map((a) => linkOf($, a, lineStartOf(lineOf($, a)))) };
 }

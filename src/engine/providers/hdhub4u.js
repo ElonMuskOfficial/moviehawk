@@ -3,7 +3,7 @@
  */
 import * as cheerio from 'cheerio';
 import { EngineError } from '../errors.js';
-import { linkOf, textOf } from '../html.js';
+import { lineOf, lineStartOf, linkOf, textOf } from '../html.js';
 import { fetchHtml } from '../http.js';
 import { jsonLdOf } from '../json-ld.js';
 
@@ -74,9 +74,8 @@ export async function scrapeHdHub4uPost(url, options) {
  *   its line names none ("WATCH | PLAYER-2").
  */
 function fileOf($, a) {
-  // Button lines are headings; a link in a paragraph is in the post's prose.
-  const line = $(a).closest('h1, h2, h3, h4, h5, h6');
-  if (line.length === 0 || textOf(line) === textOf($(a))) return '';
+  const line = lineOf($, a);
+  if (!line) return '';
   let episode = '';
   // The episode's heading is the nearest heading above without links; anything else (an <hr>, the
   // section's ": DOWNLOAD LINKS :" box) ends the search.
@@ -86,25 +85,12 @@ function fileOf($, a) {
       break;
     }
   }
-  // The line's text before its first button, without the dash after it: "720p –" is "720p".
-  const first = line.find('a[href]').first();
-  const quality = textBefore(line[0], first[0]).replace(/\s+/g, ' ').replace(/[\s–-]+$/, '').trim();
+  const quality = lineStartOf(line);
   if (episode || quality) return [episode, quality].filter(Boolean).join(' ');
   // A line of its own episode: "EPiSODE 1 | WATCH" (live: 102 lines on 46 posts); its players are
   // the episode's. A line of players only, "WATCH | PLAYER-2", names no file.
+  const first = line.find('a[href]').first();
   return first[0] !== a && EPISODE.test(textOf(first)) ? textOf(first) : '';
-}
-
-/** The text of `node` that comes before `stop`, one of its descendants. */
-function textBefore(node, stop) {
-  let text = '';
-  const read = (current) => {
-    if (current === stop) return true;
-    if (current.type === 'text') text += current.data;
-    return (current.children ?? []).some(read);
-  };
-  read(node);
-  return text;
 }
 
 /**
