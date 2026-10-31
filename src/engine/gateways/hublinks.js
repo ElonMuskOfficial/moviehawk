@@ -16,7 +16,7 @@ const CONTENT = '.entry-content';
  * failure.
  *
  * @param {string} url - On HUBLinks' current domain (older posts link hblinks.pro, which is gone).
- * @param {Parameters<typeof fetchHtml>[1]} [options]
+ * @param {import('../http.js').RequestOptions} [options]
  * @returns {Promise<{ links: string[] }>}
  * @throws {EngineError} `unrecognized` for a page without the content area (live, 2026-10-31: every
  *   archive page has one, removed ones too), and fetchHtml's errors (`notFound` on HTTP 404).

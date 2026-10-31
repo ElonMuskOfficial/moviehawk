@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { EngineError } from '../../src/engine/errors.js';
-import { fetchHtml, retry } from '../../src/engine/http.js';
+import { fetchHtml, followRedirects, retry } from '../../src/engine/http.js';
 
 const URL_A = 'https://hubcloud.ist/drive/abc';
 
@@ -117,6 +117,21 @@ describe('fetchHtml', () => {
       await assert.rejects(fetchHtml(notWeb, { fetch: fetchFn }), TypeError);
     }
     assert.equal(requests.length, 0);
+  });
+});
+
+describe('followRedirects', () => {
+  it('returns where the redirects end, asking for no body', async () => {
+    const { fetchFn, requests } = answer(200, '', { url: 'https://cryptonewz.online/dl.php?link=x' });
+
+    assert.equal(await followRedirects(URL_A, { fetch: fetchFn }), 'https://cryptonewz.online/dl.php?link=x');
+    assert.equal(requests[0].init.method, 'HEAD');
+    assert.equal(requests[0].init.redirect, 'follow');
+  });
+
+  it('fails like fetchHtml: notFound on HTTP 404, transient on the timeout', async () => {
+    await rejectsWith(followRedirects(URL_A, { fetch: answer(404).fetchFn }), 'notFound', 404);
+    await assert.rejects(followRedirects(URL_A, { fetch: stall, timeoutMs: 20 }), { code: 'transient' });
   });
 });
 

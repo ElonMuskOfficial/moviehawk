@@ -42,7 +42,7 @@ function destinationOf(html) {
  * link; following it is the caller's choice.
  *
  * @param {string} url - On GreenMotors' current domain (greenmotors.club costs an extra redirect).
- * @param {Parameters<typeof fetchHtml>[1]} [options]
+ * @param {import('../http.js').RequestOptions} [options]
  * @returns {Promise<{ links: string[] }>} The one destination.
  * @throws {EngineError} `notFound` when GreenMotors says the link is dead, `unrecognized` for a page
  *   without a destination, and fetchHtml's errors.

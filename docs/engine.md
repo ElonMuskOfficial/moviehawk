@@ -33,7 +33,7 @@ scrape all use it.
 | `host` | site a file is on | `hubcloud` |
 | `file` | one file on a host | `{ host, externalId, url }` |
 | `externalId` | host's own file id | `abc123` |
-| `download` | final URL from `resolve()` | `{ server, kind, url }` |
+| `download` | one way to download a file, from `resolve()` | `{ server, kind, url, label }` |
 | `server` | one server on HubCloud's download page | `10gbps`, `fsl` |
 
 `post`: `{ provider, url, title, year, imdbId, posterUrl, publishedAt }`.
@@ -50,8 +50,13 @@ has a global `File`).
 - `scrape*` reads a page and returns what it states, which does not expire. `resolve` follows
   redirects to make `downloads`, which expire within minutes or hours. A different job, so a
   different verb ("link resolver").
-- `resolve` calls `scrapeFile` first: one parser for the file page. No flag that switches one
+- `resolve` reads the file page with the same parser as `scrapeFile`. No flag that switches one
   function between the two jobs.
+- `download.kind`: `direct` when its URL answers with the file itself (FSL, FSLv2, ZipDisk,
+  Download File, and 10Gbps once followed), `page` when it is a page that leads to it (PixelDrain,
+  Buzz, Telegram, Watch Online, a server not known yet: `other`). `label` is the button's text.
+- 10Gbps is the only server `resolve` follows (its redirects end on an ad page whose `link` is the
+  file). When that fails, the button's own link is given, as a page.
 - `failures` is a list of `EngineError` (each has `code`, `url`, `status`); the consumer decides
   what they mean (no `outcome`).
   `linkCount` is the number of links the provider reads from the post page: 0 can be a glitch of

@@ -1,5 +1,5 @@
 /**
- * How the engine fetches pages: one browser identity, a timeout that covers the whole page, and
+ * How the engine asks the sites: one browser identity, a timeout that covers the whole answer, and
  * failures turned into EngineError by what the site said.
  */
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -19,8 +19,7 @@ const FINAL_CODES = new Set(['notFound', 'unsupported']);
  * a host sometimes sends its headers and then stalls.
  *
  * @param {string} url
- * @param {{ fetch?: typeof fetch, timeoutMs?: number, signal?: AbortSignal }} [options]
- *   `signal`: the caller's own cancellation, on top of the timeout.
+ * @param {RequestOptions} [options]
  * @returns {Promise<{ html: string, url: string }>} `url`: the page's address after redirects.
  * @throws {EngineError} `notFound` on HTTP 404 or 410; `transient` on any other HTTP error, a
  *   network error or the timeout.
@@ -28,13 +27,50 @@ const FINAL_CODES = new Set(['notFound', 'unsupported']);
  *   not of the site.
  * @throws {unknown} The caller's own reason, as it is, when the caller cancels (`signal`).
  */
-export async function fetchHtml(url, { fetch: fetchFn = fetch, timeoutMs = 8000, signal } = {}) {
+export function fetchHtml(url, options) {
+  return request(url, 'GET', options, async (response) => ({ html: await response.text(), url: response.url || url }));
+}
+
+/**
+ * Follows a URL's redirects and returns where they end, without reading that page: it can be the
+ * file itself (a HEAD request asks for no body).
+ *
+ * @param {string} url
+ * @param {RequestOptions} [options]
+ * @returns {Promise<string>} The address after redirects.
+ * @throws The same as fetchHtml.
+ */
+export function followRedirects(url, options) {
+  return request(url, 'HEAD', options, async (response) => {
+    await response.body?.cancel();
+    return response.url || url;
+  });
+}
+
+/**
+ * @typedef {{ fetch?: typeof fetch, timeoutMs?: number, signal?: AbortSignal }} RequestOptions
+ *   `signal`: the caller's own cancellation, on top of the timeout.
+ */
+
+/**
+ * One request with the engine's identity, timeout and failures; `read` turns the answer into the
+ * result, within the timeout.
+ *
+ * @template T
+ * @param {string} url
+ * @param {'GET' | 'HEAD'} method
+ * @param {RequestOptions} [options]
+ * @param {(response: Response) => Promise<T>} read
+ * @returns {Promise<T>}
+ */
+async function request(url, method, { fetch: fetchFn = fetch, timeoutMs = 8000, signal } = {}, read) {
   // A typo such as "hhttps://" parses as a URL with another scheme; no site was asked.
   const { protocol } = new URL(url);
   if (protocol !== 'https:' && protocol !== 'http:') throw new TypeError(`Not a web URL: ${url}`);
   const timeout = AbortSignal.timeout(timeoutMs);
   try {
     const response = await fetchFn(url, {
+      method,
       redirect: 'follow',
       headers: HEADERS,
       signal: signal ? AbortSignal.any([timeout, signal]) : timeout,
@@ -44,7 +80,7 @@ export async function fetchHtml(url, { fetch: fetchFn = fetch, timeoutMs = 8000,
       const code = response.status === 404 || response.status === 410 ? 'notFound' : 'transient';
       throw new EngineError(code, `HTTP ${response.status}`, { url, status: response.status });
     }
-    return { html: await response.text(), url: response.url || url };
+    return await read(response);
   } catch (error) {
     if (error instanceof EngineError || signal?.aborted) throw error;
     const message = timeout.aborted ? `No answer within ${timeoutMs} ms` : error.message;

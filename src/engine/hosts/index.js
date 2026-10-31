@@ -6,7 +6,7 @@
  * rotate (hubcloud.ist, hubcloud.foo, dl.hubcloud.link, ...) while the label stays.
  */
 import { EngineError } from '../errors.js';
-import { scrapeHubCloud } from './hubcloud.js';
+import { resolveHubCloud, scrapeHubCloud } from './hubcloud.js';
 
 // A file id is a plain token of letters, digits, _ and -. HubCloud shows a deleted file's search
 // page at "/drive/search-recover.php", which has the shape of a file URL but names no file.
@@ -23,9 +23,9 @@ const pathId = (...prefixes) => (url) => {
 // Each host's id is also the hostname label that identifies it. Shapes seen on live posts
 // (2026-10-31, 37 posts across both sites' catalogs, and the 206,598 HubCloud files stored by then).
 // `scrapeFile`: the reader of the host's file page, for a host whose page states the file's name
-// and size.
+// and size. `resolve`: the reader of its download servers, for a host a consumer needs resolved.
 const HOSTS = [
-  { id: 'hubcloud', externalId: pathId('drive', 'video'), scrapeFile: scrapeHubCloud },
+  { id: 'hubcloud', externalId: pathId('drive', 'video'), scrapeFile: scrapeHubCloud, resolve: resolveHubCloud },
   { id: 'hubcdn', externalId: pathId('file') },
   // Older posts link "gofile.io/?c=<id>".
   { id: 'gofile', externalId: (url) => pathId('d')(url) ?? (url.pathname === '/' ? fileId(url.searchParams.get('c')) : null) },
@@ -80,7 +80,7 @@ export function externalIdOf(url) {
  * Reads a file's page on its host: the file's name and size, as the page states them.
  *
  * @param {string} url - On the host's current domain.
- * @param {Parameters<typeof import('../http.js').fetchHtml>[1]} [options]
+ * @param {import('../http.js').RequestOptions} [options]
  * @returns {Promise<{ filename: string, sizeBytes: number }>}
  * @throws {EngineError} `unsupported` for a URL on a host whose page the engine does not read, and
  *   the host reader's errors.
@@ -88,5 +88,30 @@ export function externalIdOf(url) {
 export async function scrapeFile(url, options) {
   const read = findHost(url)?.host.scrapeFile;
   if (!read) throw new EngineError('unsupported', 'The engine does not read file pages of this host', { url });
+  return read(url, options);
+}
+
+/**
+ * One way to download a file, as the host's download page offers it.
+ *
+ * @typedef {{ server: string, kind: 'direct' | 'page', url: string, label: string }} Download
+ *   `server`: which server ("10gbps", "fsl", ...; "other" for one the engine does not know).
+ *   `kind`: `direct` when `url` answers with the file itself, `page` when it is a page that leads
+ *   to it. `label`: the button's text, such as "Download Part 2 [ZipDisk Server]".
+ */
+
+/**
+ * Resolves a file into its downloads: the file's page, its download page, and the redirects to
+ * the file. Downloads expire within minutes or hours; scrapeFile's answer does not.
+ *
+ * @param {string} url - On the host's current domain.
+ * @param {import('../http.js').RequestOptions} [options]
+ * @returns {Promise<{ filename: string, sizeBytes: number, downloads: Download[] }>}
+ * @throws {EngineError} `unsupported` for a URL on a host the engine does not resolve, and the host
+ *   resolver's errors.
+ */
+export async function resolve(url, options) {
+  const read = findHost(url)?.host.resolve;
+  if (!read) throw new EngineError('unsupported', 'The engine does not resolve files of this host', { url });
   return read(url, options);
 }
