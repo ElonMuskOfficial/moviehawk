@@ -17,14 +17,13 @@ const GATEWAYS = [
 ];
 
 /**
- * The reader of the gateway a URL is a page of: "https://hblinks.lol/archives/123" →
- * expandHubLinks.
+ * The gateway a URL is a page of: "https://hblinks.lol/archives/123" → HUBLinks, whose `expand`
+ * reads the page.
  *
  * @param {string} url
- * @returns {((url: string, options?: import('../http.js').RequestOptions) => Promise<{ links: string[] }>) | null}
- *   null when the URL is no gateway page the engine knows.
+ * @returns {typeof GATEWAYS[number] | null} null when the URL is no gateway page the engine knows.
  */
 export function gatewayOf(url) {
   const parsed = webUrlOf(url);
-  return (parsed && GATEWAYS.find(({ label, matches }) => hasLabel(parsed, label) && matches(parsed))?.expand) ?? null;
+  return (parsed && GATEWAYS.find(({ label, matches }) => hasLabel(parsed, label) && matches(parsed))) ?? null;
 }

@@ -128,7 +128,7 @@ describe('scrapePost', () => {
     assert.deepEqual(failures, []);
   });
 
-  it(`stops following a link after 5 gateways in a row`, async () => {
+  it('stops following a link after 5 gateways in a row', async () => {
     const pages = { [POST_URL]: hdHub4uPost('https://hblinks.lol/archives/1') };
     for (let n = 1; n <= 6; n++) pages[`https://hblinks.lol/archives/${n}`] = hubLinks(`https://hblinks.lol/archives/${n + 1}`);
 

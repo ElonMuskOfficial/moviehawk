@@ -54,7 +54,9 @@ export async function scrapePost(url, { domains = {}, onEvent = () => {}, ...opt
   const { post, links } = await retry(() => provider.post(onCurrentDomain(postUrl, domains), options));
 
   const limit = createLimiter(CONCURRENCY);
-  const opened = new Set(); // Gateway pages, each read once: a post links some twice.
+  // Gateway pages, each read once (a post links some twice), for the link that reaches it first:
+  // its files take that link's place and languages.
+  const readPages = new Set();
   const found = new Map(); // Files by "host:externalId", with the position of the link that found it first.
   const failures = [];
   const report = (type, eventUrl, detail = null) => onEvent({ type, url: eventUrl, detail });
@@ -64,24 +66,24 @@ export async function scrapePost(url, { domains = {}, onEvent = () => {}, ...opt
     const parsed = webUrlOf(link);
     if (!parsed) return report('skipped', link, 'not a web URL');
     const linkUrl = onCurrentDomain(parsed, domains);
-    const expand = gatewayOf(linkUrl);
-    if (expand) {
-      if (opened.has(linkUrl)) return report('skipped', linkUrl, 'read already');
+    const gateway = gatewayOf(linkUrl);
+    if (gateway) {
+      if (readPages.has(linkUrl)) return report('skipped', linkUrl, 'page read already');
       if (order.length > MAX_GATEWAYS) {
         const error = new EngineError('unrecognized', `More than ${MAX_GATEWAYS} gateways in a row`, { url: linkUrl });
         failures.push(error);
-        return report('failure', linkUrl, error.message);
+        return report('failure', linkUrl, `${error.code}: ${error.message}`);
       }
-      opened.add(linkUrl);
+      readPages.add(linkUrl);
       let next;
       try {
-        ({ links: next } = await limit(() => retry(() => expand(linkUrl, options))));
+        ({ links: next } = await limit(() => retry(() => gateway.expand(linkUrl, options))));
       } catch (error) {
         if (!(error instanceof EngineError)) throw error;
         failures.push(error);
         return report('failure', linkUrl, `${error.code}: ${error.message}`);
       }
-      report('gateway', linkUrl, `${next.length} links`);
+      report('gateway', linkUrl, `${gateway.label}: ${next.length} links`);
       await Promise.all(next.map((nextLink, i) => follow(nextLink, [...order, i], statedLanguages)));
       return;
     }

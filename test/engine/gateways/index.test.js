@@ -15,7 +15,7 @@ describe('gatewayOf', () => {
       ['https://hubdrive.bar/file/2861517081', expandHubDrive],
       ['https://hubdrive.bar/packs/nqhtppaz', expandHubDrive],
     ];
-    for (const [url, expand] of live) assert.equal(gatewayOf(url), expand, url);
+    for (const [url, expand] of live) assert.equal(gatewayOf(url)?.expand, expand, url);
   });
 
   it('is null for the same sites\' other pages, and for anything else', () => {
