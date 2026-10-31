@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { expandGreenMotors } from '../../src/engine/gateways/greenmotors.js';
+import { expandGreenMotors } from '../../../src/engine/gateways/greenmotors.js';
 
 const URL_GM = 'https://greenmotors.cc/?id=abc';
 // A live page (2026-10-31), from a button of 4KHDHub's "The Furious".
-const LIVE_PAGE = readFileSync(new URL('../fixtures/greenmotors.html', import.meta.url), 'utf8');
+const LIVE_PAGE = readFileSync(new URL('../../fixtures/greenmotors.html', import.meta.url), 'utf8');
 
 const answer = (body, status = 200) => ({ fetch: async () => new Response(body, { status }) });
 

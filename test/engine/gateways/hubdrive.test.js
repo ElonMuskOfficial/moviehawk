@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { expandHubDrive } from '../../src/engine/gateways/hubdrive.js';
+import { expandHubDrive } from '../../../src/engine/gateways/hubdrive.js';
 
 const FILE_URL = 'https://hubdrive.bar/file/1976154028';
 const PACK_URL = 'https://hubdrive.bar/packs/nqhtppaz';
 // Live pages (2026-10-31; "the file has been deleted": 2026-10-29).
-const fixture = (name) => readFileSync(new URL(`../fixtures/hubdrive-${name}.html`, import.meta.url), 'utf8');
+const fixture = (name) => readFileSync(new URL(`../../fixtures/hubdrive-${name}.html`, import.meta.url), 'utf8');
 const answer = (body, url, status = 200) => ({
   fetch: async () => {
     const response = new Response(body, { status });

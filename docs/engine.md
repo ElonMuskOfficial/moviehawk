@@ -117,14 +117,15 @@ running until the engine is done and the consumers use it.
 1. `EngineError`.
 2. Fetching: timeout, `signal`, retry.
 3. Hosts: which host a URL belongs to (`hostOf`), and its `externalId` (`externalIdOf`).
-4. Gateways: GreenMotors, HUBLinks, HubDrive file and pack; moving a URL to its current domain.
+4. Gateways: GreenMotors, HUBLinks, HubDrive file and pack. Each reads one page and returns
+   `{ links }`.
 5. `scrapeFile`: HubCloud's file page.
 6. `resolve`: HubCloud's download page and the 10Gbps redirects. Only HubCloud: no consumer
    needs another host resolved yet; one is added when a consumer does.
 7. Providers: HDHub4u and 4KHDHub post and listing pages; first a wide survey of Vegamovies and
    RogMovies, so pieces 7 and 8 are designed from all four sites.
 8. `scrapePost`: following the links each gateway returns until they reach a host, each file once,
-   `failures`, `onEvent`.
+   `failures`, `onEvent`; moving each URL to its current domain before it is fetched.
 9. `scrapeListing`.
 10. `createEngine` and `src/engine/index.js`.
 11. Live check on both sites: the new engine's results against `master`'s.

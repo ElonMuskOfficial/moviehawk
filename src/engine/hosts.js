@@ -6,16 +6,16 @@
  * rotate (hubcloud.ist, hubcloud.foo, dl.hubcloud.link, ...) while the label stays.
  */
 
-// A file id is a plain token. HubCloud shows a deleted file's search page at
-// "/drive/search-recover.php", which has the shape of a file URL but names no file.
-const TOKEN = /^[\w-]+$/;
+// A file id is a plain token of letters, digits, _ and -. HubCloud shows a deleted file's search
+// page at "/drive/search-recover.php", which has the shape of a file URL but names no file.
+const FILE_ID = /^[\w-]+$/;
 
-const token = (value) => (value && TOKEN.test(value) ? value : null);
+const fileId = (value) => (value && FILE_ID.test(value) ? value : null);
 
 // The id in a path "/<prefix>/<id>" (a trailing slash allowed), for any of `prefixes`.
 const pathId = (...prefixes) => (url) => {
   const segments = url.pathname.split('/').filter(Boolean);
-  return segments.length === 2 && prefixes.includes(segments[0]) ? token(segments[1]) : null;
+  return segments.length === 2 && prefixes.includes(segments[0]) ? fileId(segments[1]) : null;
 };
 
 // Each host's id is also the hostname label that identifies it. Shapes seen on live posts
@@ -24,11 +24,11 @@ const HOSTS = [
   { id: 'hubcloud', externalId: pathId('drive', 'video') },
   { id: 'hubcdn', externalId: pathId('file') },
   // Older posts link "gofile.io/?c=<id>".
-  { id: 'gofile', externalId: (url) => pathId('d')(url) ?? (url.pathname === '/' ? token(url.searchParams.get('c')) : null) },
+  { id: 'gofile', externalId: (url) => pathId('d')(url) ?? (url.pathname === '/' ? fileId(url.searchParams.get('c')) : null) },
   { id: 'hdstream4u', externalId: pathId('file') },
-  { id: 'hubstream', externalId: (url) => token(url.hash.slice(1)) },
+  { id: 'hubstream', externalId: (url) => fileId(url.hash.slice(1)) },
   // Its player ("/player.php/?v=<id>") and its download page ("/view/<id>") name the same file.
-  { id: 'multicloudlinks', externalId: (url) => pathId('view')(url) ?? (/^\/player\.php\/?$/.test(url.pathname) ? token(url.searchParams.get('v')) : null) },
+  { id: 'multicloudlinks', externalId: (url) => pathId('view')(url) ?? (/^\/player\.php\/?$/.test(url.pathname) ? fileId(url.searchParams.get('v')) : null) },
 ];
 
 /**
