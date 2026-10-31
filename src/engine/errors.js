@@ -1,3 +1,5 @@
+const CODES = new Set(['notFound', 'transient', 'unrecognized', 'unsupported']);
+
 /**
  * The one error the engine throws. Its `code` says what the site said, so a caller decides by the
  * code, never by the message:
@@ -7,8 +9,6 @@
  * - `unrecognized`: a page the engine cannot read: a changed layout or a challenge page;
  * - `unsupported`: a URL no provider or host of the engine handles.
  */
-const CODES = new Set(['notFound', 'transient', 'unrecognized', 'unsupported']);
-
 export class EngineError extends Error {
   /**
    * @param {'notFound' | 'transient' | 'unrecognized' | 'unsupported'} code

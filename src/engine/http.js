@@ -24,11 +24,14 @@ const FINAL_CODES = new Set(['notFound', 'unsupported']);
  * @returns {Promise<{ html: string, url: string }>} `url`: the page's address after redirects.
  * @throws {EngineError} `notFound` on HTTP 404 or 410; `transient` on any other HTTP error, a
  *   network error or the timeout.
- * @throws {TypeError} For a string that is not a URL: a mistake of the caller, not of the site.
- *   When the caller cancels (`signal`), its own reason is thrown as it is.
+ * @throws {TypeError} For a string that is not a web (http or https) URL: a mistake of the caller,
+ *   not of the site.
+ * @throws {unknown} The caller's own reason, as it is, when the caller cancels (`signal`).
  */
 export async function fetchHtml(url, { fetch: fetchFn = fetch, timeoutMs = 8000, signal, headers } = {}) {
-  new URL(url);
+  // A typo such as "hhttps://" parses as a URL with another scheme; no site was asked.
+  const { protocol } = new URL(url);
+  if (protocol !== 'https:' && protocol !== 'http:') throw new TypeError(`Not a web URL: ${url}`);
   const timeout = AbortSignal.timeout(timeoutMs);
   try {
     const response = await fetchFn(url, {

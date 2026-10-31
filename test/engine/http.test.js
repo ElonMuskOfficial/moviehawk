@@ -111,10 +111,12 @@ describe('fetchHtml', () => {
     await assert.rejects(fetchHtml(URL_A, { fetch: stall, signal: controller.signal }), (error) => error === reason);
   });
 
-  it('throws a TypeError for a string that is not a URL, without a request', async () => {
+  it('throws a TypeError for a string that is not a web URL, without a request', async () => {
     const { fetchFn, requests } = answer(200);
 
-    await assert.rejects(fetchHtml('hubcloud drive abc', { fetch: fetchFn }), TypeError);
+    for (const notWeb of ['hubcloud drive abc', 'hhttps://hubcloud.ist/drive/abc', 'magnet:?xt=urn:btih:abc']) {
+      await assert.rejects(fetchHtml(notWeb, { fetch: fetchFn }), TypeError);
+    }
     assert.equal(requests.length, 0);
   });
 });
