@@ -123,7 +123,7 @@ describe('scrapeLinks', () => {
     ]);
   });
 
-  it('is a TypeError for a link that is not { url, label }, without a request', async () => {
+  it('is a TypeError for a link without a url, without a request', async () => {
     const options = web({});
     for (const links of [['https://hubdrive.bar/file/7'], [null], [{ label: 'Drive' }]]) {
       await assert.rejects(scrapeLinks(links, options), TypeError);
