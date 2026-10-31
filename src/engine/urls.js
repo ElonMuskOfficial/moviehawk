@@ -27,3 +27,22 @@ export function webUrlOf(text) {
 export function hasLabel(url, label) {
   return url.hostname.split('.').includes(label);
 }
+
+/**
+ * Moves a URL to the current domain of its site, when `domains` names one for a label of it:
+ * posts keep linking domains that no longer answer (hblinks.pro, hubdrive.live, hubcloud.foo).
+ *
+ * @param {URL} url
+ * @param {Record<string, string>} domains - The current domain of each site whose domain rotates,
+ *   by its label: { hblinks: 'https://hblinks.lol' }.
+ * @returns {string}
+ */
+export function onCurrentDomain(url, domains) {
+  const label = Object.keys(domains).find((key) => hasLabel(url, key));
+  if (!label) return url.href;
+  const current = new URL(domains[label]);
+  const moved = new URL(url);
+  moved.protocol = current.protocol;
+  moved.host = current.host;
+  return moved.href;
+}

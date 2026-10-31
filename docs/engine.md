@@ -10,7 +10,9 @@ scrape all use it.
 - Lives in `src/engine/`. Consumers import only `src/engine/index.js`.
 - No database, cache or logging in the engine.
 - Configuration comes in from outside: `createEngine({ fetch, domains, timeoutMs })`.
-- `scrapePost` returns every file it reaches (HubCloud, HubCDN, GoFile, ...), each once.
+- `scrapeLinks` returns every file it reaches (HubCloud, HubCDN, GoFile, ...), each once.
+- The engine gives one function per layer of the sites (listing, post, links, file); the consumer
+  makes its own flow from them: the crawler reads every link, the bot only the option a user picks.
 - The engine states only what the site said. What a consumer does with a result is its own
   business.
 
@@ -43,7 +45,8 @@ has a global `File`).
 | Function | Reads | Returns |
 |---|---|---|
 | `scrapeListing(provider, page)` | a listing page | post URLs |
-| `scrapePost(url)` | a post page, and the pages its links lead to | `{ post, files, linkCount, failures }` |
+| `scrapePost(url)` | a post page (1 request) | `{ post, links }` |
+| `scrapeLinks(links)` | the gateway pages the links lead to, until each reaches a host | `{ files, failures }` |
 | `scrapeFile(url)` | a file's page on its host (1 request) | `{ filename, sizeBytes }` |
 | `resolve(url)` | the file's page, its download page, then the redirects to the file (3 requests) | `{ filename, sizeBytes, downloads }` |
 
@@ -59,9 +62,9 @@ has a global `File`).
   file). When that fails, the button's own link is given, as a page.
 - `failures` is a list of `EngineError` (each has `code`, `url`, `status`); the consumer decides
   what they mean (no `outcome`).
-  `linkCount` is the number of the post's links to a gateway or a known host: 0 can be a glitch of
-  the site.
-- `scrapePost` follows a link through at most 5 gateways in a row (live: 3 at most), reads each
+- `scrapePost`'s `links` are the post's links to a gateway or a known host (not WhatsApp, IMDb, the
+  site's own pages); none can be a glitch of the site.
+- `scrapeLinks` follows a link through at most 5 gateways in a row (live: 3 at most), reads each
   gateway page once, and reads all pages at once, with no limit: the sites answered 1,088
   requests at once (5 series together) with HTTP 200 only (2026-10-31). Each page is retried.
 - `domains`: the current domain of each site whose domain rotates, by its hostname label
@@ -144,9 +147,9 @@ running until the engine is done and the consumers use it.
    needs another host resolved yet; one is added when a consumer does.
 7. Providers: HDHub4u and 4KHDHub post and listing pages, after a wide survey of all four sites.
    Vegamovies and RogMovies come with NexDrive and VCloud.
-8. `scrapePost` (`src/engine/posts.js`): following the links each gateway returns until they
-   reach a host, each file once, `failures`, `onEvent`; moving each URL to its current domain
-   before it is fetched.
+8. `scrapePost` (`src/engine/posts.js`) and `scrapeLinks` (`src/engine/links.js`): following the
+   links each gateway returns until they reach a host, each file once, `failures`, `onEvent`;
+   moving each URL to its current domain before it is fetched.
 9. `scrapeListing`.
 10. `createEngine` and `src/engine/index.js`.
 11. Live check on both sites: the new engine's results against `master`'s.

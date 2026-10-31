@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { hasLabel, webUrlOf } from '../../src/engine/urls.js';
+import { hasLabel, onCurrentDomain, webUrlOf } from '../../src/engine/urls.js';
 
 describe('webUrlOf', () => {
   it('parses http and https URLs only', () => {
@@ -17,5 +17,18 @@ describe('hasLabel', () => {
     assert.equal(hasLabel(new URL('https://dl.HubCloud.link/drive/abc'), 'hubcloud'), true);
     assert.equal(hasLabel(new URL('https://t.me/hubcloudreport'), 'hubcloud'), false);
     assert.equal(hasLabel(new URL('https://myhubcloud.ist/'), 'hubcloud'), false);
+  });
+});
+
+describe('onCurrentDomain', () => {
+  const domains = { hblinks: 'https://hblinks.lol', hubcloud: 'https://hubcloud.ist' };
+
+  it('moves a URL to the current domain of its site, keeping its path', () => {
+    assert.equal(onCurrentDomain(new URL('https://hblinks.pro/archives/1'), domains), 'https://hblinks.lol/archives/1');
+    assert.equal(onCurrentDomain(new URL('http://dl.hubcloud.link/drive/a?x=1'), domains), 'https://hubcloud.ist/drive/a?x=1');
+  });
+
+  it('leaves a URL of any other site as it is', () => {
+    assert.equal(onCurrentDomain(new URL('https://hubcdn.club/file/a'), domains), 'https://hubcdn.club/file/a');
   });
 });
