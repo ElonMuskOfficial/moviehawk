@@ -89,8 +89,8 @@ running until the engine is done and the consumers use it.
 
 1. `EngineError`.
 2. Fetching: timeout, `signal`, retry.
-3. Hosts: which host a URL belongs to, its `externalId`, its current domain.
-4. Gateways: GreenMotors, HUBLinks, HubDrive file and pack.
+3. Hosts: which host a URL belongs to (`hostOf`), and its `externalId` (`externalIdOf`).
+4. Gateways: GreenMotors, HUBLinks, HubDrive file and pack; moving a URL to its current domain.
 5. `scrapeFile`: HubCloud's file page.
 6. `resolve`: HubCloud's download page and the 10Gbps redirects. Only HubCloud: no consumer
    needs another host resolved yet; one is added when a consumer does.
