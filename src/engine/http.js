@@ -38,7 +38,7 @@ export function fetchHtml(url, options) {
  * @param {string} url
  * @param {RequestOptions} [options]
  * @returns {Promise<string>} The address after redirects.
- * @throws The same as fetchHtml.
+ * @throws {EngineError} As fetchHtml; and its TypeError, and the caller's reason on cancellation.
  */
 export function followRedirects(url, options) {
   return request(url, 'HEAD', options, async (response) => {

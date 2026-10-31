@@ -15,22 +15,23 @@ const UNITS = { KB: 1024, MB: 1024 ** 2, GB: 1024 ** 3 };
 const SIZE = /^(\d+(?:\.\d+)?)\s*(KB|MB|GB)$/;
 
 // The download page's server buttons, by their text as HubCloud writes it (130 pages, 2026-10-31).
-// `direct`: the button's link answers with the file itself; `page`: a page that leads to it. A
-// button not listed here is server `other`, a page.
+// `direct`: the button's link answers with the file itself (checked live for each, with a ranged
+// GET); `page`: a page that leads to it. A button not listed here is server `other`, a page.
+// 10Gbps's link is a page, which downloadOf follows to the file.
 const SERVERS = [
-  { server: '10gbps', kind: 'page', label: /^Download \[Server : 10Gbps\]$/ },
-  { server: 'fsl', kind: 'direct', label: /^Download \[FSL Server\]$/ },
-  { server: 'fslv2', kind: 'direct', label: /^Download \[FSLv2 Server\]$/ },
-  { server: 'worker', kind: 'direct', label: /^Download File \[\d+(?:\.\d+)? (?:KB|MB|GB)\]$/ },
-  { server: 'zipdisk', kind: 'direct', label: /^Download (?:Part \d+ )?\[ZipDisk Server\]$/ },
-  { server: 'pixeldrain', kind: 'page', label: /^Download \[PixelServer : \d+\]$/ },
-  { server: 'buzz', kind: 'page', label: /^Download \[Buzz Server\]$/ },
-  { server: 'telegram', kind: 'page', label: /^Download From Telegram$/ },
-  { server: 'watch', kind: 'page', label: /^Watch Online$/ },
+  { server: '10gbps', kind: 'page', pattern: /^Download \[Server : 10Gbps\]$/ },
+  { server: 'fsl', kind: 'direct', pattern: /^Download \[FSL Server\]$/ },
+  { server: 'fslv2', kind: 'direct', pattern: /^Download \[FSLv2 Server\]$/ },
+  { server: 'worker', kind: 'direct', pattern: /^Download File \[\d+(?:\.\d+)? (?:KB|MB|GB)\]$/ },
+  { server: 'zipdisk', kind: 'direct', pattern: /^Download (?:Part \d+ )?\[ZipDisk Server\]$/ },
+  { server: 'pixeldrain', kind: 'page', pattern: /^Download \[PixelServer : \d+\]$/ },
+  { server: 'buzz', kind: 'page', pattern: /^Download \[Buzz Server\]$/ },
+  { server: 'telegram', kind: 'page', pattern: /^Download From Telegram$/ },
+  { server: 'watch', kind: 'page', pattern: /^Watch Online$/ },
 ];
 
 // 10Gbps's link redirects (gpdl.hubcloud.ist → a workers.dev) to an ad page whose `link`
-// parameter is the file: cryptonewz.online/dl.php?link=<file> (28 of 28 live, 2026-10-31).
+// parameter is the file's URL: cryptonewz.online/dl.php?link=<file URL> (28 of 28 live, 2026-10-31).
 const FILE_PARAM = 'link';
 
 /**
@@ -45,7 +46,7 @@ const FILE_PARAM = 'link';
  */
 export async function scrapeHubCloud(url, options) {
   const { html } = await fetchHtml(url, options);
-  return fileOf(cheerio.load(html), url);
+  return detailsOf(cheerio.load(html), url);
 }
 
 /**
@@ -63,9 +64,9 @@ export async function scrapeHubCloud(url, options) {
 export async function resolveHubCloud(url, options) {
   const filePage = await fetchHtml(url, options);
   const $file = cheerio.load(filePage.html, { baseURI: filePage.url });
-  const file = fileOf($file, url);
+  const details = detailsOf($file, url);
   const downloadUrl = $file('#download').prop('href');
-  if (!downloadUrl) throw new EngineError('unrecognized', 'No download page on the HubCloud page', { url });
+  if (!downloadUrl) throw new EngineError('unrecognized', 'No link to the download page on the HubCloud page', { url });
 
   const downloadPage = await fetchHtml(downloadUrl, options);
   const $ = cheerio.load(downloadPage.html, { baseURI: downloadPage.url });
@@ -76,11 +77,11 @@ export async function resolveHubCloud(url, options) {
   if (buttons.length === 0) {
     throw new EngineError('unrecognized', 'No servers on the HubCloud download page', { url: downloadUrl });
   }
-  return { ...file, downloads: await Promise.all(buttons.map((button) => downloadOf(button, options))) };
+  return { ...details, downloads: await Promise.all(buttons.map((button) => downloadOf(button, options))) };
 }
 
 /** @returns {{ filename: string, sizeBytes: number }} */
-function fileOf($, url) {
+function detailsOf($, url) {
   const filename = $('.card-header').first().text().trim();
   const [, amount, unit] = SIZE.exec($('#size').first().text().trim()) ?? [];
   if (!filename || !unit) throw new EngineError('unrecognized', 'No file name or size on the HubCloud page', { url });
@@ -89,11 +90,11 @@ function fileOf($, url) {
 
 /** @returns {Promise<Download>} */
 async function downloadOf({ label, url }, options) {
-  const { server, kind } = SERVERS.find((entry) => entry.label.test(label)) ?? { server: 'other', kind: 'page' };
+  const { server, kind } = SERVERS.find((entry) => entry.pattern.test(label)) ?? { server: 'other', kind: 'page' };
   if (server !== '10gbps') return { server, kind, url, label };
   try {
-    const file = new URL(await followRedirects(url, options)).searchParams.get(FILE_PARAM);
-    if (file) return { server, kind: 'direct', url: file, label };
+    const fileUrl = new URL(await followRedirects(url, options)).searchParams.get(FILE_PARAM);
+    if (fileUrl) return { server, kind: 'direct', url: fileUrl, label };
   } catch (error) {
     // The redirects stalled, or ended on a 404 (one zip's, live): the button stays as it is.
     if (!(error instanceof EngineError)) throw error;

@@ -1,6 +1,6 @@
 # Engine
 
-**Status:** under discussion, not implemented yet.
+**Status:** being built on the branch `engine`: pieces 1 to 6 are done.
 
 The engine takes a URL, scrapes it and returns the result. The crawler, API, bot and on-demand
 scrape all use it.

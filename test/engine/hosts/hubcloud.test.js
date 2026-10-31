@@ -59,9 +59,9 @@ describe('scrapeFile', () => {
   });
 });
 
-// The 10Gbps button redirects to an ad page whose `link` is the file (live, 2026-10-31).
-const FILE = 'https://video-downloads.googleusercontent.com/ADGPM2kG1c2DPsrJ6hovnnpZWm';
-const AD_PAGE = `https://cryptonewz.online/dl.php?link=${FILE}`;
+// The 10Gbps button redirects to an ad page whose `link` is the file's URL (live, 2026-10-31).
+const FILE_URL = 'https://video-downloads.googleusercontent.com/ADGPM2kG1c2DPsrJ6hovnnpZWm';
+const AD_PAGE = `https://cryptonewz.online/dl.php?link=${FILE_URL}`;
 
 function redirectedTo(url, status = 200) {
   const response = new Response(null, { status });
@@ -74,8 +74,8 @@ function redirectedTo(url, status = 200) {
 function sites({ downloadPage = fixture('download'), tenGbps = async () => redirectedTo(AD_PAGE) } = {}) {
   const requests = [];
   const fetchFn = async (url, init) => {
-    requests.push([new URL(url).hostname, init.method]);
     const { hostname } = new URL(url);
+    requests.push([hostname, init.method]);
     if (hostname === 'hubcloud.ist') return new Response(fixture('file'));
     if (hostname === 'gamerxyt.com') return new Response(downloadPage);
     if (hostname === 'gpdl.hubcloud.ist') return tenGbps();
@@ -98,7 +98,7 @@ describe('resolve on HubCloud', () => {
       ['worker', 'direct', 'Download File [265.62 MB]'],
       ['telegram', 'page', 'Download From Telegram'],
     ]);
-    assert.equal(resolved.downloads[0].url, FILE);
+    assert.equal(resolved.downloads[0].url, FILE_URL);
     assert.match(resolved.downloads[1].url, /^https:\/\/bsnl\.server96\.workers\.dev\/.+\.mkv$/);
     assert.match(resolved.downloads[2].url, /^https:\/\/hubcloud\.ist\/tg\/go\?id=/);
     assert.deepEqual(options.requests, [['hubcloud.ist', 'GET'], ['gamerxyt.com', 'GET'], ['gpdl.hubcloud.ist', 'HEAD']]);
@@ -161,7 +161,7 @@ describe('resolve on HubCloud', () => {
 
   it('is unrecognized for a file page without its download link, or a download page without servers', async () => {
     await assert.rejects(resolve(URL_HC, answer(pageWith('a.mkv', '1.2 GB'))), {
-      code: 'unrecognized', url: URL_HC, message: 'No download page on the HubCloud page',
+      code: 'unrecognized', url: URL_HC, message: 'No link to the download page on the HubCloud page',
     });
     const challenge = '<title>Just a moment...</title><div class="card-body"><h2><a href="https://one.one.one.one">VPN</a></h2></div>';
     await assert.rejects(resolve(URL_HC, sites({ downloadPage: challenge })), (error) => {
