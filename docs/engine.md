@@ -1,6 +1,6 @@
 # Engine
 
-**Status:** being built on the branch `engine`: pieces 1 to 6 are done.
+**Status:** being built on the branch `engine`: pieces 1 to 7 are done.
 
 The engine takes a URL, scrapes it and returns the result. The crawler, API, bot and on-demand
 scrape all use it.
@@ -28,7 +28,7 @@ scrape all use it.
 | `provider` | source site | `hdhub4u` |
 | `post` | one page of a provider | The Furious |
 | `listing` | page that lists posts | `/page/2/` |
-| `link` | URL on a page, destination not yet known | a post's button |
+| `link` | URL on a page, destination not yet known; a post's links also carry the languages the post states for them (`{ url, statedLanguages }`) | a post's button |
 | `gateway` | page that leads further | GreenMotors, HUBLinks, HubDrive |
 | `host` | site a file is on | `hubcloud` |
 | `file` | one file on a host | `{ host, externalId, url }` |
@@ -96,12 +96,20 @@ First look at Vegamovies and RogMovies:
 - So the route has the same shape as HDHub4u's (post → gateway → host): piece 8 follows the links a
   gateway returns until they reach a host, with a depth limit, instead of a fixed list of steps.
 
-To check in a wide survey before pieces 7 and 8: more posts and layouts of both sites, whether
-one provider module serves both, and the hosts' pages.
+Wide survey (2026-10-31: 3 listing pages and 20 posts per site, all four sites):
+
+- Each site's listing page has one grid of posts: HDHub4u `ul.recent-movies`, 4KHDHub
+  `.card-grid`, Vegamovies and RogMovies `.movies-grid` (their slider repeats on every page).
+- Vegamovies and RogMovies look alike but state their data differently: Vegamovies' date is in
+  its `Movie` JSON-LD (`dateCreated`), RogMovies' in `BlogPosting` and `article:published_time`.
+  Vegamovies writes the languages in each quality's heading ("{Hindi-English}"), RogMovies
+  rarely. One provider or two is decided when they are added, with NexDrive and VCloud.
+- 4KHDHub finds a post by the number at the end of its URL; the slug is ignored.
+- A page after the last: HDHub4u answers HTTP 404, 4KHDHub answers as its last page. Piece 9
+  has to tell the caller where the listing ends.
 
 ## Open
 
-- 4KHDHub: two blocks with different languages can lead to one file. Check this live.
 - On-demand scrape: decided when that feature is built.
 
 ## Plan
@@ -127,8 +135,8 @@ running until the engine is done and the consumers use it.
 5. `scrapeFile`: HubCloud's file page.
 6. `resolve`: HubCloud's download page and the 10Gbps redirects. Only HubCloud: no consumer
    needs another host resolved yet; one is added when a consumer does.
-7. Providers: HDHub4u and 4KHDHub post and listing pages; first a wide survey of Vegamovies and
-   RogMovies, so pieces 7 and 8 are designed from all four sites.
+7. Providers: HDHub4u and 4KHDHub post and listing pages, after a wide survey of all four sites.
+   Vegamovies and RogMovies come with NexDrive and VCloud.
 8. `scrapePost`: following the links each gateway returns until they reach a host, each file once,
    `failures`, `onEvent`; moving each URL to its current domain before it is fetched.
 9. `scrapeListing`.
