@@ -1,6 +1,6 @@
 # Engine
 
-**Status:** being built on the branch `engine`: pieces 1 to 9 are done.
+**Status:** being built on the branch `engine`: pieces 1 to 10 are done.
 
 The engine takes a URL, scrapes it and returns the result. The crawler, API, bot and on-demand
 scrape all use it.
@@ -9,7 +9,8 @@ scrape all use it.
 
 - Lives in `src/engine/`. Consumers import only `src/engine/index.js`.
 - No database, cache or logging in the engine.
-- Configuration comes in from outside: `createEngine({ fetch, domains, timeoutMs })`.
+- Configuration comes in from outside, on every call: `{ domains, fetch, timeoutMs, signal }`. No
+  `createEngine`: binding `domains` once is a line of the consumer's (`const options = { domains }`).
 - `scrapeLinks` returns every file it reaches (HubCloud, HubCDN, GoFile, ...), each once.
 - The engine gives one function per layer of the sites (listing, post, links, file); the consumer
   makes its own flow from them: the crawler follows every link of a post, another consumer only the ones its user picks.
@@ -158,7 +159,9 @@ running until the engine is done and the consumers use it.
 9. `scrapeListing` (`src/engine/listings.js`): page 1 is `/`, page n `/page/<n>/`; `notFound`
    after the last page on both sites (HDHub4u: HTTP 404; 4KHDHub: its pagination marks another
    page as the current one).
-10. `createEngine` and `src/engine/index.js`.
+10. `src/engine/index.js`, the one entry; `scrapeFile` and `resolve` (`src/engine/files.js`) move a
+    stored file to its host's current domain (hubcloud.foo → hubcloud.ist) and retry, like the
+    other functions.
 11. Live check on both sites: the new engine's results against `master`'s.
 
 After that, the consumers (crawler, API, bot) move to the engine.

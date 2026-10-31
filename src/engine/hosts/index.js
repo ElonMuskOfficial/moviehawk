@@ -2,7 +2,6 @@
  * The file hosts the engine recognizes, and how a host's URL names a file (its `externalId`). A
  * host is matched by a label of the URL's hostname (urls.js).
  */
-import { EngineError } from '../errors.js';
 import { hasLabel, webUrlOf } from '../urls.js';
 import { resolveHubCloud, scrapeHubCloud } from './hubcloud.js';
 
@@ -38,23 +37,15 @@ const HOSTS = [
 ];
 
 /**
- * @param {string} url
- * @returns {{ host: typeof HOSTS[number], parsed: URL } | null}
- */
-function findHost(url) {
-  const parsed = webUrlOf(url);
-  const host = parsed && HOSTS.find(({ id }) => hasLabel(parsed, id));
-  return host ? { host, parsed } : null;
-}
-
-/**
- * The host a URL is on: "https://hubcloud.foo/drive/abc" → "hubcloud".
+ * The host a URL is on: "https://hubcloud.foo/drive/abc" → HubCloud, whose `id` is "hubcloud".
  *
  * @param {string} url
- * @returns {string | null} null when the URL is on no host the engine knows, or is not a web URL.
+ * @returns {typeof HOSTS[number] | null} null when the URL is on no host the engine knows, or is
+ *   not a web URL.
  */
 export function hostOf(url) {
-  return findHost(url)?.host.id ?? null;
+  const parsed = webUrlOf(url);
+  return (parsed && HOSTS.find(({ id }) => hasLabel(parsed, id))) ?? null;
 }
 
 /**
@@ -66,23 +57,7 @@ export function hostOf(url) {
  *   "hubcdn.wiki/embed" placeholder) or is on no host the engine knows.
  */
 export function externalIdOf(url) {
-  const found = findHost(url);
-  return found ? found.host.externalId(found.parsed) : null;
-}
-
-/**
- * Reads a file's page on its host: the file's name and size, as the page states them.
- *
- * @param {string} url - On the host's current domain.
- * @param {import('../http.js').RequestOptions} [options]
- * @returns {Promise<{ filename: string, sizeBytes: number }>}
- * @throws {EngineError} `unsupported` for a URL on a host whose page the engine does not read, and
- *   the host reader's errors.
- */
-export async function scrapeFile(url, options) {
-  const read = findHost(url)?.host.scrapeFile;
-  if (!read) throw new EngineError('unsupported', 'The engine does not read file pages of this host', { url });
-  return read(url, options);
+  return hostOf(url)?.externalId(new URL(url)) ?? null;
 }
 
 /**
@@ -99,19 +74,3 @@ export async function scrapeFile(url, options) {
  *   `kind`: `direct` when `url` answers with the file itself, `page` when it is a page that leads
  *   to it. `label`: the button's text, such as "Download Part 2 [ZipDisk Server]".
  */
-
-/**
- * Resolves a file into its downloads: the file's page, its download page, and the redirects to
- * the file. Downloads expire within minutes or hours; scrapeFile's answer does not.
- *
- * @param {string} url - On the host's current domain.
- * @param {import('../http.js').RequestOptions} [options]
- * @returns {Promise<{ filename: string, sizeBytes: number, downloads: Download[] }>}
- * @throws {EngineError} `unsupported` for a URL on a host the engine does not resolve, and the host
- *   resolver's errors.
- */
-export async function resolve(url, options) {
-  const read = findHost(url)?.host.resolve;
-  if (!read) throw new EngineError('unsupported', 'The engine does not resolve files of this host', { url });
-  return read(url, options);
-}

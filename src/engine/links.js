@@ -69,7 +69,7 @@ export async function scrapeLinks(links, { domains = {}, onEvent = () => {}, ...
       await Promise.all(next.map((nextLink, i) => follow(nextLink, [...order, i])));
       return;
     }
-    const host = hostOf(url);
+    const host = hostOf(url)?.id;
     const externalId = externalIdOf(url);
     if (!externalId) return report('skipped', url, host ? 'names no file' : 'no known host');
     const key = `${host}:${externalId}`;

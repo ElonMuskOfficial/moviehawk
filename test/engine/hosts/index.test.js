@@ -23,7 +23,7 @@ const LIVE = [
 describe('hostOf and externalIdOf', () => {
   it('read the host and the file id of every URL shape seen live', () => {
     for (const [url, host, id] of LIVE) {
-      assert.equal(hostOf(url), host, url);
+      assert.equal(hostOf(url)?.id, host, url);
       assert.equal(externalIdOf(url), id, url);
     }
   });
