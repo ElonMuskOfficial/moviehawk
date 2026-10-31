@@ -66,12 +66,16 @@ describe('scrape4kHdHubPost', () => {
 });
 
 describe('scrape4kHdHubListing', () => {
-  it('gives the posts of the grid, in page order', async () => {
-    const { postUrls } = await scrape4kHdHubListing('https://4khdhub.one/page/2/', answer(fixture('listing')));
+  it('gives the cards of the grid, in page order: URL, title and poster', async () => {
+    const { posts } = await scrape4kHdHubListing('https://4khdhub.one/page/2/', answer(fixture('listing')));
 
-    assert.equal(postUrls.length, 18);
-    assert.equal(postUrls[0], 'https://4khdhub.one/the-perfect-lie-series-8466/');
-    assert.equal(postUrls.at(-1), 'https://4khdhub.one/a-couple-of-lies-aka-bytet-series-8462/');
+    assert.equal(posts.length, 18);
+    assert.deepEqual(posts[0], {
+      url: 'https://4khdhub.one/the-perfect-lie-series-8466/',
+      title: 'The Perfect Lie',
+      posterUrl: 'https://image.tmdb.org/t/p/w500/thXJkiBByDitV7iFSv1hU1sg7ij.jpg',
+    });
+    assert.equal(posts.at(-1).url, 'https://4khdhub.one/a-couple-of-lies-aka-bytet-series-8462/');
   });
 
   it('is notFound for a page after the last, which 4KHDHub answers as its last', async () => {

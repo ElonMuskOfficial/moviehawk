@@ -10,6 +10,8 @@ import { scrapeHdHub4uListing, scrapeHdHub4uPost } from './hdhub4u.js';
  * @typedef {{ provider: string, url: string, title: string, year: number | null,
  *   imdbId: string | null, posterUrl: string | null, publishedAt: string | null }} Post
  *   `url`: the post's address after redirects; `publishedAt`: ISO 8601, UTC.
+ * @typedef {{ url: string, title: string, posterUrl: string | null }} PostCard
+ *   A post as a listing page shows it: its card's title and image, as the card states them.
  */
 
 // Each provider's id is also the hostname label that identifies it. `post` reads one post page,

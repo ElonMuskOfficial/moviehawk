@@ -83,12 +83,16 @@ describe('scrapeHdHub4uPost', () => {
 });
 
 describe('scrapeHdHub4uListing', () => {
-  it('gives each post of the grid once, in page order', async () => {
-    const { postUrls } = await scrapeHdHub4uListing('https://new10.hdhub4u.cl/page/2/', answer(fixture('listing')));
+  it('gives each card of the grid once, in page order: URL, title and poster', async () => {
+    const { posts } = await scrapeHdHub4uListing('https://new10.hdhub4u.cl/page/2/', answer(fixture('listing')));
 
-    assert.equal(postUrls.length, 15);
-    assert.equal(postUrls[0], 'https://new10.hdhub4u.cl/dont-trouble-the-trouble-2026-webrip-hindi-full-movie/');
-    assert.equal(postUrls.at(-1), 'https://new10.hdhub4u.cl/ali-g-who-iz-i-2026-webrip-hindi-full-movie/');
+    assert.equal(posts.length, 15);
+    assert.deepEqual(posts[0], {
+      url: 'https://new10.hdhub4u.cl/dont-trouble-the-trouble-2026-webrip-hindi-full-movie/',
+      title: 'Don’t Trouble the Trouble (2026) WEB-DL [Hindi (DD5.1) & Telugu] 4K 1080p 720p & 480p Dual Audio [x264/HEVC] | Full Movie',
+      posterUrl: 'https://image.tmdb.org/t/p/w342/A0uqqpeLhGfOsW6muky7xvLd8Qf.jpg',
+    });
+    assert.equal(posts.at(-1).url, 'https://new10.hdhub4u.cl/ali-g-who-iz-i-2026-webrip-hindi-full-movie/');
   });
 
   it('is unrecognized for a page without posts', async () => {

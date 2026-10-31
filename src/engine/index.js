@@ -3,7 +3,7 @@
  * function per layer of the sites; the consumer makes its own flow from them:
  *
  *   const engine = createEngine({ domains });
- *   engine.scrapeListing(siteUrl, page) → post URLs
+ *   engine.scrapeListing(siteUrl, page) → its posts' cards: URL, title, poster
  *   engine.scrapePost(postUrl)          → the post and its links
  *   engine.scrapeLinks(urls)            → the files the links' URLs lead to
  *   engine.scrapeFile(fileUrl)          → the file's name and size
@@ -21,6 +21,7 @@ export { EngineError } from './errors.js';
 
 /**
  * @typedef {import('./providers/index.js').Post} Post
+ * @typedef {import('./providers/index.js').PostCard} PostCard
  * @typedef {import('./html.js').Link} Link
  * @typedef {import('./hosts/index.js').HostFile} HostFile
  * @typedef {import('./hosts/index.js').Download} Download

@@ -15,8 +15,9 @@ import { onCurrentDomain, webUrlOf } from './urls.js';
  * @param {number} [page] - From 1.
  * @param {import('./http.js').RequestOptions & { domains?: Record<string, string> }} [options]
  *   `domains`: as for onCurrentDomain (urls.js).
- * @returns {Promise<{ postUrls: string[] }>} The page's posts, in page order. Pages can share
- *   posts (HDHub4u's page 1 lists those of its pages 2 to 6 too).
+ * @returns {Promise<{ posts: import('./providers/index.js').PostCard[] }>} The page's posts, in
+ *   page order, as their cards show them: `{ url, title, posterUrl }`. Pages can share posts
+ *   (HDHub4u's page 1 lists those of its pages 2 to 6 too).
  * @throws {EngineError} `notFound` for a page after the last; `unsupported` for a URL on no site
  *   the engine reads; and the provider's errors.
  * @throws {TypeError} For a string that is not a web URL, or a page that is not a whole number
