@@ -32,7 +32,7 @@ scrape all use it.
 | `provider` | source site | `hdhub4u` |
 | `post` | one page of a provider | The Furious |
 | `listing` | page that lists posts | `/page/2/` |
-| `link` | a link on a page: its URL (destination not yet known) and its text | `{ url, label }` |
+| `link` | a link on a page: its URL (destination not yet known) and its text; `scrapeLinks` takes the URLs | `{ url, label }` |
 | `gateway` | page that leads further | GreenMotors, HUBLinks, HubDrive |
 | `host` | site a file is on | `hubcloud` |
 | `file` | one file on a host | `{ host, externalId, url }` |
@@ -50,7 +50,7 @@ has a global `File`).
 |---|---|---|
 | `scrapeListing(url, page)` | a listing page of the site `url` is on (1 request) | `{ postUrls }` |
 | `scrapePost(url)` | a post page (1 request) | `{ post, links }` |
-| `scrapeLinks(links)` | the gateway pages the links lead to, until each reaches a host | `{ files, failures }` |
+| `scrapeLinks(urls)` | the gateway pages the links' URLs lead to, until each reaches a host | `{ files, failures }` |
 | `scrapeFile(url)` | a file's page on its host (1 request) | `{ filename, sizeBytes }` |
 | `resolve(url)` | the file's page, its download page, then the redirects to the file (3 requests) | `{ filename, sizeBytes, downloads }` |
 

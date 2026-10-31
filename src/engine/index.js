@@ -5,7 +5,7 @@
  *   const engine = createEngine({ domains });
  *   engine.scrapeListing(siteUrl, page) → post URLs
  *   engine.scrapePost(postUrl)          → the post and its links
- *   engine.scrapeLinks(links)           → the files they lead to
+ *   engine.scrapeLinks(urls)            → the files the links' URLs lead to
  *   engine.scrapeFile(fileUrl)          → the file's name and size
  *   engine.resolve(fileUrl)             → its downloads
  *

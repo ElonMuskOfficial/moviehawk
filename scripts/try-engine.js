@@ -24,11 +24,9 @@ console.log(`${links.length} links:`);
 links.forEach(({ label }, i) => console.log(`  ${i}: ${label}`));
 
 // Step 2: the files the selected link leads to, through the gateways.
-// A link to follow: step 1 gives { url, label }; only its url is read.
-const link = {
-  url: 'https://greenmotors.club/?id=cUk4cEpVbFU1NW8yUVR1ZVFUM3phNm5QS2Z3TTdCSkVpS1pqdjdkTHQ5bDlqUGNSMTVIWDk5d05BZDVIa3R2QkRla3o2ektFaFhld2Y4NWhJZTgvZzZLNTZaN2lndkpMNTJWcXBONzFDdjg9',
-};
-console.log(`\nFollowing ${link.url}`);
-const { files, failures } = await engine.scrapeLinks([link]);
+// The URL of the link to follow, such as one of step 1's: links[1].url.
+const url = 'https://greenmotors.club/?id=cUk4cEpVbFU1NW8yUVR1ZVFUM3phNm5QS2Z3TTdCSkVpS1pqdjdkTHQ5bDlqUGNSMTVIWDk5d05BZDVIa3R2QkRla3o2ektFaFhld2Y4NWhJZTgvZzZLNTZaN2lndkpMNTJWcXBONzFDdjg9';
+console.log(`\nFollowing ${url}`);
+const { files, failures } = await engine.scrapeLinks([url]);
 console.log(`${files.length} files:`, files);
 console.log(`${failures.length} failures:`, failures.map(({ code, url, message }) => ({ code, url, message })));

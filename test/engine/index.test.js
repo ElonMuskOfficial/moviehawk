@@ -31,7 +31,7 @@ describe('the engine\'s entry', () => {
     const events = [];
 
     const { links } = await engine.scrapePost('https://new9.hdhub4u.cl/show/');
-    const { files } = await engine.scrapeLinks(links, { onEvent: (event) => events.push(event.type) });
+    const { files } = await engine.scrapeLinks(links.map(({ url }) => url), { onEvent: (event) => events.push(event.type) });
 
     assert.deepEqual(requests, ['https://new10.hdhub4u.cl/show/', 'https://hubdrive.bar/file/7']);
     assert.deepEqual(files, [{ host: 'hubcloud', externalId: 'a', url: 'https://hubcloud.ist/drive/a' }]);

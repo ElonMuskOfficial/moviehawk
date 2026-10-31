@@ -41,11 +41,11 @@ describe('scrapePost', () => {
     assert.deepEqual(options.requests, [POST_URL]);
   });
 
-  it('gives links that scrapeLinks takes as they are', async () => {
+  it('gives links whose URLs scrapeLinks follows', async () => {
     const options = web({ [POST_URL]: hdHub4uPost('https://hubcloud.ist/drive/a') });
 
     const { links } = await scrapePost(POST_URL, options);
-    const { files } = await scrapeLinks(links, options);
+    const { files } = await scrapeLinks(links.map(({ url }) => url), options);
 
     assert.deepEqual(files.map(({ externalId }) => externalId), ['a']);
   });

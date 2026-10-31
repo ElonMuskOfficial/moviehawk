@@ -24,8 +24,8 @@ const MAX_GATEWAYS = 5;
  * once). A link that is neither a gateway nor a file on a known host is skipped. Every URL is moved
  * to its site's current domain before it is read, files too.
  *
- * @param {import('./html.js').Link[]} links - A post's links as scrapePost gives them, all or some.
- *   Only their `url` is read: `[{ url }]` will do.
+ * @param {string[]} urls - The links' URLs: all of a post's (`links.map(({ url }) => url)`), or the
+ *   one a user picked.
  * @param {import('./http.js').RequestOptions & {
  *   domains?: Record<string, string>,
  *   onEvent?: (event: EngineEvent) => void,
@@ -34,13 +34,13 @@ const MAX_GATEWAYS = 5;
  * @returns {Promise<{ files: HostFile[], failures: EngineError[] }>} `failures`: every page that did
  *   not lead on, such as a dead GreenMotors link (`notFound`) or a stalled HubDrive (`transient`);
  *   the files of every other link are there.
- * @throws {TypeError} For a link without a `url`, such as a bare URL string: it would be skipped
- *   as if the page linked nothing.
+ * @throws {TypeError} For a URL that is not a string, such as a link `{ url, label }`: it would be
+ *   skipped as if the page linked nothing.
  * @throws {unknown} The caller's own reason, as it is, when the caller cancels (`signal`).
  */
-export async function scrapeLinks(links, { domains = {}, onEvent = () => {}, ...options } = {}) {
-  const notLink = links.find((link) => typeof link?.url !== 'string');
-  if (notLink !== undefined) throw new TypeError(`Not a link { url }: ${JSON.stringify(notLink)}`);
+export async function scrapeLinks(urls, { domains = {}, onEvent = () => {}, ...options } = {}) {
+  const notUrl = urls.find((url) => typeof url !== 'string');
+  if (notUrl !== undefined) throw new TypeError(`Not a URL string: ${JSON.stringify(notUrl)}`);
   // Gateway pages, each read once (a post links some twice), for the link that reaches it first:
   // its files take that link's place.
   const readPages = new Set();
@@ -52,11 +52,11 @@ export async function scrapeLinks(links, { domains = {}, onEvent = () => {}, ...
     report('failure', error.url, `${error.code}: ${error.message}`);
   };
 
-  // `order`: the link's position, page by page, so files keep the links' order although pages load
-  // at once.
-  const follow = async (link, order) => {
-    const parsed = webUrlOf(link.url);
-    if (!parsed) return report('skipped', link.url, 'not a web URL');
+  // `target`: a URL as given, before it is moved to its current domain. `order`: its position,
+  // page by page, so files keep the links' order although pages load at once.
+  const follow = async (target, order) => {
+    const parsed = webUrlOf(target);
+    if (!parsed) return report('skipped', target, 'not a web URL');
     const url = onCurrentDomain(parsed, domains);
     const gateway = gatewayOf(url);
     if (gateway) {
@@ -71,7 +71,7 @@ export async function scrapeLinks(links, { domains = {}, onEvent = () => {}, ...
         return fail(error);
       }
       report('gateway', url, `${gateway.label}: ${next.length} links`);
-      await Promise.all(next.map((nextLink, i) => follow(nextLink, [...order, i])));
+      await Promise.all(next.map((link, i) => follow(link.url, [...order, i])));
       return;
     }
     const host = hostOf(url)?.id;
@@ -84,7 +84,7 @@ export async function scrapeLinks(links, { domains = {}, onEvent = () => {}, ...
     report('file', url, host);
   };
 
-  await Promise.all(links.map((link, i) => follow(link, [i])));
+  await Promise.all(urls.map((url, i) => follow(url, [i])));
   const files = [...found.values()].sort((a, b) => compareOrder(a.order, b.order)).map(({ file }) => file);
   return { files, failures };
 }
