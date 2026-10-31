@@ -1,6 +1,6 @@
 # Engine
 
-**Status:** being built on the branch `engine`: pieces 1 to 7 are done.
+**Status:** being built on the branch `engine`: pieces 1 to 8 are done.
 
 The engine takes a URL, scrapes it and returns the result. The crawler, API, bot and on-demand
 scrape all use it.
@@ -59,8 +59,12 @@ has a global `File`).
   file). When that fails, the button's own link is given, as a page.
 - `failures` is a list of `EngineError` (each has `code`, `url`, `status`); the consumer decides
   what they mean (no `outcome`).
-  `linkCount` is the number of links the provider reads from the post page: 0 can be a glitch of
+  `linkCount` is the number of the post's links to a gateway or a known host: 0 can be a glitch of
   the site.
+- `scrapePost` follows a link through at most 5 gateways in a row (live: 3 at most), reads each
+  gateway page once, and reads at most 6 pages at once. Each page is retried.
+- `domains`: the current domain of each site whose domain rotates, by its hostname label
+  (`{ hblinks: 'https://hblinks.lol' }`); every URL is moved to it before it is read.
 - Nothing found is an empty result (`files: []`), not an error.
 - `onEvent({ type, url, detail })`: what happened to each link, for logs.
 - `EngineError.code`, by what the site said:
@@ -137,8 +141,9 @@ running until the engine is done and the consumers use it.
    needs another host resolved yet; one is added when a consumer does.
 7. Providers: HDHub4u and 4KHDHub post and listing pages, after a wide survey of all four sites.
    Vegamovies and RogMovies come with NexDrive and VCloud.
-8. `scrapePost`: following the links each gateway returns until they reach a host, each file once,
-   `failures`, `onEvent`; moving each URL to its current domain before it is fetched.
+8. `scrapePost` (`src/engine/posts.js`): following the links each gateway returns until they
+   reach a host, each file once, `failures`, `onEvent`; moving each URL to its current domain
+   before it is fetched.
 9. `scrapeListing`.
 10. `createEngine` and `src/engine/index.js`.
 11. Live check on both sites: the new engine's results against `master`'s.

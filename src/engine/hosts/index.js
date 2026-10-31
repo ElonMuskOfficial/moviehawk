@@ -1,11 +1,9 @@
 /**
- * The file hosts the engine recognizes, and how a host's URL names a file (its `externalId`).
- *
- * A host is matched by a label of the URL's hostname, never by a substring of the URL:
- * "https://t.me/hubcloudreport" is not HubCloud. A label, not a whole domain, because the domains
- * rotate (hubcloud.ist, hubcloud.foo, dl.hubcloud.link, ...) while the label stays.
+ * The file hosts the engine recognizes, and how a host's URL names a file (its `externalId`). A
+ * host is matched by a label of the URL's hostname (urls.js).
  */
 import { EngineError } from '../errors.js';
+import { hasLabel, webUrlOf } from '../urls.js';
 import { resolveHubCloud, scrapeHubCloud } from './hubcloud.js';
 
 // A file id is a plain token of letters, digits, _ and -. HubCloud shows a deleted file's search
@@ -40,16 +38,8 @@ const HOSTS = [
  * @returns {{ host: typeof HOSTS[number], parsed: URL } | null}
  */
 function findHost(url) {
-  let parsed;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return null; // Pages link all kinds of text; one that is not a URL is on no host.
-  }
-  // Only web links: the sites have typos such as "hhttps://hubcloud.ist/...".
-  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null;
-  const labels = parsed.hostname.split('.');
-  const host = HOSTS.find(({ id }) => labels.includes(id));
+  const parsed = webUrlOf(url);
+  const host = parsed && HOSTS.find(({ id }) => hasLabel(parsed, id));
   return host ? { host, parsed } : null;
 }
 

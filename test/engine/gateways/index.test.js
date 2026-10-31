@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
+import { gatewayOf } from '../../../src/engine/gateways/index.js';
+import { expandGreenMotors } from '../../../src/engine/gateways/greenmotors.js';
+import { expandHubDrive } from '../../../src/engine/gateways/hubdrive.js';
+import { expandHubLinks } from '../../../src/engine/gateways/hublinks.js';
+
+describe('gatewayOf', () => {
+  it('knows each gateway page by its site and its path, as seen live', () => {
+    const live = [
+      ['https://greenmotors.club/?id=Q1dxTzFnbjhr', expandGreenMotors],
+      ['https://greenmotors.cc/?id=Q1dxTzFnbjhr', expandGreenMotors],
+      ['https://hblinks.lol/archives/104512', expandHubLinks],
+      ['https://hblinks.pro/archives/88/', expandHubLinks],
+      ['https://hubdrive.bar/file/2861517081', expandHubDrive],
+      ['https://hubdrive.bar/packs/nqhtppaz', expandHubDrive],
+    ];
+    for (const [url, expand] of live) assert.equal(gatewayOf(url), expand, url);
+  });
+
+  it('is null for the same sites\' other pages, and for anything else', () => {
+    const others = [
+      'https://hblinks.lol/', 'https://hblinks.lol/login', 'https://hubdrive.bar/newdl', 'https://greenmotors.cc/',
+      'https://hubcloud.ist/drive/abc', 'https://t.me/hblinks', 'magnet:?xt=urn:btih:abc', 'not a url',
+    ];
+    for (const url of others) assert.equal(gatewayOf(url), null, url);
+  });
+});
