@@ -21,8 +21,13 @@ const MAX_GATEWAYS = 5;
 /**
  * Follows links to the files they lead to: every file once (found by its host and externalId), in
  * the order of the links (4KHDHub's HubCloud and HubDrive buttons lead to one file, which it gives
- * once). A link that is neither a gateway nor a file on a known host is skipped. Every URL is moved
- * to its site's current domain before it is read, files too.
+ * once, with the label of the first way to it). A link that is neither a gateway nor a file on a
+ * known host is skipped. Every URL is moved to its site's current domain before it is read, files
+ * too.
+ *
+ * A file's label is the first one on its way, which is the page nearest the post: HUBLinks'
+ * "480p · Drive", not the "[HubCloud Server]" of the HubDrive page after it. The post's own label is
+ * the caller's, which picked the link.
  *
  * @param {string[]} urls - The links' URLs: all of a post's (`links.map(({ url }) => url)`), or the
  *   one a user picked.
@@ -53,8 +58,9 @@ export async function scrapeLinks(urls, { domains = {}, onEvent = () => {}, ...o
   };
 
   // `target`: a URL as given, before it is moved to its current domain. `order`: its position,
-  // page by page, so files keep the links' order although pages load at once.
-  const follow = async (target, order) => {
+  // page by page, so files keep the links' order although pages load at once. `label`: the first
+  // label on its way.
+  const follow = async (target, order, label = null) => {
     const parsed = webUrlOf(target);
     if (!parsed) return report('skipped', target, 'not a web URL');
     const url = onCurrentDomain(parsed, domains);
@@ -71,7 +77,7 @@ export async function scrapeLinks(urls, { domains = {}, onEvent = () => {}, ...o
         return fail(error);
       }
       report('gateway', url, `${gateway.label}: ${next.length} links`);
-      await Promise.all(next.map((link, i) => follow(link.url, [...order, i])));
+      await Promise.all(next.map((link, i) => follow(link.url, [...order, i], label ?? link.label)));
       return;
     }
     const host = hostOf(url)?.id;
@@ -80,7 +86,7 @@ export async function scrapeLinks(urls, { domains = {}, onEvent = () => {}, ...o
     const key = `${host}:${externalId}`;
     const known = found.get(key);
     if (known && compareOrder(known.order, order) <= 0) return report('skipped', url, 'file found already');
-    found.set(key, { order, file: { host, externalId, url } });
+    found.set(key, { order, file: { host, externalId, url, label } });
     report('file', url, host);
   };
 

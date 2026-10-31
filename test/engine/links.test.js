@@ -34,7 +34,7 @@ describe('scrapeLinks', () => {
     const { files, failures } = await scrapeLinks(urls, options);
 
     assert.deepEqual(files.map(({ host, externalId }) => `${host}:${externalId}`), ['hubcloud:a', 'hubcloud:b', 'hubcdn:cdn1', 'hubcloud:c']);
-    assert.deepEqual(files[0], { host: 'hubcloud', externalId: 'a', url: 'https://hubcloud.ist/drive/a' });
+    assert.deepEqual(files[0], { host: 'hubcloud', externalId: 'a', url: 'https://hubcloud.ist/drive/a', label: 'Drive' });
     assert.deepEqual(failures, []);
   });
 
@@ -45,7 +45,22 @@ describe('scrapeLinks', () => {
 
     const { files } = await scrapeLinks(urls, options);
 
-    assert.deepEqual(files, [{ host: 'hubcloud', externalId: 'a', url: 'https://hubcloud.ist/drive/a' }]);
+    assert.deepEqual(files, [{ host: 'hubcloud', externalId: 'a', url: 'https://hubcloud.ist/drive/a', label: null }]);
+  });
+
+  it('labels a file with the first label on its way, the page nearest the post', async () => {
+    // A HUBLinks episode page (live, 2026-10-31: archives/121857): "480p – Drive | Direct", where
+    // Drive is a HubDrive page whose button is the same HubCloud file as Direct.
+    const options = web({
+      'https://hblinks.lol/archives/1': '<div class="entry-content"><h3>480p – <a href="https://hubdrive.bar/file/7">Drive</a> | <a href="https://hubcloud.ist/drive/a">Direct</a></h3>'
+        + '<h5><a href="https://hubdrive.bar/file/8">4K SDR WEB-DL [8GB]</a></h5></div>',
+      'https://hubdrive.bar/file/7': hubDrive('https://hubcloud.ist/drive/a'),
+      'https://hubdrive.bar/file/8': hubDrive('https://hubcloud.ist/drive/b'),
+    });
+
+    const { files } = await scrapeLinks(['https://hblinks.lol/archives/1'], options);
+
+    assert.deepEqual(files.map(({ externalId, label }) => [externalId, label]), [['a', '480p · Drive'], ['b', '4K SDR WEB-DL [8GB]']]);
   });
 
   it('reads each gateway page once, however often it is linked', async () => {

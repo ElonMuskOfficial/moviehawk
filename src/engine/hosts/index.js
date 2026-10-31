@@ -63,7 +63,9 @@ export function externalIdOf(url) {
 /**
  * One file on a host, as a link names it. (Not `File`: Node has a global of that name.)
  *
- * @typedef {{ host: string, externalId: string, url: string }} HostFile
+ * @typedef {{ host: string, externalId: string, url: string, label: string | null }} HostFile
+ *   `label`: what the pages on the way to the file say of it, from the one nearest the post
+ *   ("480p · Drive"); null when none says anything (a link straight to the file).
  */
 
 /**

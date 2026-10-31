@@ -35,13 +35,13 @@ scrape all use it.
 | `link` | a link on a page: its URL (destination not yet known) and its text; `scrapeLinks` takes the URLs | `{ url, label }` |
 | `gateway` | page that leads further | GreenMotors, HUBLinks, HubDrive |
 | `host` | site a file is on | `hubcloud` |
-| `file` | one file on a host | `{ host, externalId, url }` |
+| `file` | one file on a host, with the first label on the way to it | `{ host, externalId, url, label }` |
 | `externalId` | host's own file id | `abc123` |
 | `download` | one way to download a file, from `resolve()` | `{ server, kind, url, label }` |
 | `server` | one server on HubCloud's download page | `10gbps`, `fsl` |
 
 `post`: `{ provider, url, title, year, imdbId, posterUrl, publishedAt }`.
-`file`: `{ host, externalId, url }` (its JSDoc type is `HostFile`: Node already
+`file`: `{ host, externalId, url, label }` (its JSDoc type is `HostFile`: Node already
 has a global `File`).
 
 `const engine = createEngine({ domains })`, then:
