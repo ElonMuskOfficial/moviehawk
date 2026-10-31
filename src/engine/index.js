@@ -3,11 +3,11 @@
  * function per layer of the sites; the consumer makes its own flow from them:
  *
  *   const engine = createEngine({ domains });
- *   engine.scrapeListing(siteUrl, page) → its posts' cards: URL, title, poster
+ *   engine.scrapeListing(siteUrl, page)      → its posts' cards: URL, title, poster
  *   engine.searchPosts(siteUrl, query, page) → the cards of the posts that match
- *   engine.scrapePost(postUrl)          → the post and its links
- *   engine.scrapeLinks(urls)            → the files the links' URLs lead to
- *   engine.resolve(fileUrl)             → the file's name, size and downloads
+ *   engine.scrapePost(postUrl)               → the post and its links
+ *   engine.scrapeLinks(urls)                 → the files the links' URLs lead to
+ *   engine.resolve(fileUrl)                  → the file's name, size and downloads
  *
  * Every function throws EngineError. The engine keeps no state of its own: the config it is made
  * with is all it knows, and it never changes it.

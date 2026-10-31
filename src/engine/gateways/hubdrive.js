@@ -37,7 +37,7 @@ export async function expandHubDrive(url, options) {
   }
   // A real file page states the file's size; a challenge page has a title but no details.
   if (!$('tr').toArray().some((row) => /File Size/i.test($(row).text()))) {
-    throw new EngineError('unrecognized', 'No file details on the HubDrive page', { url });
+    throw new EngineError('unrecognized', 'No file details on the HubDrive file page', { url });
   }
   // Each server is a button inside a heading ("[HubCloud Server]", "Telegram File"). The card's
   // other links are an ad and "Copy Link".

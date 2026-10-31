@@ -56,7 +56,7 @@ export async function resolveHubCloud(url, options) {
   // The link to the download page is the file card's one primary button: `#download` on a
   // /drive/ page, without the id on a /video/ page (live, 2026-10-31: 40 of 40 and 8 of 8).
   const downloadUrl = $file('a.btn-primary[href]').first().prop('href');
-  if (!downloadUrl) throw new EngineError('unrecognized', 'No link to the download page on the HubCloud page', { url });
+  if (!downloadUrl) throw new EngineError('unrecognized', 'No link to the download page on the HubCloud file page', { url });
 
   const downloadPage = await fetchHtml(downloadUrl, options);
   const $ = cheerio.load(downloadPage.html, { baseURI: downloadPage.url });
@@ -74,7 +74,7 @@ export async function resolveHubCloud(url, options) {
 function detailsOf($, url) {
   const filename = $('.card-header').first().text().trim();
   const [, amount, unit] = SIZE.exec($('#size').first().text().trim()) ?? [];
-  if (!filename || !unit) throw new EngineError('unrecognized', 'No file name or size on the HubCloud page', { url });
+  if (!filename || !unit) throw new EngineError('unrecognized', 'No file name or size on the HubCloud file page', { url });
   return { filename, sizeBytes: Math.round(Number(amount) * UNITS[unit]) };
 }
 

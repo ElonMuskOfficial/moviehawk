@@ -145,7 +145,7 @@ describe('resolveHubCloud', () => {
   it('is unrecognized for a file page without its download link, or a download page without servers', async () => {
     const withoutLink = '<div class="card-header">a.mkv</div><ul><li>File Size<i id="size">1.2 GB</i></li></ul>';
     await assert.rejects(resolveHubCloud(URL_HC, answer(withoutLink)), {
-      code: 'unrecognized', url: URL_HC, message: 'No link to the download page on the HubCloud page',
+      code: 'unrecognized', url: URL_HC, message: 'No link to the download page on the HubCloud file page',
     });
     const challenge = '<title>Just a moment...</title><div class="card-body"><h2><a href="https://one.one.one.one">VPN</a></h2></div>';
     await assert.rejects(resolveHubCloud(URL_HC, sites({ downloadPage: challenge })), (error) => {
