@@ -8,8 +8,6 @@ const rot13 = (text) => text.replace(/[a-z]/gi, (c) => String.fromCharCode(((c.c
 const greenMotors = (destination) => `<script>s('o','${base64(base64(rot13(base64(JSON.stringify({ o: base64(destination) })))))}')</script>`;
 const hubLinks = (...links) => `<div class="entry-content">${links.map((link) => `<a href="${link}">Drive</a>`).join('')}</div>`;
 const hubDrive = (link) => `<table><tr><td>File Size</td><td>1 GB</td></tr></table><div class="card-body"><h4><a href="${link}">[HubCloud Server]</a></h4></div>`;
-// A post's links, as scrapePost gives them.
-const postLinks = (...urls) => urls.map((url) => ({ url, statedLanguages: null }));
 
 // A fake web: each URL answers with its page, or with an HTTP status; it records every request.
 function web(pages) {
@@ -31,50 +29,38 @@ describe('scrapeLinks', () => {
       'https://hubdrive.bar/file/7': hubDrive('https://hubcloud.ist/drive/a'),
       'https://hubdrive.bar/file/9': hubDrive('https://hubcloud.ist/drive/c'),
     });
-    const links = postLinks('https://greenmotors.cc/?id=a', 'https://hubcdn.club/file/cdn1', 'https://hubdrive.bar/file/9');
+    const links = ['https://greenmotors.cc/?id=a', 'https://hubcdn.club/file/cdn1', 'https://hubdrive.bar/file/9'];
 
     const { files, failures } = await scrapeLinks(links, options);
 
     assert.deepEqual(files.map(({ host, externalId }) => `${host}:${externalId}`), ['hubcloud:a', 'hubcloud:b', 'hubcdn:cdn1', 'hubcloud:c']);
-    assert.deepEqual(files[0], { host: 'hubcloud', externalId: 'a', url: 'https://hubcloud.ist/drive/a', statedLanguages: null });
+    assert.deepEqual(files[0], { host: 'hubcloud', externalId: 'a', url: 'https://hubcloud.ist/drive/a' });
     assert.deepEqual(failures, []);
   });
 
   it('gives each file once, from the first link that leads to it', async () => {
     // 4KHDHub's HubCloud and HubDrive buttons lead to one file (441 times on 14 live posts).
     const options = web({ 'https://hubdrive.bar/file/7': hubDrive('https://hubcloud.ist/drive/a') });
-    const links = postLinks('https://hubcloud.ist/drive/a', 'https://hubdrive.bar/file/7', 'http://hubcloud.foo/drive/a');
+    const links = ['https://hubcloud.ist/drive/a', 'https://hubdrive.bar/file/7', 'http://hubcloud.foo/drive/a'];
 
     const { files } = await scrapeLinks(links, options);
 
-    assert.deepEqual(files, [{ host: 'hubcloud', externalId: 'a', url: 'https://hubcloud.ist/drive/a', statedLanguages: null }]);
+    assert.deepEqual(files, [{ host: 'hubcloud', externalId: 'a', url: 'https://hubcloud.ist/drive/a' }]);
   });
 
   it('reads each gateway page once, however often it is linked', async () => {
     const options = web({ 'https://hubdrive.bar/file/7': hubDrive('https://hubcloud.ist/drive/a') });
 
-    await scrapeLinks(postLinks('https://hubdrive.bar/file/7', 'https://hubdrive.bar/file/7'), options);
+    await scrapeLinks(['https://hubdrive.bar/file/7', 'https://hubdrive.bar/file/7'], options);
 
     assert.deepEqual(options.requests, ['https://hubdrive.bar/file/7']);
-  });
-
-  it('gives each file the languages the post states for its link', async () => {
-    const options = web({ 'https://hubdrive.bar/file/1': hubDrive('https://hubcloud.ist/drive/h') });
-    const links = [
-      { url: 'https://hubdrive.bar/file/1', statedLanguages: 'Hindi, English' },
-      { url: 'https://hubcloud.ist/drive/k', statedLanguages: 'Korean' },
-    ];
-
-    const { files } = await scrapeLinks(links, options);
-
-    assert.deepEqual(files.map(({ externalId, statedLanguages }) => [externalId, statedLanguages]), [['h', 'Hindi, English'], ['k', 'Korean']]);
   });
 
   it('moves every URL to its site\'s current domain before reading it, files too', async () => {
     const domains = { hblinks: 'https://hblinks.lol', hubcloud: 'https://hubcloud.ist' };
     const options = web({ 'https://hblinks.lol/archives/1': hubLinks('http://hubcloud.foo/drive/a') });
 
-    const { files } = await scrapeLinks(postLinks('https://hblinks.pro/archives/1'), { ...options, domains });
+    const { files } = await scrapeLinks(['https://hblinks.pro/archives/1'], { ...options, domains });
 
     assert.deepEqual(options.requests, ['https://hblinks.lol/archives/1']);
     assert.equal(files[0].url, 'https://hubcloud.ist/drive/a');
@@ -85,7 +71,7 @@ describe('scrapeLinks', () => {
       'https://greenmotors.cc/?id=dead': 'Invalid Link !!',
       'https://hubdrive.bar/file/7': '<h2>File not found !</h2>',
     });
-    const links = postLinks('https://greenmotors.cc/?id=dead', 'https://hubdrive.bar/file/7', 'https://hubcloud.ist/drive/a');
+    const links = ['https://greenmotors.cc/?id=dead', 'https://hubdrive.bar/file/7', 'https://hubcloud.ist/drive/a'];
 
     const { files, failures } = await scrapeLinks(links, options);
 
@@ -100,7 +86,7 @@ describe('scrapeLinks', () => {
     let tries = 0;
     const fetchFn = async () => (++tries === 1 ? new Response('', { status: 503 }) : new Response(hubDrive('https://hubcloud.ist/drive/a')));
 
-    const { files, failures } = await scrapeLinks(postLinks('https://hubdrive.bar/file/7'), { fetch: fetchFn });
+    const { files, failures } = await scrapeLinks(['https://hubdrive.bar/file/7'], { fetch: fetchFn });
 
     assert.equal(tries, 2);
     assert.equal(files.length, 1);
@@ -111,7 +97,7 @@ describe('scrapeLinks', () => {
     const pages = {};
     for (let n = 1; n <= 6; n++) pages[`https://hblinks.lol/archives/${n}`] = hubLinks(`https://hblinks.lol/archives/${n + 1}`);
 
-    const { failures } = await scrapeLinks(postLinks('https://hblinks.lol/archives/1'), web(pages));
+    const { failures } = await scrapeLinks(['https://hblinks.lol/archives/1'], web(pages));
 
     assert.deepEqual(failures.map(({ code, url }) => [code, url]), [['unrecognized', 'https://hblinks.lol/archives/6']]);
   });
@@ -122,7 +108,7 @@ describe('scrapeLinks', () => {
       'https://hubdrive.bar/file/7': hubDrive('https://hubcloud.ist/drive/a'),
       'https://greenmotors.cc/?id=dead': 'Invalid Link !!',
     });
-    const links = postLinks('https://hubdrive.bar/file/7', 'https://wa.me/1', 'https://greenmotors.cc/?id=dead');
+    const links = ['https://hubdrive.bar/file/7', 'https://wa.me/1', 'https://greenmotors.cc/?id=dead'];
 
     await scrapeLinks(links, { ...options, onEvent: (event) => events.push(event) });
 
@@ -142,6 +128,6 @@ describe('scrapeLinks', () => {
       throw reason;
     };
 
-    await assert.rejects(scrapeLinks(postLinks('https://hubdrive.bar/file/7'), { fetch: fetchFn, signal: controller.signal }), (error) => error === reason);
+    await assert.rejects(scrapeLinks(['https://hubdrive.bar/file/7'], { fetch: fetchFn, signal: controller.signal }), (error) => error === reason);
   });
 });

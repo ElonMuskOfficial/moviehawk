@@ -32,11 +32,7 @@ describe('scrapePost', () => {
     const { post, links } = await scrapePost(POST_URL, options);
 
     assert.equal(post.title, 'Show (2026)');
-    assert.deepEqual(links, [
-      { url: 'https://greenmotors.cc/?id=a', statedLanguages: null },
-      { url: 'https://hubcdn.club/file/cdn1', statedLanguages: null },
-      { url: 'https://hubdrive.bar/file/9', statedLanguages: null },
-    ]);
+    assert.deepEqual(links, ['https://greenmotors.cc/?id=a', 'https://hubcdn.club/file/cdn1', 'https://hubdrive.bar/file/9']);
     assert.deepEqual(options.requests, [POST_URL]);
   });
 

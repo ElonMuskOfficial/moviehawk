@@ -1,8 +1,7 @@
 /**
  * 4KHDHub (4khdhub.one): its post pages (/<slug>-<movie|series>-<id>/) and listing pages (/,
  * /page/<n>/). Every file is one block on a post page (`.download-item` for a movie or a season
- * pack, `.episode-download-item` for an episode) with its buttons, and badges naming its size,
- * source and languages.
+ * pack, `.episode-download-item` for an episode) with its buttons.
  */
 import * as cheerio from 'cheerio';
 import { EngineError } from '../errors.js';
@@ -10,12 +9,6 @@ import { fetchHtml } from '../http.js';
 import { jsonLdOf } from '../json-ld.js';
 
 /** @typedef {import('./index.js').Post} Post */
-/** @typedef {import('./index.js').PostLink} PostLink */
-
-// The languages badge is told apart from the others (size, source, codec) by its color, the one
-// thing that marks a badge's kind (live, 2026-10-31: 785 of 785 blocks have one, and it names
-// languages only).
-const LANGUAGES_COLOR = '#0d9488';
 
 /**
  * Reads one 4KHDHub post page. 4KHDHub finds a post by the number at the end of its URL; for a
@@ -24,9 +17,8 @@ const LANGUAGES_COLOR = '#0d9488';
  *
  * @param {string} url - On 4KHDHub's current domain.
  * @param {import('../http.js').RequestOptions} [options]
- * @returns {Promise<{ post: Post, links: PostLink[] }>}
- *   `links`: the buttons of every block, in page order; `statedLanguages`: as the block's badge
- *   states them ("Hindi, English"). The page states no publication date and no IMDb id.
+ * @returns {Promise<{ post: Post, links: string[] }>} `links`: the buttons of every block, in page
+ *   order. The page states no publication date and no IMDb id.
  * @throws {EngineError} `notFound` for 4KHDHub's answer to a missing post; `unrecognized` for a
  *   page without the post's title (a challenge page, a changed layout); and fetchHtml's errors.
  */
@@ -51,13 +43,7 @@ export async function scrape4kHdHubPost(url, options) {
       posterUrl: media?.image ?? null,
       publishedAt: null,
     },
-    links: $('.download-item a[href], .episode-download-item a[href]').toArray().map((a) => ({
-      url: $(a).prop('href'),
-      // An episode's languages are stated once, for its season.
-      statedLanguages: $(a).closest('.download-item, .season-item').find('.badge').toArray()
-        .map((badge) => $(badge))
-        .find((badge) => badge.css('background-color') === LANGUAGES_COLOR)?.text().trim() ?? null,
-    })),
+    links: $('.download-item a[href], .episode-download-item a[href]').toArray().map((a) => $(a).prop('href')),
   };
 }
 

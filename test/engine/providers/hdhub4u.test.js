@@ -7,7 +7,7 @@ const MOVIE_URL = 'https://new10.hdhub4u.cl/wrong-turn-2003-hindi-bluray-full-mo
 // Live pages (2026-10-31): a movie, a series that links TMDB instead of IMDb, and listing page 2.
 const fixture = (name) => readFileSync(new URL(`../../fixtures/hdhub4u-${name}.html`, import.meta.url), 'utf8');
 const answer = (body, status = 200) => ({ fetch: async () => new Response(body, { status }) });
-const hostnamesOf = (links) => links.map(({ url }) => new URL(url).hostname);
+const hostnamesOf = (links) => links.map((url) => new URL(url).hostname);
 
 describe('scrapeHdHub4uPost', () => {
   it('reads a movie post: title, year, IMDb id, poster and publication date', async () => {
@@ -31,7 +31,6 @@ describe('scrapeHdHub4uPost', () => {
       'new10.hdhub4u.cl', 'new10.hdhub4u.cl', 'whatsapp.com', 'www.imdb.com',
       'greenmotors.club', 'greenmotors.club', 'greenmotors.club', 'hubdrive.bar', 'greenmotors.club',
     ]);
-    assert.ok(links.every(({ statedLanguages }) => statedLanguages === null));
   });
 
   it('has no year and no IMDb id for a series that links TMDB in IMDb\'s box', async () => {

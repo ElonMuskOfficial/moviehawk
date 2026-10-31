@@ -30,7 +30,7 @@ scrape all use it.
 | `provider` | source site | `hdhub4u` |
 | `post` | one page of a provider | The Furious |
 | `listing` | page that lists posts | `/page/2/` |
-| `link` | URL on a page, destination not yet known; a post's links also carry the languages the post states for them (`{ url, statedLanguages }`) | a post's button |
+| `link` | URL on a page, destination not yet known | a post's button |
 | `gateway` | page that leads further | GreenMotors, HUBLinks, HubDrive |
 | `host` | site a file is on | `hubcloud` |
 | `file` | one file on a host | `{ host, externalId, url }` |
@@ -39,7 +39,7 @@ scrape all use it.
 | `server` | one server on HubCloud's download page | `10gbps`, `fsl` |
 
 `post`: `{ provider, url, title, year, imdbId, posterUrl, publishedAt }`.
-`file`: `{ host, externalId, url, statedLanguages }` (its JSDoc type is `HostFile`: Node already
+`file`: `{ host, externalId, url }` (its JSDoc type is `HostFile`: Node already
 has a global `File`).
 
 | Function | Reads | Returns |

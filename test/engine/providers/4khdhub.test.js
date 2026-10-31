@@ -7,7 +7,6 @@ const MOVIE_URL = 'https://4khdhub.one/addicted-movie-7869/';
 // Live pages (2026-10-31): a movie, a series (season packs and episodes), and listing page 2.
 const fixture = (name) => readFileSync(new URL(`../../fixtures/4khdhub-${name}.html`, import.meta.url), 'utf8');
 const answer = (body, status = 200) => ({ fetch: async () => new Response(body, { status }) });
-const badge = (text, color) => `<span class="badge" style="background-color: ${color}; color: white;">${text}</span>`;
 
 describe('scrape4kHdHubPost', () => {
   it('reads a movie post: title, year and poster; the page states no date and no IMDb id', async () => {
@@ -24,14 +23,11 @@ describe('scrape4kHdHubPost', () => {
     });
   });
 
-  it('gives every block\'s buttons with the languages its badge states', async () => {
+  it('gives every block\'s buttons, in page order', async () => {
     const { links } = await scrape4kHdHubPost(MOVIE_URL, answer(fixture('movie')));
 
     assert.equal(links.length, 2);
-    for (const { url, statedLanguages } of links) {
-      assert.match(url, /^https:\/\/greenmotors\.club\/\?id=/);
-      assert.equal(statedLanguages, 'English');
-    }
+    for (const url of links) assert.match(url, /^https:\/\/greenmotors\.club\/\?id=/);
   });
 
   it('reads a series: its year from startDate, and the buttons of its packs and episodes', async () => {
@@ -40,22 +36,16 @@ describe('scrape4kHdHubPost', () => {
     assert.equal(post.title, 'Fallen');
     assert.equal(post.year, 2024);
     assert.equal(links.length, 54);
-    assert.ok(links.every(({ statedLanguages }) => statedLanguages === 'English'));
   });
 
-  it('takes an episode\'s languages from its season, and only the languages badge', async () => {
-    const page = `<h1 class="page-title">Show</h1>
-      <div class="season-item"><div class="episode-meta">${badge('Episodes 2', '#ea580c')}${badge('Hindi, Korean', '#0d9488')}</div>
-        <div class="episode-download-item"><a href="https://greenmotors.club/?id=e1">Download HubCloud</a></div></div>
-      <div class="download-item">${badge('7 GB', '#ea580c')}${badge('WEB-DL', '#15803d')}
-        <a href="https://greenmotors.club/?id=pack">Download HubCloud</a></div>`;
+  it('gives the buttons of the blocks only, not the page\'s other links', async () => {
+    const page = `<h1 class="page-title">Show</h1><a href="https://new10.hdhub4u.cl/">HDHub4U Team</a>
+      <div class="season-item"><div class="episode-download-item"><a href="https://greenmotors.club/?id=e1">Download HubCloud</a></div></div>
+      <div class="download-item"><a href="https://greenmotors.club/?id=pack">Download HubCloud</a></div>`;
 
     const { links } = await scrape4kHdHubPost(MOVIE_URL, answer(page));
 
-    assert.deepEqual(links, [
-      { url: 'https://greenmotors.club/?id=e1', statedLanguages: 'Hindi, Korean' },
-      { url: 'https://greenmotors.club/?id=pack', statedLanguages: null },
-    ]);
+    assert.deepEqual(links, ['https://greenmotors.club/?id=e1', 'https://greenmotors.club/?id=pack']);
   });
 
   it('is notFound for 4KHDHub\'s answer to a post it does not have', async () => {

@@ -7,7 +7,6 @@ import { fetchHtml } from '../http.js';
 import { jsonLdOf } from '../json-ld.js';
 
 /** @typedef {import('./index.js').Post} Post */
-/** @typedef {import('./index.js').PostLink} PostLink */
 
 // A movie's title states its year, "Wrong Turn (2003) BluRay ..."; a series' does not,
 // "MobLand (Season 2) ..." (live, 2026-10-31: 15 of 15 movies, 6 of 6 series).
@@ -28,9 +27,8 @@ function imdbIdOf(href) {
  *
  * @param {string} url - On HDHub4u's current domain.
  * @param {import('../http.js').RequestOptions} [options]
- * @returns {Promise<{ post: Post, links: PostLink[] }>}
- *   `links`: every link in the post's body, in page order, as the page gives them (gateways, hosts,
- *   screenshots, IMDb); HDHub4u states no languages per link.
+ * @returns {Promise<{ post: Post, links: string[] }>} `links`: every link in the post's body, in
+ *   page order, as the page gives them (gateways, hosts, screenshots, IMDb).
  * @throws {EngineError} `unrecognized` for a page without the post's title (a challenge page, a
  *   changed layout), and fetchHtml's errors (`notFound`: HDHub4u answers a missing post with
  *   HTTP 404).
@@ -54,7 +52,7 @@ export async function scrapeHdHub4uPost(url, options) {
       posterUrl: body.find('img[src]').first().prop('src') ?? null,
       publishedAt: datePublished ? new Date(datePublished).toISOString() : null,
     },
-    links: body.find('a[href]').toArray().map((a) => ({ url: $(a).prop('href'), statedLanguages: null })),
+    links: body.find('a[href]').toArray().map((a) => $(a).prop('href')),
   };
 }
 
