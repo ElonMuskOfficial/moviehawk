@@ -5,7 +5,7 @@
  */
 import * as cheerio from 'cheerio';
 import { EngineError } from '../errors.js';
-import { linkOf } from '../html.js';
+import { textOf } from '../html.js';
 import { fetchHtml } from '../http.js';
 import { jsonLdOf } from '../json-ld.js';
 
@@ -20,7 +20,8 @@ import { jsonLdOf } from '../json-ld.js';
  * @param {string} url - On 4KHDHub's current domain.
  * @param {import('../http.js').RequestOptions} [options]
  * @returns {Promise<{ post: Post, links: Link[] }>} `links`: the buttons of every block, in page
- *   order; a button's label names its server only ("Download HubCloud"). The page states no
+ *   order, each labelled with its block's file and its own server, as the page states them:
+ *   "Addicted (1080p WEB-DL H264 AVC) 7 GB English WEB-DL · Download HubCloud". The page states no
  *   publication date and no IMDb id.
  * @throws {EngineError} `notFound` for 4KHDHub's answer to a missing post; `unrecognized` for a
  *   page without the post's title (a challenge page, a changed layout); and fetchHtml's errors.
@@ -28,7 +29,7 @@ import { jsonLdOf } from '../json-ld.js';
 export async function scrape4kHdHubPost(url, options) {
   const page = await fetchHtml(url, options);
   const $ = cheerio.load(page.html, { baseURI: page.url });
-  const title = $('h1.page-title').first().text().replace(/\s+/g, ' ').trim();
+  const title = textOf($('h1.page-title').first());
   if (!title) {
     if (isMissingPost(page.html)) throw new EngineError('notFound', '4KHDHub says the post does not exist', { url });
     throw new EngineError('unrecognized', 'No title on the 4KHDHub post page', { url });
@@ -46,7 +47,8 @@ export async function scrape4kHdHubPost(url, options) {
       posterUrl: media?.image ?? null,
       publishedAt: null,
     },
-    links: $('.download-item a[href], .episode-download-item a[href]').toArray().map((a) => linkOf($, a)),
+    links: $('.download-item a[href], .episode-download-item a[href]').toArray()
+      .map((a) => ({ url: $(a).prop('href'), label: `${fileOf($, a)} · ${textOf($(a))}` })),
   };
 }
 
@@ -65,6 +67,19 @@ export async function scrape4kHdHubListing(url, options) {
   const postUrls = $('.card-grid a[href]').toArray().map((a) => $(a).prop('href'));
   if (postUrls.length === 0) throw new EngineError('unrecognized', 'No posts on the 4KHDHub listing page', { url });
   return { postUrls };
+}
+
+/**
+ * What a button's block says of its file; the button itself names only its server. A movie's or a
+ * season pack's block: its header ("Addicted (1080p WEB-DL H264 AVC) 7 GB English WEB-DL"). An
+ * episode's: its season's heading and its own number and size ("S02 1080p WEB-DL H264
+ * Episode-01 4.01 GB"). Live, 2026-10-31: 154 of 154 blocks and 439 of 439 episodes of 30 posts.
+ */
+function fileOf($, a) {
+  const episode = $(a).closest('.episode-download-item');
+  if (episode.length === 0) return textOf($(a).closest('.download-item').find('.download-header .flex-1').first());
+  const season = textOf(episode.closest('.season-item').find('.episode-title').first());
+  return `${season} ${textOf(episode.find('.episode-file-info').first())}`;
 }
 
 /** @returns {boolean} Whether the page is 4KHDHub's answer for a post it does not have. */

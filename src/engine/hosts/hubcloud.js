@@ -5,6 +5,7 @@
  */
 import * as cheerio from 'cheerio';
 import { EngineError } from '../errors.js';
+import { textOf } from '../html.js';
 import { fetchHtml, followRedirects } from '../http.js';
 
 /** @typedef {import('./index.js').Download} Download */
@@ -73,7 +74,7 @@ export async function resolveHubCloud(url, options) {
   // The page's other links (VPN, a tutorial, the site's new domain) sit in the same headings,
   // but are not buttons.
   const buttons = $('.card-body h2 a.btn[href]').toArray()
-    .map((a) => ({ label: $(a).text().replace(/\s+/g, ' ').trim(), url: $(a).prop('href') }));
+    .map((a) => ({ label: textOf($(a)), url: $(a).prop('href') }));
   if (buttons.length === 0) {
     throw new EngineError('unrecognized', 'No servers on the HubCloud download page', { url: downloadUrl });
   }

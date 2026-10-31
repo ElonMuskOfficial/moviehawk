@@ -3,7 +3,7 @@
  */
 import * as cheerio from 'cheerio';
 import { EngineError } from '../errors.js';
-import { linkOf } from '../html.js';
+import { linkOf, textOf } from '../html.js';
 import { fetchHtml } from '../http.js';
 import { jsonLdOf } from '../json-ld.js';
 
@@ -39,7 +39,7 @@ function imdbIdOf(href) {
 export async function scrapeHdHub4uPost(url, options) {
   const page = await fetchHtml(url, options);
   const $ = cheerio.load(page.html, { baseURI: page.url });
-  const title = $('h1.page-title .material-text').first().text().replace(/\s+/g, ' ').trim();
+  const title = textOf($('h1.page-title .material-text').first());
   if (!title) throw new EngineError('unrecognized', 'No title on the HDHub4u post page', { url });
   const body = $('main.page-body').first();
   const datePublished = jsonLdOf($, ['BlogPosting'])?.datePublished;

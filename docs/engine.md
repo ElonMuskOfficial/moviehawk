@@ -63,7 +63,10 @@ has a global `File`).
 - `failures` is a list of `EngineError` (each has `code`, `url`, `status`); the consumer decides
   what they mean (no `outcome`).
 - `scrapePost`'s `links` are the post's links to a gateway or a known host (not WhatsApp, IMDb, the
-  site's own pages); none can be a glitch of the site.
+  site's own pages); none can be a glitch of the site. A link's `label` is what the page says it
+  is: HDHub4u's button states its file (`720p x264 [850MB]`; an episode line's only its server,
+  `Drive`); a 4KHDHub button names only its server, so its label is its block's file and then the
+  button (`Addicted (1080p WEB-DL H264 AVC) 7 GB English WEB-DL · Download HubCloud`).
 - `scrapeLinks` follows a link through at most 5 gateways in a row (live: 3 at most), reads each
   gateway page once, and reads all pages at once, with no limit: the sites answered 1,088
   requests at once (5 series together) with HTTP 200 only (2026-10-31). Each page is retried.

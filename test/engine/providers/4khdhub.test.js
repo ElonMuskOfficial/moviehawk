@@ -23,19 +23,24 @@ describe('scrape4kHdHubPost', () => {
     });
   });
 
-  it('gives every block\'s buttons, in page order', async () => {
+  it('gives every block\'s buttons, in page order, labelled with their file and server', async () => {
     const { links } = await scrape4kHdHubPost(MOVIE_URL, answer(fixture('movie')));
 
-    assert.deepEqual(links.map(({ label }) => label), ['Download HubCloud', 'Download HubDrive']);
+    assert.deepEqual(links.map(({ label }) => label), [
+      'Addicted (1080p WEB-DL H264 AVC) 7 GB English WEB-DL · Download HubCloud',
+      'Addicted (1080p WEB-DL H264 AVC) 7 GB English WEB-DL · Download HubDrive',
+    ]);
     for (const { url } of links) assert.match(url, /^https:\/\/greenmotors\.club\/\?id=/);
   });
 
-  it('reads a series: its year from startDate, and the buttons of its packs and episodes', async () => {
+  it('reads a series: its year from startDate, and the buttons of its packs and episodes, labelled', async () => {
     const { post, links } = await scrape4kHdHubPost('https://4khdhub.one/fallen-series-7872/', answer(fixture('series')));
 
     assert.equal(post.title, 'Fallen');
     assert.equal(post.year, 2024);
     assert.equal(links.length, 54);
+    assert.equal(links[0].label, 'Fallen S01 AVC (AMZN 1080p WEB-DL H264) 24.26 GB English WEB-DL · Download HubCloud');
+    assert.equal(links.at(-1).label, 'S01 1080p WEB-DL AV1 Episode-08 756.33 MB · Download HubDrive');
   });
 
   it('gives the buttons of the blocks only, not the page\'s other links', async () => {
