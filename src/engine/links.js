@@ -49,25 +49,29 @@ export async function scrapeLinks(urls, { domains = {}, onEvent = () => {}, ...o
   // Gateway pages, each read once (a post links some twice), for the link that reaches it first:
   // its files take that link's place.
   const readPages = new Set();
-  const found = new Map(); // Files by "host:externalId", with the position of the link that found it first.
   const failures = [];
   const report = (type, url, detail = null) => onEvent({ type, url, detail });
+  const skip = (url, reason) => {
+    report('skipped', url, reason);
+    return [];
+  };
   const fail = (error) => {
     failures.push(error);
     report('failure', error.url, `${error.code}: ${error.message}`);
+    return [];
   };
 
-  // `target`: a URL as given, before it is moved to its current domain. `order`: its position,
-  // page by page, so files keep the links' order although pages load at once. `label`: the first
-  // label on its way.
-  const follow = async (target, order, label = null) => {
+  // The files `target` leads to, in page order: Promise.all keeps it, although pages load at once.
+  // `target`: a URL as given, before it is moved to its current domain. `gateways`: how many it has
+  // passed. `label`: the first label on its way.
+  const follow = async (target, gateways, label = null) => {
     const parsed = webUrlOf(target);
-    if (!parsed) return report('skipped', target, 'not a web URL');
+    if (!parsed) return skip(target, 'not a web URL');
     const url = onCurrentDomain(parsed, domains);
     const gateway = gatewayOf(url);
     if (gateway) {
-      if (readPages.has(url)) return report('skipped', url, 'page read already');
-      if (order.length > MAX_GATEWAYS) return fail(new EngineError('unrecognized', `More than ${MAX_GATEWAYS} gateways in a row`, { url }));
+      if (readPages.has(url)) return skip(url, 'page read already');
+      if (gateways === MAX_GATEWAYS) return fail(new EngineError('unrecognized', `More than ${MAX_GATEWAYS} gateways in a row`, { url }));
       readPages.add(url);
       let next;
       try {
@@ -77,26 +81,21 @@ export async function scrapeLinks(urls, { domains = {}, onEvent = () => {}, ...o
         return fail(error);
       }
       report('gateway', url, `${gateway.label}: ${next.length} links`);
-      await Promise.all(next.map((link, i) => follow(link.url, [...order, i], label ?? link.label)));
-      return;
+      const files = await Promise.all(next.map((link) => follow(link.url, gateways + 1, label ?? link.label)));
+      return files.flat();
     }
     const host = hostOf(url)?.id;
     const externalId = externalIdOf(url);
-    if (!externalId) return report('skipped', url, host ? 'names no file' : 'no known host');
-    const key = `${host}:${externalId}`;
-    const known = found.get(key);
-    if (known && compareOrder(known.order, order) <= 0) return report('skipped', url, 'file found already');
-    found.set(key, { order, file: { host, externalId, url, label } });
+    if (!externalId) return skip(url, host ? 'names no file' : 'no known host');
     report('file', url, host);
+    return [{ host, externalId, url, label }];
   };
 
-  await Promise.all(urls.map((url, i) => follow(url, [i])));
-  const files = [...found.values()].sort((a, b) => compareOrder(a.order, b.order)).map(({ file }) => file);
-  return { files, failures };
-}
-
-/** Order of two link positions: [2, 0] comes before [2, 1] and before [3]. */
-function compareOrder(a, b) {
-  for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return a[i] - b[i];
-  return a.length - b.length;
+  const files = new Map(); // By "host:externalId": each file as the first link reaches it.
+  for (const file of (await Promise.all(urls.map((url) => follow(url, 0)))).flat()) {
+    const key = `${file.host}:${file.externalId}`;
+    if (files.has(key)) skip(file.url, 'file found already');
+    else files.set(key, file);
+  }
+  return { files: [...files.values()], failures };
 }
