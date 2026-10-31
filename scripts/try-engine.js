@@ -1,6 +1,7 @@
 /**
  * Runs the engine on one live post page, to see what it gives: node scripts/try-engine.js
- * Change POST_URL to try another post, and url to follow another link.
+ * Change POST_URL to try another post, url to follow another link, and fileUrl to resolve another
+ * file.
  */
 import { createEngine } from '../src/engine/index.js';
 
@@ -30,3 +31,10 @@ console.log(`\nFollowing ${url}`);
 const { files, failures } = await engine.scrapeLinks([url]);
 console.log(`${files.length} files:`, files);
 console.log(`${failures.length} failures:`, failures.map(({ code, url, message }) => ({ code, url, message })));
+
+// Step 3: the downloads of the selected file, such as one of step 2's: files[0].url (HubCloud only).
+const fileUrl = 'https://hubcloud.ist/drive/d191b9adqj9q9zw';
+console.log(`\nResolving ${fileUrl}`);
+const { filename, sizeBytes, downloads } = await engine.resolve(fileUrl);
+console.log({ filename, sizeBytes });
+console.log(`${downloads.length} downloads:`, downloads);
