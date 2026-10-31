@@ -7,20 +7,24 @@
  * - `unrecognized`: a page the engine cannot read: a changed layout or a challenge page;
  * - `unsupported`: a URL no provider or host of the engine handles.
  */
+const CODES = new Set(['notFound', 'transient', 'unrecognized', 'unsupported']);
+
 export class EngineError extends Error {
   /**
    * @param {'notFound' | 'transient' | 'unrecognized' | 'unsupported'} code
    * @param {string} message
-   * @param {{ url?: string | null, host?: string | null, status?: number | null, cause?: unknown }} [details]
-   *   `host`: the provider, gateway or host whose page failed; `status`: the HTTP status, if any;
-   *   `cause`: the error underneath (a network error, a timeout).
+   * @param {{ url?: string | null, status?: number | null, cause?: unknown }} [details]
+   *   `url`: the page that failed; `status`: its HTTP status, if any; `cause`: the error
+   *   underneath (a network error, a timeout).
+   * @throws {TypeError} For a code that is not one of the four: a caller comparing codes would
+   *   never match it.
    */
-  constructor(code, message, { url = null, host = null, status = null, cause } = {}) {
+  constructor(code, message, { url = null, status = null, cause } = {}) {
+    if (!CODES.has(code)) throw new TypeError(`Unknown EngineError code: ${code}`);
     super(message, cause === undefined ? undefined : { cause });
     this.name = 'EngineError';
     this.code = code;
     this.url = url;
-    this.host = host;
     this.status = status;
   }
 }
