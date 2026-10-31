@@ -1,6 +1,6 @@
 /**
  * Runs the engine on one live post page, to see what it gives: node scripts/try-engine.js
- * Change POST_URL to try another post, and link to follow another link.
+ * Change POST_URL to try another post, and url to follow another link.
  */
 import { createEngine } from '../src/engine/index.js';
 

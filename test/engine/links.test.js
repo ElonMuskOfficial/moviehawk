@@ -120,9 +120,19 @@ describe('scrapeLinks', () => {
     ]);
   });
 
-  it('is a TypeError for a URL that is not a string, without a request', async () => {
+  it('skips a gateway page\'s link that is no web URL, as the site gave it', async () => {
+    // A HUBLinks page that offers a torrent (live, 2026-10-31).
+    const options = web({ 'https://hblinks.lol/archives/1': hubLinks('magnet:?xt=urn:btih:91e6', 'https://hubcloud.ist/drive/a') });
+
+    const { files, failures } = await scrapeLinks(['https://hblinks.lol/archives/1'], options);
+
+    assert.deepEqual(files.map(({ externalId }) => externalId), ['a']);
+    assert.deepEqual(failures, []);
+  });
+
+  it('is a TypeError for a URL that is not a web URL, without a request', async () => {
     const options = web({});
-    for (const urls of [[{ url: 'https://hubdrive.bar/file/7', label: 'Drive' }], [null], [7]]) {
+    for (const urls of [['hhttps://hubdrive.bar/file/7'], [{ url: 'https://hubdrive.bar/file/7', label: 'Drive' }], [undefined]]) {
       await assert.rejects(scrapeLinks(urls, options), TypeError);
     }
     assert.deepEqual(options.requests, []);

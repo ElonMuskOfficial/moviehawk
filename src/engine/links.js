@@ -34,13 +34,13 @@ const MAX_GATEWAYS = 5;
  * @returns {Promise<{ files: HostFile[], failures: EngineError[] }>} `failures`: every page that did
  *   not lead on, such as a dead GreenMotors link (`notFound`) or a stalled HubDrive (`transient`);
  *   the files of every other link are there.
- * @throws {TypeError} For a URL that is not a string, such as a link `{ url, label }`: it would be
- *   skipped as if the page linked nothing.
+ * @throws {TypeError} For one of `urls` that is not a web URL (a typo, a link `{ url, label }`):
+ *   it would be skipped as if the page linked nothing. A URL a gateway page gives is the site's,
+ *   and is skipped instead.
  * @throws {unknown} The caller's own reason, as it is, when the caller cancels (`signal`).
  */
 export async function scrapeLinks(urls, { domains = {}, onEvent = () => {}, ...options } = {}) {
-  const notUrl = urls.find((url) => typeof url !== 'string');
-  if (notUrl !== undefined) throw new TypeError(`Not a URL string: ${JSON.stringify(notUrl)}`);
+  for (const url of urls) if (!webUrlOf(url)) throw new TypeError(`Not a web URL: ${url}`);
   // Gateway pages, each read once (a post links some twice), for the link that reaches it first:
   // its files take that link's place.
   const readPages = new Set();
