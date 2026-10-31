@@ -14,7 +14,7 @@ import { onCurrentDomain, webUrlOf } from './urls.js';
 const MAX_GATEWAYS = 5;
 
 /**
- * @typedef {{ host: string, externalId: string, url: string }} HostFile
+ * @typedef {import('./hosts/index.js').HostFile} HostFile
  * @typedef {{ type: 'gateway' | 'file' | 'skipped' | 'failure', url: string, detail: string | null }} EngineEvent
  */
 

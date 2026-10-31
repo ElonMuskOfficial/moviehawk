@@ -15,7 +15,7 @@ import { onCurrentDomain, webUrlOf } from './urls.js';
  * @param {import('./http.js').RequestOptions & { domains?: Record<string, string> }} [options]
  *   `domains`: as for onCurrentDomain (urls.js).
  * @returns {Promise<{ post: import('./providers/index.js').Post, links: import('./html.js').Link[] }>}
- *   `links`: the post's links to a gateway or a known host, in page order, with their labels; none can be a glitch of
+ *   `links`: the post's links to a gateway or a known host, in page order; none can be a glitch of
  *   the site. The others (the site's own pages, WhatsApp, IMDb, screenshots) are left out.
  * @throws {EngineError} `unsupported` for a URL on no site the engine reads, and the provider's
  *   errors.

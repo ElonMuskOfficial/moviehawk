@@ -1,5 +1,5 @@
 /**
- * A provider's listing pages, read by its provider: the posts on one page, newest first.
+ * A provider's listing pages, read by its provider: the posts on one page.
  */
 import { EngineError } from './errors.js';
 import { retry } from './http.js';

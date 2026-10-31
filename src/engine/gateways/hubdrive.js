@@ -17,8 +17,8 @@ const DELETED = /^(?:File not found|The file has been deleted)\b/i;
  *
  * @param {string} url - On HubDrive's current domain (older posts link hubdrive.live, which is gone).
  * @param {import('../http.js').RequestOptions} [options]
- * @returns {Promise<{ links: import('../html.js').Link[] }>} A file page: its server buttons' links; none when the file
- *   has no server (an answer, not a failure). A pack page: its rows' file pages.
+ * @returns {Promise<{ links: import('../html.js').Link[] }>} A file page: its server buttons; none
+ *   when the file has no server (an answer, not a failure). A pack page: its rows' file pages.
  * @throws {EngineError} `notFound` for HubDrive's deleted page; `unrecognized` for a file page
  *   without the file's details (a challenge page) or a pack without rows; and fetchHtml's errors.
  */

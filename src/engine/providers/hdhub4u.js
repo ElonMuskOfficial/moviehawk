@@ -59,11 +59,7 @@ export async function scrapeHdHub4uPost(url, options) {
       posterUrl: body.find('img[src]').first().prop('src') ?? null,
       publishedAt: datePublished ? new Date(datePublished).toISOString() : null,
     },
-    links: body.find('a[href]').toArray().map((a) => {
-      const link = linkOf($, a);
-      const file = fileOf($, a);
-      return file ? { ...link, label: `${file} · ${link.label}` } : link;
-    }),
+    links: body.find('a[href]').toArray().map((a) => linkOf($, a, fileOf($, a))),
   };
 }
 
@@ -74,7 +70,8 @@ export async function scrapeHdHub4uPost(url, options) {
  * 2026-10-31: 480 links of 38 posts); or each episode as a line, "EPiSODE 1 | WATCH". A button
  * alone in its heading ("720p x264 [850MB]") states its file itself.
  *
- * @returns {string} Such as "EPiSODE 1 720p"; empty when the line names no file ("WATCH | PLAYER-2").
+ * @returns {string} Such as "EPiSODE 1 720p"; empty when the button states its file itself, or
+ *   its line names none ("WATCH | PLAYER-2").
  */
 function fileOf($, a) {
   // Button lines are headings; a link in a paragraph is in the post's prose.
@@ -93,8 +90,8 @@ function fileOf($, a) {
   const first = line.find('a[href]').first();
   const quality = textBefore(line[0], first[0]).replace(/\s+/g, ' ').replace(/[\s–-]+$/, '').trim();
   if (episode || quality) return [episode, quality].filter(Boolean).join(' ');
-  // A line of its own episode: "EPiSODE 1 | WATCH" (live: 102 lines on 46 posts); its players are the
-  // episode's. A line of players only, "WATCH | PLAYER-2", names no file.
+  // A line of its own episode: "EPiSODE 1 | WATCH" (live: 102 lines on 46 posts); its players are
+  // the episode's. A line of players only, "WATCH | PLAYER-2", names no file.
   return first[0] !== a && EPISODE.test(textOf(first)) ? textOf(first) : '';
 }
 

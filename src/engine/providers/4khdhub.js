@@ -5,7 +5,7 @@
  */
 import * as cheerio from 'cheerio';
 import { EngineError } from '../errors.js';
-import { textOf } from '../html.js';
+import { linkOf, textOf } from '../html.js';
 import { fetchHtml } from '../http.js';
 import { jsonLdOf } from '../json-ld.js';
 
@@ -47,8 +47,7 @@ export async function scrape4kHdHubPost(url, options) {
       posterUrl: media?.image ?? null,
       publishedAt: null,
     },
-    links: $('.download-item a[href], .episode-download-item a[href]').toArray()
-      .map((a) => ({ url: $(a).prop('href'), label: `${fileOf($, a)} · ${textOf($(a))}` })),
+    links: $('.download-item a[href], .episode-download-item a[href]').toArray().map((a) => linkOf($, a, fileOf($, a))),
   };
 }
 
@@ -56,9 +55,9 @@ export async function scrape4kHdHubPost(url, options) {
 const LISTING_PAGE = /^\/page\/(\d+)\/?$/;
 
 /**
- * Reads one 4KHDHub listing page: its grid of posts. A page after the last answers HTTP 200, without
- * posts, and its pagination marks the last page as the current one (live, 2026-10-31: /page/408/
- * and /page/99999/ both mark 407).
+ * Reads one 4KHDHub listing page: its grid of posts. A page after the last answers HTTP 200,
+ * without posts, and its pagination marks the last page as the current one (live, 2026-10-31:
+ * /page/408/ and /page/99999/ both mark 407).
  *
  * @param {string} url - Such as "https://4khdhub.one/page/2/".
  * @param {import('../http.js').RequestOptions} [options]
@@ -72,7 +71,7 @@ export async function scrape4kHdHubListing(url, options) {
   const requested = Number(LISTING_PAGE.exec(new URL(url).pathname)?.[1] ?? 1);
   const current = Number(textOf($('.pagination .pagination-item.active').first()));
   if (current && current !== requested) {
-    throw new EngineError('notFound', `4KHDHub has no listing page ${requested}; its last is ${current}`, { url });
+    throw new EngineError('notFound', `4KHDHub says listing page ${requested} does not exist (its last is ${current})`, { url });
   }
   const postUrls = $('.card-grid a[href]').toArray().map((a) => $(a).prop('href'));
   if (postUrls.length === 0) throw new EngineError('unrecognized', 'No posts on the 4KHDHub listing page', { url });
@@ -84,6 +83,8 @@ export async function scrape4kHdHubListing(url, options) {
  * season pack's block: its header ("Addicted (1080p WEB-DL H264 AVC) 7 GB English WEB-DL"). An
  * episode's: its season's heading and its own number and size ("S02 1080p WEB-DL H264
  * Episode-01 4.01 GB"). Live, 2026-10-31: 154 of 154 blocks and 439 of 439 episodes of 30 posts.
+ *
+ * @returns {string}
  */
 function fileOf($, a) {
   const episode = $(a).closest('.episode-download-item');

@@ -20,8 +20,10 @@ export function textOf(element) {
 /**
  * @param {import('cheerio').CheerioAPI} $ - The page, loaded with its address as `baseURI`.
  * @param {object} a - One of its `a[href]` elements.
- * @returns {Link} Labelled with the link's own text.
+ * @param {string} [file] - What the page says of the link's file, for a button that names only its
+ *   server: the label is then "<file> · <the button's text>", "EPiSODE 1 720p · Drive".
+ * @returns {Link}
  */
-export function linkOf($, a) {
-  return { url: $(a).prop('href'), label: textOf($(a)) || null };
+export function linkOf($, a, file = '') {
+  return { url: $(a).prop('href'), label: [file, textOf($(a))].filter(Boolean).join(' · ') || null };
 }

@@ -86,6 +86,12 @@ export async function scrapeFile(url, options) {
 }
 
 /**
+ * One file on a host, as a link names it. (Not `File`: Node has a global of that name.)
+ *
+ * @typedef {{ host: string, externalId: string, url: string }} HostFile
+ */
+
+/**
  * One way to download a file, as the host's download page offers it.
  *
  * @typedef {{ server: string, kind: 'direct' | 'page', url: string, label: string }} Download
