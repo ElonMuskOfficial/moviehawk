@@ -33,12 +33,33 @@ describe('scrapeHdHub4uPost', () => {
     ]);
   });
 
-  it('labels each link with its text on the page', async () => {
+  it('labels a button alone in its heading with its own text', async () => {
     const { links } = await scrapeHdHub4uPost(MOVIE_URL, answer(fixture('movie')));
 
     assert.deepEqual(links.slice(4).map(({ label }) => label), [
       '480p⚡[320MB]', '720p x264 [850MB]', '1080p x264 [1.7GB]', '1080p BluRay [20.42GB]', 'Watch Online',
     ]);
+  });
+
+  it('labels an episode line\'s buttons with the episode, the line\'s quality and the button', async () => {
+    const { links } = await scrapeHdHub4uPost(MOVIE_URL, answer(fixture('series')));
+
+    assert.deepEqual(links.map(({ label }) => label).filter((label) => label?.startsWith('EPiSODE 1 ')), [
+      'EPiSODE 1 720p · Drive', 'EPiSODE 1 720p · Instant', 'EPiSODE 1 720p · WATCH',
+      'EPiSODE 1 1080p · Drive', 'EPiSODE 1 1080p · Instant',
+    ]);
+  });
+
+  it('labels with its own text a button whose line or heading names no file', async () => {
+    // Shapes of live posts (2026-10-31): an episode line right under the ": DOWNLOAD LINKS :" box,
+    // and a link in the post's prose.
+    const page = `<h1 class="page-title"><span class="material-text">Show</span></h1><main class="page-body">
+      <div>: DOWNLOAD LINKS :</div><h3><a href="https://greenmotors.club/?id=1">EPiSODE 1</a> | <a href="https://hubstream.art/#a">WATCH</a></h3>
+      <p>Download Show in Hindi <a href="https://greenmotors.club/?id=2">HDHub4u</a></p></main>`;
+
+    const { links } = await scrapeHdHub4uPost(MOVIE_URL, answer(page));
+
+    assert.deepEqual(links.map(({ label }) => label), ['EPiSODE 1', 'WATCH', 'HDHub4u']);
   });
 
   it('has no year and no IMDb id for a series that links TMDB in IMDb\'s box', async () => {
