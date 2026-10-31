@@ -74,9 +74,10 @@ has a global `File`).
   the button: HDHub4u's episode lines (`EPiSODE 1 720p · Drive`, `EPiSODE 1 · WATCH`), 4KHDHub's
   blocks (`Addicted (1080p WEB-DL H264 AVC) 7 GB English WEB-DL · Download HubCloud`). A movie's
   players (`WATCH`, `PLAYER-2`) name no file.
-- `scrapeLinks` follows a link through at most 5 gateways in a row (live: 3 at most), reads each
-  gateway page once, and reads all pages at once, with no limit: the sites answered 1,088
-  requests at once (5 series together) with HTTP 200 only (2026-10-31). Each page is retried.
+- `scrapeLinks` follows a link through its gateways (live: 3 at most) and reads each gateway page
+  once, so a gateway that leads back to a page read already ends there. It reads all pages at
+  once, with no limit: the sites answered 1,088 requests at once (5 series together) with HTTP 200
+  only (2026-10-31). Each page is retried.
 - `domains`: the current domain of each site whose domain rotates, by its hostname label
   (`{ hblinks: 'https://hblinks.lol' }`); every URL is moved to it before it is read.
 - Nothing found is an empty result (`files: []`, a search's `posts: []`), not an error.
@@ -112,7 +113,7 @@ First look at Vegamovies and RogMovies:
 - VCloud's and VegaDrive's pages state the filename and size, like HubCloud's. G-Direct's page
   says only "redirecting...". Filepress did not answer.
 - So the route has the same shape as HDHub4u's (post → gateway → host): piece 8 follows the links a
-  gateway returns until they reach a host, with a depth limit, instead of a fixed list of steps.
+  gateway returns until they reach a host, instead of a fixed list of steps.
 
 Wide survey (2026-10-31: 3 listing pages and 20 posts per site, all four sites):
 

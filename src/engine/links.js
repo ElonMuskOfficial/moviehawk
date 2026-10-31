@@ -8,11 +8,6 @@ import { externalIdOf, hostOf } from './hosts/index.js';
 import { retry } from './http.js';
 import { onCurrentDomain, webUrlOf } from './urls.js';
 
-// Gateways in a row a link may pass before the engine stops following it, so a gateway that
-// leads to itself under new URLs cannot keep it busy. Live, a link passes at most 3
-// (GreenMotors → HUBLinks → HubDrive → HubCloud, 2026-10-31: 1,122 pages of 14 posts).
-const MAX_GATEWAYS = 5;
-
 /**
  * @typedef {import('./hosts/index.js').HostFile} HostFile
  * @typedef {{ type: 'gateway' | 'file' | 'skipped' | 'failure', url: string, detail: string | null }} EngineEvent
@@ -47,7 +42,7 @@ const MAX_GATEWAYS = 5;
 export async function scrapeLinks(urls, { domains = {}, onEvent = () => {}, ...options } = {}) {
   for (const url of urls) if (!webUrlOf(url)) throw new TypeError(`Not a web URL: ${url}`);
   // Gateway pages, each read once (a post links some twice), for the link that reaches it first:
-  // its files take that link's place.
+  // its files take that link's place. A gateway that leads back to a page read already ends there.
   const readPages = new Set();
   const failures = [];
   const report = (type, url, detail = null) => onEvent({ type, url, detail });
@@ -62,16 +57,15 @@ export async function scrapeLinks(urls, { domains = {}, onEvent = () => {}, ...o
   };
 
   // The files `target` leads to, in page order: Promise.all keeps it, although pages load at once.
-  // `target`: a URL as given, before it is moved to its current domain. `gateways`: how many it has
-  // passed. `label`: the first label on its way.
-  const follow = async (target, gateways, label = null) => {
+  // `target`: a URL as given, before it is moved to its current domain. `label`: the first label
+  // on its way.
+  const follow = async (target, label = null) => {
     const parsed = webUrlOf(target);
     if (!parsed) return skip(target, 'not a web URL');
     const url = onCurrentDomain(parsed, domains);
     const gateway = gatewayOf(url);
     if (gateway) {
       if (readPages.has(url)) return skip(url, 'page read already');
-      if (gateways === MAX_GATEWAYS) return fail(new EngineError('unrecognized', `More than ${MAX_GATEWAYS} gateways in a row`, { url }));
       readPages.add(url);
       let next;
       try {
@@ -81,7 +75,7 @@ export async function scrapeLinks(urls, { domains = {}, onEvent = () => {}, ...o
         return fail(error);
       }
       report('gateway', url, `${gateway.label}: ${next.length} links`);
-      const files = await Promise.all(next.map((link) => follow(link.url, gateways + 1, label ?? link.label)));
+      const files = await Promise.all(next.map((link) => follow(link.url, label ?? link.label)));
       return files.flat();
     }
     const host = hostOf(url)?.id;
@@ -92,7 +86,7 @@ export async function scrapeLinks(urls, { domains = {}, onEvent = () => {}, ...o
   };
 
   const files = new Map(); // By "host:externalId": each file as the first link reaches it.
-  for (const file of (await Promise.all(urls.map((url) => follow(url, 0)))).flat()) {
+  for (const file of (await Promise.all(urls.map((url) => follow(url)))).flat()) {
     const key = `${file.host}:${file.externalId}`;
     if (files.has(key)) skip(file.url, 'file found already');
     else files.set(key, file);

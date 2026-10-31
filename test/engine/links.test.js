@@ -108,13 +108,16 @@ describe('scrapeLinks', () => {
     assert.deepEqual(failures, []);
   });
 
-  it('stops following a link after 5 gateways in a row', async () => {
-    const pages = {};
-    for (let n = 1; n <= 6; n++) pages[`https://hblinks.lol/archives/${n}`] = hubLinks(`https://hblinks.lol/archives/${n + 1}`);
+  it('ends at a gateway that leads back to a page read already', async () => {
+    const options = web({
+      'https://hblinks.lol/archives/1': hubLinks('https://hblinks.lol/archives/2'),
+      'https://hblinks.lol/archives/2': hubLinks('https://hblinks.lol/archives/1'),
+    });
 
-    const { failures } = await scrapeLinks(['https://hblinks.lol/archives/1'], web(pages));
+    const { files, failures } = await scrapeLinks(['https://hblinks.lol/archives/1'], options);
 
-    assert.deepEqual(failures.map(({ code, url }) => [code, url]), [['unrecognized', 'https://hblinks.lol/archives/6']]);
+    assert.deepEqual([files, failures], [[], []]);
+    assert.equal(options.requests.length, 2);
   });
 
   it('reports what happened to each link', async () => {
