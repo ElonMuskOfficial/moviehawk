@@ -163,11 +163,10 @@ describe('retry', () => {
     assert.equal(calls, 1);
   });
 
-  it('refuses attempts and delays that would never end or make no sense, before any try', async () => {
-    for (const options of [{ attempts: NaN }, { attempts: 0 }, { attempts: 2.5 }, { attempts: Infinity }, { attempts: '3' },
-      { delayMs: NaN }, { delayMs: -1 }, { delayMs: Infinity }]) {
+  it('refuses a number of attempts that would never end the loop, before any try', async () => {
+    for (const attempts of [NaN, Infinity, 0, 2.5, '3']) {
       const { fn, calls } = failing(['transient']);
-      await assert.rejects(retry(fn, options), TypeError);
+      await assert.rejects(retry(fn, { attempts }), TypeError);
       assert.equal(calls(), 0);
     }
   });

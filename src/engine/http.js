@@ -66,12 +66,11 @@ export async function fetchHtml(url, { fetch: fetchFn = fetch, timeoutMs = 8000,
  * @param {{ attempts?: number, delayMs?: number, signal?: AbortSignal }} [options] `signal` also
  *   ends a wait between tries.
  * @returns {Promise<T>}
- * @throws {TypeError} When `attempts` is not a whole number of at least 1 (NaN would never end the
- *   loop), or `delayMs` is not a number of at least 0.
+ * @throws {TypeError} When `attempts` is not a whole number of at least 1: NaN would never end the
+ *   loop.
  */
 export async function retry(fn, { attempts = 3, delayMs = 1000, signal } = {}) {
   if (!Number.isInteger(attempts) || attempts < 1) throw new TypeError(`attempts must be a whole number of at least 1: ${attempts}`);
-  if (!Number.isFinite(delayMs) || delayMs < 0) throw new TypeError(`delayMs must be a number of at least 0: ${delayMs}`);
   for (let attempt = 1; ; attempt++) {
     try {
       return await fn();
