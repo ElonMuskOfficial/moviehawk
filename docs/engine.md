@@ -9,8 +9,9 @@ scrape all use it.
 
 - Lives in `src/engine/`. Consumers import only `src/engine/index.js`.
 - No database, cache or logging in the engine.
-- Configuration comes in from outside, on every call: `{ domains, fetch, timeoutMs, signal }`. No
-  `createEngine`: binding `domains` once is a line of the consumer's (`const options = { domains }`).
+- Configuration comes in from outside, once: `createEngine({ domains, fetch, timeoutMs })` gives the
+  functions below, each with that config, so no call can read dead domains for lack of `domains`.
+  A call's own options are `signal`, and `onEvent` for `scrapeLinks`.
 - `scrapeLinks` returns every file it reaches (HubCloud, HubCDN, GoFile, ...), each once.
 - The engine gives one function per layer of the sites (listing, post, links, file); the consumer
   makes its own flow from them: the crawler follows every link of a post, another consumer only the ones its user picks.
@@ -42,6 +43,8 @@ scrape all use it.
 `post`: `{ provider, url, title, year, imdbId, posterUrl, publishedAt }`.
 `file`: `{ host, externalId, url }` (its JSDoc type is `HostFile`: Node already
 has a global `File`).
+
+`const engine = createEngine({ domains })`, then:
 
 | Function | Reads | Returns |
 |---|---|---|
@@ -159,9 +162,9 @@ running until the engine is done and the consumers use it.
 9. `scrapeListing` (`src/engine/listings.js`): page 1 is `/`, page n `/page/<n>/`; `notFound`
    after the last page on both sites (HDHub4u: HTTP 404; 4KHDHub: its pagination marks another
    page as the current one).
-10. `src/engine/index.js`, the one entry; `scrapeFile` and `resolve` (`src/engine/files.js`) move a
-    stored file to its host's current domain (hubcloud.foo → hubcloud.ist) and retry, like the
-    other functions.
+10. `createEngine` (`src/engine/index.js`), the one entry. `scrapeFile` and `resolve`
+    (`src/engine/files.js`) move a stored file to its host's current domain (hubcloud.foo →
+    hubcloud.ist) and retry, like the other functions.
 11. Live check on both sites: the new engine's results against `master`'s.
 
 After that, the consumers (crawler, API, bot) move to the engine.

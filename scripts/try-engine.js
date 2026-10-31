@@ -2,7 +2,7 @@
  * Runs the engine on one live post page, to see what it gives: node scripts/try-engine.js
  * Change POST_URL to try another post.
  */
-import { scrapePost } from '../src/engine/index.js';
+import { createEngine } from '../src/engine/index.js';
 
 const POST_URL = 'https://new10.hdhub4u.cl/akka-season-1-hindi-webrip-full-series/';
 
@@ -12,6 +12,7 @@ const domains = {
   '4khdhub': 'https://4khdhub.one',
 };
 
-const { post, links } = await scrapePost(POST_URL, { domains });
+const engine = createEngine({ domains });
+const { post, links } = await engine.scrapePost(POST_URL);
 console.log(post);
 console.log(`${links.length} links:`, links);
