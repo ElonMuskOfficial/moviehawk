@@ -40,7 +40,7 @@ describe('liveConfig', () => {
   });
 
   it('starts with the fallback domains when GitHub fails, or gives domains it cannot use', async () => {
-    for (const answer of [new TypeError('fetch failed'), 503, { hdhub4u: 'https://new10.hdhub4u.cl' }, { ...GITHUB, hubcloud: 'http://hubcloud.ist' }]) {
+    for (const answer of [new TypeError('fetch failed'), 503, { hdhub4u: 'https://new10.hdhub4u.cl' }, { ...GITHUB, hubcloud: 'https://hubcloud.ist/' }]) {
       const { fetch, now } = world(answer);
 
       const config = await liveConfig({ makeEngine, fetch, now });

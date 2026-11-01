@@ -7,9 +7,9 @@ import { ProblemError } from './problems.js';
 // The sites the engine reads posts of. Vegamovies and RogMovies come with their provider.
 export const SITES = ['hdhub4u', '4khdhub'];
 
-// A page number, as the API gives it in nextPageToken: from 1. At most 6 digits (the sites have
-// under 1,000 pages): a longer one would be read as 1e+21 and make a wrong URL.
-const pageToken = { type: 'string', pattern: '^[1-9][0-9]{0,5}$', description: 'The nextPageToken of the page before' };
+// A page number, as the API gives it in nextPageToken: from 1. At most 15 digits, which Number()
+// reads exactly: a 400-digit one is Infinity, which the engine rejects with a TypeError (a 500).
+const pageToken = { type: 'string', pattern: '^[1-9][0-9]*$', maxLength: 15, description: 'The nextPageToken of the page before' };
 
 // Every segment of a name is at least 1 character: "/v1/sites/hdhub4u/posts/" is no post, and
 // would read the site's home page as one.

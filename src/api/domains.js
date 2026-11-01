@@ -38,7 +38,8 @@ function unusableBecause(domains) {
     } catch {
       return `${label}: not a URL`;
     }
-    if (url.protocol !== 'https:' || url.origin !== origin) return `${label}: not an https origin: ${origin}`;
+    // An origin, without a path: "https://new10.hdhub4u.cl/" would make "https://new10.hdhub4u.cl//<post>/".
+    if (url.origin !== origin) return `${label}: not an origin: ${origin}`;
   }
   const missing = SITES.filter((site) => !domains[site]);
   return missing.length ? `no domain for ${missing.join(', ')}` : null;

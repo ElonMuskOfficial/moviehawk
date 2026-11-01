@@ -47,12 +47,10 @@ export function fileName(url) {
  * The URL back from the id of a link's or a file's name.
  *
  * @param {string} id - The base64url part, as the router gives it.
- * @returns {string | null} null for an id the API did not make: not base64url as the API writes it
- *   (Node decodes any text, skipping what is not base64), or not a web URL.
+ * @returns {string | null} null when it is not of a web URL: the engine takes no other.
  */
 export function urlOfId(id) {
   const text = Buffer.from(id, 'base64url').toString();
-  if (Buffer.from(text).toString('base64url') !== id) return null;
   try {
     const url = new URL(text);
     return url.protocol === 'https:' || url.protocol === 'http:' ? text : null;

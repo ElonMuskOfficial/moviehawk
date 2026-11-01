@@ -70,7 +70,7 @@ files/aHR0cHM6Ly9odWJjbG91ZC5pc3QvZHJpdmUveHVrcWxwNmpic2Y4d2ph
   domain when it reads it.
 - Every link of a post has the same URL each time the page is read (live, 2026-11-01: 29 links
   of 3 HDHub4u and 4KHDHub posts, and 4 posts each of Vegamovies and RogMovies, read twice).
-- A name that is not base64url as the API writes it, or not of a web URL, is HTTP 400. A link's
+- A name that is not of a web URL is HTTP 400. A link's
   name of a URL on no gateway or host the engine knows gives `files: []`, and nothing is
   requested for it: the engine reads only the sites it knows.
 - Names are long: a GreenMotors link is up to 540 characters (median 231; 4KHDHub's 199),

@@ -96,7 +96,7 @@ describe('ListPosts', () => {
     const server = await app(engine);
     t.after(() => server.close());
 
-    for (const token of ['0', '-1', '2.5', 'abc', '1234567']) {
+    for (const token of ['0', '-1', '2.5', 'abc', '9'.repeat(400)]) {
       const response = await server.inject(`/v1/sites/hdhub4u/posts?pageToken=${token}`);
       assert.equal(response.statusCode, 400, token);
       assert.equal(response.json().code, 'invalidArgument', token);
