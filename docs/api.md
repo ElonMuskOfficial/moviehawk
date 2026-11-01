@@ -1,6 +1,12 @@
 # API
 
-**Status:** design, not built yet. Built on the branch `engine`, piece by piece, as the engine was.
+**Status:** being built on the branch `engine`, piece by piece, as the engine was: pieces 1 and 2
+are done (the server, without its routes over the engine yet).
+
+```bash
+npm run api                          # http://127.0.0.1:3000
+PORT=8080 HOST=0.0.0.0 npm run api
+```
 
 A read-only HTTP API over the engine (`docs/engine.md`) for web and mobile apps. Each request reads
 the live sites through the engine: there is no database.

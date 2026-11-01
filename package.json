@@ -7,9 +7,12 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "api": "node scripts/api.js"
   },
   "dependencies": {
-    "cheerio": "1.2.0"
+    "@fastify/swagger": "9.9.2",
+    "cheerio": "1.2.0",
+    "fastify": "5.12.7"
   }
 }
