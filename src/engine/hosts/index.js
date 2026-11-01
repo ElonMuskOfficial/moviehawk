@@ -18,7 +18,7 @@ const pathId = (...prefixes) => (url) => {
 };
 
 // Each host's id is also the hostname label that identifies it. Shapes seen on live posts
-// (2026-10-31, 37 posts across both sites' catalogs, and the 206,598 HubCloud files stored by then).
+// (2026-10-31, 37 posts across both sites' catalogs).
 // `resolve`: the reader of the host's download servers, for a host a consumer needs resolved.
 const HOSTS = [
   { id: 'hubcloud', externalId: pathId('drive', 'video'), resolve: resolveHubCloud },

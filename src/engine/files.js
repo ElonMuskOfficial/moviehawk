@@ -11,8 +11,8 @@ import { onCurrentDomain, webUrlOf } from './urls.js';
  * page, and 10Gbps's redirects to the file, when the page has that server. The file's name and
  * size do not change; its downloads expire within minutes or hours.
  *
- * @param {string} url - A file, on any of its host's domains (stored files keep the domain they
- *   were found on: hubcloud.foo, ...).
+ * @param {string} url - A file, on any of its host's domains (a URL kept from earlier keeps the
+ *   domain it was found on: hubcloud.foo, ...).
  * @param {import('./http.js').RequestOptions & { domains?: Record<string, string> }} [options]
  *   `domains`: as for onCurrentDomain (urls.js).
  * @returns {Promise<{ filename: string, sizeBytes: number, downloads: import('./hosts/index.js').Download[] }>}

@@ -10,8 +10,8 @@ import { fetchHtml, followRedirects } from '../http.js';
 
 /** @typedef {import('./index.js').Download} Download */
 
-// HubCloud states sizes in binary units ("265.62 MB" is 278,522,757 bytes). The 206,598 files
-// stored by 2026-10-31 are 2 MB to 278 GB; a subtitle or an image is in KB.
+// HubCloud states sizes in binary units ("265.62 MB" is 278,522,757 bytes), KB (a subtitle, an
+// image) to GB.
 const UNITS = { KB: 1024, MB: 1024 ** 2, GB: 1024 ** 3 };
 const SIZE = /^(\d+(?:\.\d+)?)\s*(KB|MB|GB)$/;
 
@@ -41,7 +41,7 @@ const FILE_PARAM = 'link';
  * order. 10Gbps's link is followed to the file; when that fails, the button's own link is given,
  * as a page (in a browser it leads to the file, through the ad page).
  *
- * @param {string} url - On HubCloud's current domain (stored files keep older ones: hubcloud.foo, ...).
+ * @param {string} url - On HubCloud's current domain (a URL kept from earlier can be on an older one: hubcloud.foo, ...).
  * @param {import('../http.js').RequestOptions} [options]
  * @returns {Promise<{ filename: string, sizeBytes: number, downloads: Download[] }>}
  * @throws {EngineError} `unrecognized` for a file page without the file's name, a size it can read

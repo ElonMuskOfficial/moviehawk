@@ -58,7 +58,7 @@ has a global `File`).
   redirects to make `downloads`, which expire within minutes or hours. A different job, so a
   different verb ("link resolver").
 - No `scrapeFile` (the file's name and size alone): no consumer needs it yet, and a link's label
-  states the size already (`720p x264 [850MB]`). It comes back when the crawler stores files.
+  states the size already (`720p x264 [850MB]`). It comes back when a consumer needs a file's name and size without its downloads.
 - `download.kind`: `direct` when its URL answers with the file itself (FSL, FSLv2, ZipDisk,
   Download File, and 10Gbps once followed), `page` when it is a page that leads to it (PixelDrain,
   Buzz, Telegram, Watch Online, a server not known yet: `other`). `label` is the button's text.
@@ -166,7 +166,7 @@ running until the engine is done and the consumers use it.
    (`/?s=<query>`), HDHub4u's search API; the same `{ posts, hasNextPage }`, and `notFound`
    after the last page.
 10. `createEngine` (`src/engine/index.js`), the one entry. `resolve` (`src/engine/files.js`)
-    moves a stored file to its host's current domain (hubcloud.foo →
+    moves a file on an old domain to its host's current domain (hubcloud.foo →
     hubcloud.ist) and retries, like the other functions.
 11. Live check on both sites: the new engine's results against `master`'s.
 

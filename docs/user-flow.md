@@ -76,4 +76,3 @@ The labels the engine gives, from live posts:
 - `resolve` reads HubCloud only. HubCDN, GoFile and the players are found by `scrapeLinks`; for
   their files `resolve` is `unsupported`.
 - Vegamovies and RogMovies (NexDrive, VCloud) come later.
-- The engine stores nothing. A consumer that shows steps 0 to 2 from its database does so itself.

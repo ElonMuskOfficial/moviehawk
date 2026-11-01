@@ -20,7 +20,7 @@ function web(pages) {
 }
 
 describe('resolve', () => {
-  it('reads a stored file on its host\'s current domain', async () => {
+  it('reads a file on an old domain on its host\'s current domain', async () => {
     const options = web({ 'https://hubcloud.ist/drive/a': filePage, 'https://gamerxyt.com/hubcloud.php?id=a': downloadPage });
     const domains = { hubcloud: 'https://hubcloud.ist' };
 
