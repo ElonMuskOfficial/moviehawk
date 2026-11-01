@@ -1,6 +1,7 @@
 /**
  * The sites and their posts (README.md, The API): ListSites, ListPosts, SearchPosts, GetPost.
  */
+import { queryOf } from './cache.js';
 import { linkName, postName, postUrl } from './names.js';
 import { ProblemError } from './problems.js';
 
@@ -94,7 +95,7 @@ export async function sitesRoutes(app, { config, cached }) {
   app.get('/v1/sites/:site/posts', {
     schema: {
       params: siteParams,
-      querystring: { type: 'object', properties: { pageToken } },
+      querystring: queryOf({ pageToken }),
       response: { 200: postPage },
     },
   }, async (request, reply) => {
@@ -107,7 +108,7 @@ export async function sitesRoutes(app, { config, cached }) {
   app.get('/v1/sites/:site/search', {
     schema: {
       params: siteParams,
-      querystring: { type: 'object', required: ['q'], properties: { q, pageToken } },
+      querystring: queryOf({ q, pageToken }, ['q']),
       response: { 200: postPage },
     },
   }, async (request, reply) => {
@@ -117,7 +118,7 @@ export async function sitesRoutes(app, { config, cached }) {
   });
 
   app.get('/v1/sites/:site/posts/:post', {
-    schema: { params: postParams, response: { 200: fullPost } },
+    schema: { params: postParams, querystring: queryOf(), response: { 200: fullPost } },
   }, async (request, reply) => {
     const { site, engine, siteUrl } = siteOf(request);
     // A site adds links to a post (a series' new episodes).

@@ -351,7 +351,8 @@ by hand. The API (`src/api/domains.js`) reads the repo's raw `domains.json`:
 ### Cache
 
 Each route's answer is kept in memory (`src/api/cache.js`, `lru-cache`, 500 answers at most), by
-its URL, for as long as it stays true:
+what the request asks (its route, its names, and the query the route reads, in any order: a query
+it does not read is dropped), for as long as it stays true:
 
 | Route | Kept | Why |
 |---|---|---|

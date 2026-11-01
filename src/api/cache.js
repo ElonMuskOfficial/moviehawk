@@ -9,14 +9,25 @@ import { LRUCache } from 'lru-cache';
 const MAX_ANSWERS = 500;
 
 /**
+ * The query schema of a route that answers through `cached`: what it reads, and nothing else.
+ * Fastify drops the rest from `request.query`, so the cache knows a request by what it asks.
+ *
+ * @param {Record<string, object>} [properties]
+ * @param {string[]} [required]
+ */
+export const queryOf = (properties = {}, required = []) => ({ type: 'object', required, properties, additionalProperties: false });
+
+/**
  * @returns The `cached` function a route answers through: one cache for the app.
  */
 export function createCache() {
   const answers = new LRUCache({ max: MAX_ANSWERS });
 
   /**
-   * The route's answer for this request's URL: the kept one, or `load`'s, kept for `ttlMs`. Its
-   * `Cache-Control` lets the client keep it for the time it has left here.
+   * The route's answer for what the request asks: the kept one, or `load`'s, kept for `ttlMs`. Its
+   * `Cache-Control` lets the client keep it for the time it has left here. Kept by the route, its
+   * params and its query (queryOf), not by the URL: another encoding of a name, or a query
+   * the route does not read, is the same answer.
    *
    * @template T
    * @param {import('fastify').FastifyRequest} request
@@ -26,7 +37,8 @@ export function createCache() {
    * @returns {Promise<T>}
    */
   return async function cached(request, reply, ttlMs, load) {
-    const key = request.url;
+    const query = Object.entries(request.query).sort(([a], [b]) => (a < b ? -1 : 1));
+    const key = JSON.stringify([request.routeOptions.url, request.params, query]);
     let answer = answers.get(key);
     if (answer === undefined) {
       answer = await load();

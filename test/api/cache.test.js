@@ -62,6 +62,25 @@ describe('the cache', () => {
     assert.equal(calls.length, 3);
   });
 
+  it('answers from the cache a URL that asks the same: a query the route does not read, its query in another order', async (t) => {
+    const { engine, calls } = engineFor();
+    const server = await app(engine);
+    t.after(() => server.close());
+    const asks = {
+      '/v1/sites/hdhub4u/posts?pageToken=2': ['/v1/sites/hdhub4u/posts?pageToken=2&x=1', '/v1/sites/hdhub4u/posts?x=1&pageToken=2'],
+      '/v1/sites/hdhub4u/search?q=dexter&pageToken=2': ['/v1/sites/hdhub4u/search?pageToken=2&q=dexter', '/v1/sites/hdhub4u/search?q=dexter&pageToken=2&y'],
+      '/v1/sites/hdhub4u/posts/show': ['/v1/sites/hdhub4u/posts/show?x=1', '/v1/sites/hdhub4u/posts/%73how'],
+      [LINK]: [`${LINK}?x=1`],
+      [FILE]: [`${FILE}?x=1`],
+    };
+
+    for (const [url, same] of Object.entries(asks)) {
+      for (const each of [url, ...same]) assert.equal((await server.inject(each)).statusCode, 200, each);
+    }
+
+    assert.equal(calls.length, Object.keys(asks).length);
+  });
+
   it('keeps no error: the next request asks the engine again', async (t) => {
     let tries = 0;
     const { engine, calls } = fakeEngine(() => {

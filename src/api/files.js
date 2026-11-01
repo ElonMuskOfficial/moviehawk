@@ -1,6 +1,7 @@
 /**
  * A link's files and a file's downloads (README.md, The API): ListFiles, GetFile.
  */
+import { queryOf } from './cache.js';
 import { fileName, urlOfId } from './names.js';
 import { ProblemError } from './problems.js';
 
@@ -66,7 +67,7 @@ const resolvedFile = {
  */
 export async function filesRoutes(app, { config, cached }) {
   app.get('/v1/links/:link/files', {
-    schema: { params: idParams('link'), response: { 200: fileList } },
+    schema: { params: idParams('link'), querystring: queryOf(), response: { 200: fileList } },
   }, async (request, reply) => {
     const url = urlOf(request.params.link, 'link');
     // A link's files hardly change; an answer with failures is not kept, as a page on the way that
@@ -82,7 +83,7 @@ export async function filesRoutes(app, { config, cached }) {
   });
 
   app.get('/v1/files/:file', {
-    schema: { params: idParams('file'), response: { 200: resolvedFile } },
+    schema: { params: idParams('file'), querystring: queryOf(), response: { 200: resolvedFile } },
   }, async (request, reply) => {
     const url = urlOf(request.params.file, 'file');
     // Its downloads expire, but not within 5 minutes.
