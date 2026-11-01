@@ -30,7 +30,9 @@ function sendProblem(reply, body) {
  */
 export async function buildApp({ config, logger = false }) {
   const app = Fastify({
-    logger,
+    // Pino's lines say "name": "moviehawk", not the machine's hostname and the process id, which
+    // name nothing a reader of the log needs (base: undefined drops them).
+    logger: logger && { name: 'moviehawk', base: undefined },
     // Each request gets its own id; a client's own `Request-Id` header is not taken, so an id in
     // the log is always the server's (Fastify's requestIdHeader is false by default).
     genReqId: () => randomUUID(),
