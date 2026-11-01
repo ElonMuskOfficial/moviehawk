@@ -3,8 +3,9 @@
 An engine that reads movie and series sites (HDHub4u, 4KHDHub), and a read-only HTTP API over it
 for web and mobile apps. Every request reads the live sites: there is no database.
 
-This is the branch `engine`, written from scratch. `master` keeps the old crawler, API and bot
-running until their replacements use the engine.
+Written from scratch. The old crawler, API and bot stay in
+[moviehawk-bot](https://github.com/ElonMuskOfficial/moviehawk-bot), running until their
+replacements use the engine.
 
 ```bash
 npm test                              # every test, on saved pages (test/fixtures/)
@@ -396,4 +397,5 @@ by hand. The API (`src/api/domains.js`) reads the repo's raw `domains.json`:
 - **Access**: open, without a key, for now.
 - **Load on the sites**: the engine sets no limit on requests at once, as no site has answered 429
   or stalled. When one does, retrying after its `Retry-After` is added then; nothing before.
-- **The other consumers**: the crawler and the bot (on `master`) move to the engine after the API.
+- **The other consumers**: the crawler and the bot (in moviehawk-bot) move to the engine after the
+  API, as clients of the API.
