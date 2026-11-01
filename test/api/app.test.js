@@ -3,9 +3,9 @@ import { describe, it } from 'node:test';
 import { buildApp } from '../../src/api/app.js';
 import { EngineError } from '../../src/engine/index.js';
 
-// The app, with routes of the test's own added before it is ready.
+// The app, with routes of the test's own added before it is ready. Its engine is never called.
 async function app(addRoutes = () => {}) {
-  const server = await buildApp();
+  const server = await buildApp({ engine: {}, domains: { hdhub4u: 'https://new10.hdhub4u.cl', '4khdhub': 'https://4khdhub.one' } });
   addRoutes(server);
   await server.ready();
   return server;
@@ -112,14 +112,19 @@ describe('the API server', () => {
     assert.equal(response.json().code, 'invalidArgument');
   });
 
+  it('will not start without a domain for each site', async () => {
+    await assert.rejects(buildApp({ engine: {}, domains: { hdhub4u: 'https://new10.hdhub4u.cl' } }), /No domain for 4khdhub/);
+  });
+
   it('serves its OpenAPI 3.1 document, which does not list itself', async (t) => {
-    const server = await app((s) => s.get('/v1/sites', { schema: { response: { 200: { type: 'object' } } } }, () => ({})));
+    const server = await app();
     t.after(() => server.close());
 
     const response = await server.inject('/v1/openapi.json');
 
     assert.equal(response.statusCode, 200);
     assert.equal(response.json().openapi, '3.1.0');
-    assert.deepEqual(Object.keys(response.json().paths), ['/v1/sites']);
+    assert.ok(response.json().paths['/v1/sites/{site}/posts']);
+    assert.equal(response.json().paths['/v1/openapi.json'], undefined);
   });
 });

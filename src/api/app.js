@@ -1,11 +1,12 @@
 /**
- * The HTTP API (docs/api.md): the server, without the routes over the engine yet. Every response
- * has a `Request-Id`, and every error is a problem (problems.js).
+ * The HTTP API (docs/api.md). Every response has a `Request-Id`, and every error is a problem
+ * (problems.js).
  */
 import { randomUUID } from 'node:crypto';
 import fastifySwagger from '@fastify/swagger';
 import Fastify from 'fastify';
 import { PROBLEM_TYPE, problem, problemOf } from './problems.js';
+import { SITES, sitesRoutes } from './sites.js';
 
 // Names are long: a GreenMotors link's is up to 540 characters, an HDHub4u post's up to 143
 // (docs/api.md, Names). Fastify's default, 100, would make them HTTP 404.
@@ -23,9 +24,16 @@ function sendProblem(reply, body) {
  * Makes the API's server, not yet listening: the caller listens (scripts/api.js) or injects
  * requests (the tests).
  *
- * @param {{ logger?: boolean }} [options] `logger`: Fastify's request log, to stdout.
+ * @param {{ engine: ReturnType<typeof import('../engine/index.js').createEngine>,
+ *   domains: Record<string, string>, logger?: boolean }} options `engine`: made with the same
+ *   `domains`. `domains`: the current domain of each site and gateway whose domain rotates
+ *   (domains.json). `logger`: Fastify's request log, to stdout.
+ * @throws {TypeError} When `domains` has no domain for a site: each of its requests would fail.
  */
-export async function buildApp({ logger = false } = {}) {
+export async function buildApp({ engine, domains, logger = false }) {
+  const missing = SITES.filter((site) => !domains[site]);
+  if (missing.length) throw new TypeError(`No domain for ${missing.join(', ')}`);
+
   const app = Fastify({
     logger,
     // Each request gets its own id; a client's own `Request-Id` header is not taken, so an id in
@@ -60,6 +68,7 @@ export async function buildApp({ logger = false } = {}) {
   });
 
   app.get('/v1/openapi.json', { schema: { hide: true } }, () => app.swagger());
+  await app.register(sitesRoutes, { engine, domains });
 
   return app;
 }

@@ -24,15 +24,27 @@ export function problem(status, code, detail) {
   return { type: 'about:blank', title: STATUS_CODES[status], status, detail, code };
 }
 
+/** An error a route throws to answer with a problem of its own: a site the API does not have. */
+export class ProblemError extends Error {
+  /** @param {number} status @param {string} code @param {string} detail */
+  constructor(status, code, detail) {
+    super(detail);
+    this.name = 'ProblemError';
+    this.problem = problem(status, code, detail);
+  }
+}
+
 /**
  * The problem an error thrown while answering a request is.
  *
  * @param {unknown} error
- * @returns {ReturnType<typeof problem>} An EngineError by its code; an error Fastify made for the
- *   request (its schema validation, a malformed URL: a 4xx `statusCode`) as `invalidArgument`;
- *   anything else as 500 `internal`, without its message, which is for the log, not the client.
+ * @returns {ReturnType<typeof problem>} A ProblemError's own; an EngineError by its code; an error
+ *   Fastify made for the request (its schema validation, a malformed URL: a 4xx `statusCode`) as
+ *   `invalidArgument`; anything else as 500 `internal`, without its message, which is for the log,
+ *   not the client.
  */
 export function problemOf(error) {
+  if (error instanceof ProblemError) return error.problem;
   if (error instanceof EngineError) return problem(STATUS_BY_ENGINE_CODE[error.code], error.code, error.message);
   const status = error?.statusCode;
   if (Number.isInteger(status) && status >= 400 && status < 500) return problem(status, 'invalidArgument', error.message);

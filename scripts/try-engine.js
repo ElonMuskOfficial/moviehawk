@@ -3,19 +3,14 @@
  * Change SITE_URL and PAGE to read another listing page, QUERY to search, POST_URL to try another
  * post, url to follow another link, and fileUrl to resolve another file. Uncomment a step to run it.
  */
+import { readFile } from 'node:fs/promises';
 import { createEngine } from '../src/engine/index.js';
 
 const SITE_URL = 'https://4khdhub.one'; // or 'https://new10.hdhub4u.cl'
 const PAGE = 1; // of the listing or the search, from 1; a page after the last is notFound
 
-// The current domain of each site whose domain rotates (2026-10-31).
-const domains = {
-  hdhub4u: 'https://new10.hdhub4u.cl',
-  '4khdhub': 'https://4khdhub.one',
-  hblinks: 'https://hblinks.lol',
-  hubdrive: 'https://hubdrive.bar',
-  hubcloud: 'https://hubcloud.ist',
-};
+// The current domain of each site whose domain rotates, as the API reads them.
+const domains = JSON.parse(await readFile(new URL('../domains.json', import.meta.url), 'utf8'));
 
 const engine = createEngine({ domains });
 

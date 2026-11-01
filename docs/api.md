@@ -1,12 +1,16 @@
 # API
 
-**Status:** being built on the branch `engine`, piece by piece, as the engine was: pieces 1 and 2
-are done (the server, without its routes over the engine yet).
+**Status:** being built on the branch `engine`, piece by piece, as the engine was: pieces 1 to 3
+are done (ListSites, ListPosts, SearchPosts).
 
 ```bash
 npm run api                          # http://127.0.0.1:3000
 PORT=8080 HOST=0.0.0.0 npm run api
 ```
+
+The sites' current domains are in `domains.json`, by hostname label (`{ "hubcloud":
+"https://hubcloud.ist" }`): when a site moves, edit it and restart. The API does not start
+without a domain for each of its sites.
 
 A read-only HTTP API over the engine (`docs/engine.md`) for web and mobile apps. Each request reads
 the live sites through the engine: there is no database.
@@ -268,7 +272,6 @@ only their names to ListSites. What was checked for them (live, 2026-11-01, on
 - **Rate limit:** each GetFile sends 2 or 3 requests to HubCloud. Its own piece, before the API
   is public.
 - **Access:** open, without a key.
-- **The domains:** where the API reads the sites' current domains from.
 - **Deploy:** where it runs.
 
 ## Plan
