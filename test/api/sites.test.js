@@ -1,25 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { buildApp } from '../../src/api/app.js';
 import { EngineError } from '../../src/engine/index.js';
-
-const domains = { hdhub4u: 'https://new10.hdhub4u.cl', '4khdhub': 'https://4khdhub.one' };
-
-// An engine that answers each call with `answer`, and records how it was called.
-function fakeEngine(answer) {
-  const calls = [];
-  const record = (name) => async (...args) => {
-    calls.push([name, ...args]);
-    return answer(...args);
-  };
-  return { engine: { scrapeListing: record('scrapeListing'), searchPosts: record('searchPosts'), scrapePost: record('scrapePost') }, calls };
-}
-
-async function app(engine) {
-  const server = await buildApp({ config: { current: () => ({ engine, domains }) } });
-  await server.ready();
-  return server;
-}
+import { appWith as app, fakeEngine } from './helpers.js';
 
 const card = (url, title = 'A post') => ({ url, title, posterUrl: 'https://image.tmdb.org/t/p/w342/a.jpg' });
 
@@ -119,6 +101,20 @@ describe('ListPosts', () => {
       assert.equal(response.statusCode, 400, token);
       assert.equal(response.json().code, 'invalidArgument', token);
     }
+    assert.deepEqual(calls, []);
+  });
+});
+
+describe('GetPost, with no post in its path', () => {
+  it("gives ListPosts' path with a trailing slash as 400, and does not read the site's home page as a post", async (t) => {
+    const { engine, calls } = fakeEngine(() => ({ post: {}, links: [] }));
+    const server = await app(engine);
+    t.after(() => server.close());
+
+    const response = await server.inject('/v1/sites/hdhub4u/posts/');
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.json().code, 'invalidArgument');
     assert.deepEqual(calls, []);
   });
 });

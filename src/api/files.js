@@ -11,88 +11,73 @@ function urlOf(id, kind) {
   return url;
 }
 
+// Every segment of a name is at least 1 character, as in sites.js.
 const idParams = (key) => ({ type: 'object', required: [key], properties: { [key]: { type: 'string', minLength: 1 } } });
 
-const nullableString = { type: ['string', 'null'] };
+const linkFile = {
+  type: 'object',
+  required: ['name', 'host', 'url', 'label'],
+  properties: {
+    name: { type: 'string', description: 'Its downloads: GET /v1/{name}' },
+    host: { type: 'string', examples: ['hubcloud'] },
+    url: { type: 'string', description: 'The file\'s page on its host' },
+    label: { type: ['string', 'null'] },
+  },
+};
+
+const failure = {
+  type: 'object',
+  required: ['code', 'url', 'detail'],
+  properties: { code: { type: 'string' }, url: { type: ['string', 'null'] }, detail: { type: 'string' } },
+};
+
+const fileList = {
+  type: 'object',
+  required: ['files', 'failures'],
+  properties: { files: { type: 'array', items: linkFile }, failures: { type: 'array', items: failure } },
+};
+
+const download = {
+  type: 'object',
+  required: ['server', 'kind', 'url', 'label'],
+  properties: {
+    server: { type: 'string', examples: ['10gbps', 'fsl', 'pixeldrain'] },
+    kind: { type: 'string', enum: ['direct', 'page'] },
+    url: { type: 'string' },
+    label: { type: 'string' },
+  },
+};
+
+const resolvedFile = {
+  type: 'object',
+  required: ['name', 'filename', 'sizeBytes', 'downloads'],
+  properties: {
+    name: { type: 'string' },
+    filename: { type: 'string' },
+    sizeBytes: { type: 'integer' },
+    downloads: { type: 'array', items: download },
+  },
+};
 
 /**
  * @param {import('fastify').FastifyInstance} app
- * @param {{ config: { current: (log: import('fastify').FastifyBaseLogger) => import('./domains.js').Config } }} options
- *   `config`: the engine, for each request (domains.js).
+ * @param {{ config: import('./domains.js').LiveConfig }} options `config`: the engine, for each
+ *   request.
  */
 export async function filesRoutes(app, { config }) {
   app.get('/v1/links/:link/files', {
-    schema: {
-      summary: 'ListFiles',
-      params: idParams('link'),
-      response: {
-        200: {
-          type: 'object',
-          required: ['files', 'failures'],
-          properties: {
-            files: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['name', 'host', 'url', 'label'],
-                properties: {
-                  name: { type: 'string', description: 'Its downloads: GET /v1/{name}' },
-                  host: { type: 'string', examples: ['hubcloud'] },
-                  url: { type: 'string', description: 'The file\'s page on its host' },
-                  label: nullableString,
-                },
-              },
-            },
-            failures: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['code', 'url', 'detail'],
-                properties: { code: { type: 'string' }, url: nullableString, detail: { type: 'string' } },
-              },
-            },
-          },
-        },
-      },
-    },
+    schema: { operationId: 'ListFiles', params: idParams('link'), response: { 200: fileList } },
   }, async (request) => {
     const url = urlOf(request.params.link, 'link');
     const { files, failures } = await config.current(request.log).engine.scrapeLinks([url]);
     return {
-      files: files.map(({ host, url, label }) => ({ name: fileName(url), host, url, label })),
-      failures: failures.map(({ code, url, message }) => ({ code, url, detail: message })),
+      files: files.map((file) => ({ name: fileName(file.url), host: file.host, url: file.url, label: file.label })),
+      failures: failures.map((error) => ({ code: error.code, url: error.url, detail: error.message })),
     };
   });
 
   app.get('/v1/files/:file', {
-    schema: {
-      summary: 'GetFile',
-      params: idParams('file'),
-      response: {
-        200: {
-          type: 'object',
-          required: ['name', 'filename', 'sizeBytes', 'downloads'],
-          properties: {
-            name: { type: 'string' },
-            filename: { type: 'string' },
-            sizeBytes: { type: 'integer' },
-            downloads: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['server', 'kind', 'url', 'label'],
-                properties: {
-                  server: { type: 'string', examples: ['10gbps', 'fsl', 'pixeldrain'] },
-                  kind: { type: 'string', enum: ['direct', 'page'] },
-                  url: { type: 'string' },
-                  label: { type: 'string' },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
+    schema: { operationId: 'GetFile', params: idParams('file'), response: { 200: resolvedFile } },
   }, async (request) => {
     const url = urlOf(request.params.file, 'file');
     const { filename, sizeBytes, downloads } = await config.current(request.log).engine.resolve(url);

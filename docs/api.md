@@ -1,7 +1,7 @@
 # API
 
-**Status:** being built on the branch `engine`, piece by piece, as the engine was: pieces 1 to 5
-are done: every route.
+**Status:** being built on the branch `engine`, piece by piece, as the engine was: pieces 1 to 6
+are done: every route, and the domains.
 
 ```bash
 npm run api                          # http://127.0.0.1:3000
@@ -27,14 +27,14 @@ the API departs from AIP is in [Departures from AIP](#departures-from-aip), with
 
 Each route is one engine function, and reads only what that function reads.
 
-| HTTP | Engine | Requests to the sites |
-|---|---|---|
-| `GET /v1/sites` | (the API's config) | 0 |
-| `GET /v1/sites/{site}/posts?pageToken=` | `scrapeListing` | 1 |
-| `GET /v1/sites/{site}/search?q=&pageToken=` | `searchPosts` | 1 |
-| `GET /v1/sites/{site}/posts/{post}` | `scrapePost` | 1 |
-| `GET /v1/links/{link}/files` | `scrapeLinks([url])` | 1 to 3 |
-| `GET /v1/files/{file}` | `resolve` | 2 or 3 |
+| HTTP | `operationId` | Engine | Requests to the sites |
+|---|---|---|---|
+| `GET /v1/sites` | ListSites | (the API's config) | 0 |
+| `GET /v1/sites/{site}/posts?pageToken=` | ListPosts | `scrapeListing` | 1 |
+| `GET /v1/sites/{site}/search?q=&pageToken=` | SearchPosts | `searchPosts` | 1 |
+| `GET /v1/sites/{site}/posts/{post}` | GetPost | `scrapePost` | 1 |
+| `GET /v1/links/{link}/files` | ListFiles | `scrapeLinks([url])` | 1 to 3 |
+| `GET /v1/files/{file}` | GetFile | `resolve` | 2 or 3 |
 
 Live through the API (2026-11-01): 30 posts of both sites, 3 links of each: 87 links, 83 of them
 to files (167 files), and 75 of 75 HubCloud files resolved; another host's file is 400
@@ -246,14 +246,14 @@ Content-Type: application/problem+json
 |---|---|---|
 | The site said it is gone | 404 | `notFound` |
 | A name or `pageToken` the API cannot read | 400 | `invalidArgument` |
-| A URL no site or host of the engine handles | 400 | `unsupported` |
+| A file on a host the engine does not resolve (GetFile of a GoFile, HubCDN, player file) | 400 | `unsupported` |
 | The site's page could not be read (a changed layout, a challenge page) | 502 | `unrecognized` |
 | The site did not answer (timeout, network error, its 5xx or 429) | 504 | `transient` |
 
 ## Headers
 
 - `Request-Id` on every response, to name a request in a bug report (RFC 6648: no `X-`).
-- `Cache-Control` on every response, by route: decided with the cache.
+- `Cache-Control`: comes with the cache (Not decided yet).
 
 ## Departures from AIP
 
@@ -308,7 +308,8 @@ Each piece: an example first, then the code and its tests, one commit.
 3. ListSites, ListPosts, SearchPosts.
 4. GetPost: a post's name to its URL and back; a link's name.
 5. ListFiles, GetFile.
-6. Cache.
-7. Rate limit.
-8. Live check: the engine's sweep, through the API.
-9. Deploy.
+6. The domains from the moviehawk-domains repo ([Domains](#domains)).
+7. Cache.
+8. Rate limit.
+9. Live check: the engine's sweep, through the API.
+10. Deploy.

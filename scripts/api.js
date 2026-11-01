@@ -1,7 +1,7 @@
 /**
  * Runs the API (docs/api.md): node scripts/api.js
- * The sites' current domains come from the moviehawk-domains repo, or FALLBACK_DOMAINS when it
- * cannot be read at start (src/api/domains.js).
+ * The current domains come from the moviehawk-domains repo, or FALLBACK_DOMAINS when it cannot be
+ * read at start (src/api/domains.js).
  * PORT (default 3000) and HOST (default 127.0.0.1; 0.0.0.0 to be reached from outside) set where
  * it listens.
  */

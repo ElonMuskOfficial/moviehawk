@@ -1,5 +1,6 @@
 /**
- * The sites' current domains, from the moviehawk-domains repo, which heals them twice a day
+ * The current domains (of the sites, gateways and hosts whose domain rotates, by hostname label),
+ * from the moviehawk-domains repo, which heals them twice a day
  * (github.com/ElonMuskOfficial/moviehawk-domains). Read at start, and again when a request comes
  * and the last read is 30 minutes old: in the background, so no request waits for GitHub
  * (stale-while-revalidate, RFC 5861). No timer: an idle server reads nothing.
@@ -28,7 +29,7 @@ const TIMEOUT_MS = 10_000;
  * @returns {string | null} Why `domains` cannot be used (each of a site's requests would fail),
  *   or null.
  */
-function problemOf(domains) {
+function unusableBecause(domains) {
   if (typeof domains !== 'object' || domains === null || Array.isArray(domains)) return 'not an object';
   for (const [label, origin] of Object.entries(domains)) {
     let url;
@@ -54,8 +55,8 @@ export async function readDomains({ url = DOMAINS_URL, fetch = globalThis.fetch 
   const response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const domains = await response.json();
-  const problem = problemOf(domains);
-  if (problem) throw new Error(problem);
+  const reason = unusableBecause(domains);
+  if (reason) throw new Error(reason);
   return domains;
 }
 
@@ -76,7 +77,13 @@ export async function startDomains(options) {
 
 /**
  * @typedef {{ domains: Record<string, string>, engine: ReturnType<typeof import('../engine/index.js').createEngine> }} Config
+ *   The domains and the engine made with them, for one request.
  * @typedef {{ info: (message: string) => void, warn: (message: string) => void }} Log
+ *   A request's log (Fastify's request.log is one).
+ * @typedef {{ current: (log: Log) => Config, fallbackBecause: string | null }} LiveConfig
+ *   `current`: the config for a request; when the last read is 30 minutes old, it starts the next
+ *   one, whose domains later requests get, and logs what it found to `log`. `fallbackBecause`:
+ *   why it started with FALLBACK_DOMAINS, or null.
  */
 
 /**
@@ -85,10 +92,7 @@ export async function startDomains(options) {
  * @param {{ makeEngine: (domains: Record<string, string>) => Config['engine'],
  *   url?: string, fetch?: typeof fetch, now?: () => number }} options
  *   `makeEngine`: a new engine for new domains (an engine's config never changes).
- * @returns {Promise<{ current: (log: Log) => Config, fallbackBecause: string | null }>}
- *   `current`: the config for a request; when the last read is 30 minutes old, it starts the next
- *   one, whose domains later requests get. `log`: the request's, for what that read found.
- *   `fallbackBecause`: why it started with FALLBACK_DOMAINS, or null.
+ * @returns {Promise<LiveConfig>}
  */
 export async function liveConfig({ makeEngine, url = DOMAINS_URL, fetch = globalThis.fetch, now = Date.now }) {
   const read = () => readDomains({ url, fetch });

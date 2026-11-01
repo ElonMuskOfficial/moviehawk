@@ -25,9 +25,9 @@ function sendProblem(reply, body) {
  * Makes the API's server, not yet listening: the caller listens (scripts/api.js) or injects
  * requests (the tests).
  *
- * @param {{ config: { current: (log: import('fastify').FastifyBaseLogger) => import('./domains.js').Config },
- *   logger?: boolean }} options `config`: the engine and the sites' domains for each request
- *   (liveConfig, domains.js). `logger`: Fastify's request log, to stdout.
+ * @param {{ config: import('./domains.js').LiveConfig, logger?: boolean }} options `config`: the
+ *   engine and the domains for each request (liveConfig). `logger`: Fastify's request log, to
+ *   stdout.
  */
 export async function buildApp({ config, logger = false }) {
   const app = Fastify({
