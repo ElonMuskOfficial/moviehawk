@@ -5,7 +5,7 @@ import { FALLBACK_DOMAINS, liveConfig, readDomains } from '../../src/api/domains
 const GITHUB = {
   hdhub4u: 'https://new11.hdhub4u.cl',
   '4khdhub': 'https://4khdhub.one',
-  greenmotors: 'https://greenmotors.club',
+  greenmotors: 'https://greenmotors.cc',
   hblinks: 'https://hblinks.lol',
   hubdrive: 'https://hubdrive.bar',
   hubcloud: 'https://hubcloud.ist',
