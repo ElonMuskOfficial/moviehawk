@@ -62,13 +62,16 @@ const post = {
 
 /**
  * @param {import('fastify').FastifyInstance} app
- * @param {{ engine: ReturnType<typeof import('../engine/index.js').createEngine>,
- *   domains: Record<string, string> }} options `domains`: the current domain of each site.
+ * @param {{ config: { current: (log: import('fastify').FastifyBaseLogger) => import('./domains.js').Config } }} options
+ *   `config`: the engine and the sites' domains, for each request (domains.js).
  */
-export async function sitesRoutes(app, { engine, domains }) {
-  const siteUrlOf = (site) => {
+export async function sitesRoutes(app, { config }) {
+  // The engine, and the site's current domain, for one request.
+  const siteOf = (request) => {
+    const { site } = request.params;
     if (!SITES.includes(site)) throw new ProblemError(404, 'notFound', `No site ${site}`);
-    return domains[site];
+    const { engine, domains } = config.current(request.log);
+    return { site, engine, siteUrl: domains[site] };
   };
 
   // The engine's { posts, hasNextPage } as a page of the API.
@@ -98,9 +101,9 @@ export async function sitesRoutes(app, { engine, domains }) {
       response: { 200: postPage },
     },
   }, async (request) => {
-    const { site } = request.params;
+    const { site, engine, siteUrl } = siteOf(request);
     const page = Number(request.query.pageToken ?? 1);
-    return pageOf(site, page, await engine.scrapeListing(siteUrlOf(site), page));
+    return pageOf(site, page, await engine.scrapeListing(siteUrl, page));
   });
 
   app.get('/v1/sites/:site/search', {
@@ -115,9 +118,9 @@ export async function sitesRoutes(app, { engine, domains }) {
       response: { 200: postPage },
     },
   }, async (request) => {
-    const { site } = request.params;
+    const { site, engine, siteUrl } = siteOf(request);
     const page = Number(request.query.pageToken ?? 1);
-    return pageOf(site, page, await engine.searchPosts(siteUrlOf(site), request.query.q, page));
+    return pageOf(site, page, await engine.searchPosts(siteUrl, request.query.q, page));
   });
 
   app.get('/v1/sites/:site/posts/:post', {
@@ -131,8 +134,8 @@ export async function sitesRoutes(app, { engine, domains }) {
       response: { 200: post },
     },
   }, async (request) => {
-    const { site } = request.params;
-    const { post: found, links } = await engine.scrapePost(postUrl(siteUrlOf(site), request.params.post));
+    const { site, engine, siteUrl } = siteOf(request);
+    const { post: found, links } = await engine.scrapePost(postUrl(siteUrl, request.params.post));
     return {
       // From the URL the site answered at: a post the site renamed is named by its new slug.
       name: postName(site, found.url),

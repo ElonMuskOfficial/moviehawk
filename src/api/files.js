@@ -17,9 +17,10 @@ const nullableString = { type: ['string', 'null'] };
 
 /**
  * @param {import('fastify').FastifyInstance} app
- * @param {{ engine: ReturnType<typeof import('../engine/index.js').createEngine> }} options
+ * @param {{ config: { current: (log: import('fastify').FastifyBaseLogger) => import('./domains.js').Config } }} options
+ *   `config`: the engine, for each request (domains.js).
  */
-export async function filesRoutes(app, { engine }) {
+export async function filesRoutes(app, { config }) {
   app.get('/v1/links/:link/files', {
     schema: {
       summary: 'ListFiles',
@@ -55,7 +56,8 @@ export async function filesRoutes(app, { engine }) {
       },
     },
   }, async (request) => {
-    const { files, failures } = await engine.scrapeLinks([urlOf(request.params.link, 'link')]);
+    const url = urlOf(request.params.link, 'link');
+    const { files, failures } = await config.current(request.log).engine.scrapeLinks([url]);
     return {
       files: files.map(({ host, url, label }) => ({ name: fileName(url), host, url, label })),
       failures: failures.map(({ code, url, message }) => ({ code, url, detail: message })),
@@ -93,7 +95,7 @@ export async function filesRoutes(app, { engine }) {
     },
   }, async (request) => {
     const url = urlOf(request.params.file, 'file');
-    const { filename, sizeBytes, downloads } = await engine.resolve(url);
+    const { filename, sizeBytes, downloads } = await config.current(request.log).engine.resolve(url);
     return { name: fileName(url), filename, sizeBytes, downloads };
   });
 }

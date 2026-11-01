@@ -16,7 +16,7 @@ function fakeEngine(answer) {
 }
 
 async function app(engine) {
-  const server = await buildApp({ engine, domains });
+  const server = await buildApp({ config: { current: () => ({ engine, domains }) } });
   await server.ready();
   return server;
 }
