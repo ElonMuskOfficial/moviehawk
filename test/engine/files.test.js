@@ -34,7 +34,7 @@ describe('resolve', () => {
 
   it('is unsupported for a host the engine does not resolve, and a TypeError for no web URL, without a request', async () => {
     const options = web({});
-    for (const url of ['https://hubcdn.club/file/abc', 'https://gofile.io/d/abc', 'https://example.com/file/abc']) {
+    for (const url of ['https://hdstream4u.com/file/abc', 'https://gofile.io/d/abc', 'https://example.com/file/abc']) {
       await assert.rejects(resolve(url, options), { code: 'unsupported', url });
     }
     for (const url of ['hhttps://hubcloud.ist/drive/a', 'not a url']) await assert.rejects(resolve(url, options), TypeError);

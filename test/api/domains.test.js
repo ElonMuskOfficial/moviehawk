@@ -9,6 +9,7 @@ const GITHUB = {
   hblinks: 'https://hblinks.lol',
   hubdrive: 'https://hubdrive.bar',
   hubcloud: 'https://hubcloud.ist',
+  hubcdn: 'https://hubcdn.wiki',
 };
 const MINUTE = 60_000;
 
@@ -58,7 +59,7 @@ describe('liveConfig', () => {
   });
 
   it('takes no domains without one of a gateway or host: its URLs would be read on any domain', async () => {
-    for (const label of ['greenmotors', 'hblinks', 'hubdrive', 'hubcloud']) {
+    for (const label of ['greenmotors', 'hblinks', 'hubdrive', 'hubcloud', 'hubcdn']) {
       const { [label]: _, ...without } = GITHUB;
       const { fetch, now } = world(without);
 

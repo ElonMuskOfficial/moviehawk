@@ -34,14 +34,14 @@ What a user goes through, from finding a post to a download, and what does it.
 ```
 
 A link can skip gateways: 4KHDHub's HubCloud button is GreenMotors → HubCloud. Other hosts
-(HubCDN, GoFile, the players) are found the same way, but only HubCloud's files are resolved.
+(HubCDN, GoFile, the players) are found the same way; HubCloud's and HubCDN's files are resolved.
 
 | Step | The user sees | Engine | API | Time (live, 2026-11-01) |
 |---|---|---|---|---|
 | 0. Find | posters, a next page | `scrapeListing`, `searchPosts` | `GET /v1/sites/{site}/posts`, `/search?q=` | under 1 s |
 | 1. Post | the post, its links (`720p x264 [850MB]`) | `scrapePost` | `GET /v1/sites/{site}/posts/{post}` | up to 1 s |
 | 2. Files | the files a link leads to (`[HubCloud Server]`) | `scrapeLinks` | `GET /v1/links/{link}/files` | up to 3 s |
-| 3. Download | name, size, download servers | `resolve` | `GET /v1/files/{file}` | 1 to 6 s; 10 s when 10Gbps's redirects are slow |
+| 3. Download | name, size, download servers | `resolve` | `GET /v1/files/{file}` | 1 to 6 s; 10 s when 10Gbps's redirects are slow; HubCDN 1 to 3 s |
 
 Whether step 2 is shown when a link leads to one file is the consumer's choice. Downloads expire
 within minutes or hours, so step 3 is always live.
@@ -97,7 +97,7 @@ New domains need a new engine: its config never changes.
 | `file` | one file on a host, with the first label on the way to it: `{ host, externalId, url, label }` (JSDoc `HostFile`: Node has a global `File`) | |
 | `externalId` | the host's own file id | `xukqlp6jbsf8wja` |
 | `download` | one way to download a file: `{ server, kind, url, label }` | |
-| `server` | one server on HubCloud's download page | `10gbps`, `fsl` |
+| `server` | one server on HubCloud's download page, or `hubcdn` | `10gbps`, `fsl` |
 
 ### Rules
 
@@ -113,7 +113,11 @@ New domains need a new engine: its config never changes.
   `externalId`, with the first label on its way (null when no page on the way says anything).
   It reads all pages at once: the sites answered 1,088 requests at once with HTTP 200 only
   (2026-10-31). A URL on no gateway or host it knows is skipped, and not requested.
-- `resolve` reads HubCloud only; another host's file is `unsupported`. `download.kind` is
+- `resolve` reads HubCloud and HubCDN; another host's file is `unsupported`. A HubCDN file has
+  one download, `direct`: the file's URL (on R2 or Google) that its page's script holds,
+  base64-encoded. Its name and size are that URL's headers, asked for with a HEAD request, which
+  sends none of the file (a ranged GET would not do: Google answers it with the whole file); when
+  the HEAD fails they are null, and the download is still given. For HubCloud, `download.kind` is
   `direct` when its URL answers with the file (FSL, FSLv2, ZipDisk, Download File, 10Gbps once
   followed), `page` when it leads to it (PixelDrain, Buzz, Telegram, Watch Online, a server not
   known yet: `other`). 10Gbps is the only server it follows; when that fails, the button's own
@@ -163,7 +167,7 @@ Each route is one engine function, and reads only what that function reads.
 | `GET /v1/sites/{site}/search?q=&pageToken=` | SearchPosts | `searchPosts` | 1 |
 | `GET /v1/sites/{site}/posts/{post}` | GetPost | `scrapePost` | 1 |
 | `GET /v1/links/{link}/files` | ListFiles | `scrapeLinks([url])` | 1 to 3 |
-| `GET /v1/files/{file}` | GetFile | `resolve` | 2 or 3 |
+| `GET /v1/files/{file}` | GetFile | `resolve` | 2 or 3 (HubCDN: its page, and a HEAD to the file) |
 
 Live through the API (2026-11-01): 30 posts of both sites, 3 links of each: 87 links, 83 of them
 to files (167 files), and 75 of 75 HubCloud files resolved; another host's file is 400
@@ -303,8 +307,9 @@ GET /v1/files/aHR0cHM6Ly9odWJjbG91ZC5pc3QvZHJpdmUveHVrcWxwNmpic2Y4d2ph
 }
 ```
 
-Its Buzz, Watch Online and Telegram downloads are left out here. Only HubCloud's files are
-resolved; another host's is HTTP 400 `unsupported`.
+Its Buzz, Watch Online and Telegram downloads are left out here. HubCloud's and HubCDN's files
+are resolved; another host's is HTTP 400 `unsupported`. A HubCDN file's `filename` and
+`sizeBytes` are null when its storage did not state them.
 
 ### Errors
 

@@ -59,10 +59,23 @@ export function fetchJson(url, options) {
  * @returns {Promise<string>} The address after redirects.
  * @throws {EngineError} As fetchHtml; and the caller's reason on cancellation.
  */
-export function followRedirects(url, options) {
+export async function followRedirects(url, options) {
+  return (await fetchHead(url, options)).url;
+}
+
+/**
+ * Asks for a URL's headers only, following redirects: a HEAD request, so a file's URL sends none of
+ * the file (a ranged GET would not do: Google's file URLs answer it with the whole file, 2026-11-01).
+ *
+ * @param {string} url
+ * @param {RequestOptions} [options]
+ * @returns {Promise<{ url: string, headers: Headers }>} `url`: the address after redirects.
+ * @throws {EngineError} As fetchHtml; and the caller's reason on cancellation.
+ */
+export function fetchHead(url, options) {
   return request(url, 'HEAD', options, async (response) => {
     await response.body?.cancel();
-    return response.url || url;
+    return { url: response.url || url, headers: response.headers };
   });
 }
 

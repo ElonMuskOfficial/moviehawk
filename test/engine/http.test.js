@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { EngineError } from '../../src/engine/errors.js';
-import { fetchHtml, fetchJson, followRedirects, retry } from '../../src/engine/http.js';
+import { fetchHead, fetchHtml, fetchJson, followRedirects, retry } from '../../src/engine/http.js';
 
 const URL_A = 'https://hubcloud.ist/drive/abc';
 
@@ -138,6 +138,23 @@ describe('followRedirects', () => {
   it('fails like fetchHtml: notFound on HTTP 404, transient on the timeout', async () => {
     await rejectsWith(followRedirects(URL_A, { fetch: answer(404).fetchFn }), 'notFound', 404);
     await assert.rejects(followRedirects(URL_A, { fetch: stall, timeoutMs: 20 }), { code: 'transient' });
+  });
+});
+
+describe('fetchHead', () => {
+  it('returns the headers and the address after redirects, with a HEAD request', async () => {
+    const fetchFn = async (requestUrl, init) => {
+      fetchFn.init = init;
+      const response = new Response(null, { status: 200, headers: { 'content-length': '791997862' } });
+      Object.defineProperty(response, 'url', { value: 'https://pub-1.r2.dev/f' });
+      return response;
+    };
+
+    const { url, headers } = await fetchHead(URL_A, { fetch: fetchFn });
+
+    assert.equal(url, 'https://pub-1.r2.dev/f');
+    assert.equal(headers.get('content-length'), '791997862');
+    assert.equal(fetchFn.init.method, 'HEAD');
   });
 });
 

@@ -19,6 +19,7 @@ export const FALLBACK_DOMAINS = Object.freeze({
   hblinks: 'https://hblinks.lol',
   hubdrive: 'https://hubdrive.bar',
   hubcloud: 'https://hubcloud.ist',
+  hubcdn: 'https://hubcdn.wiki',
 });
 
 // A domain fixed by hand in the repo reaches the API within 30 minutes (GitHub caches the raw
