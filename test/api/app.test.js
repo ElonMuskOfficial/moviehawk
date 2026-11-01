@@ -102,7 +102,7 @@ describe('the API server', () => {
   });
 
   it('gives a URL that does not decode as a 400 problem', async (t) => {
-    const server = await app((s) => s.get('/v1/sites/:site/posts/:post', () => ({ ok: true })));
+    const server = await app();
     t.after(() => server.close());
 
     const response = await server.inject('/v1/sites/hdhub4u/posts/wall%c2%b-2008');

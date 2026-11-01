@@ -12,7 +12,7 @@ function fakeEngine(answer) {
     calls.push([name, ...args]);
     return answer(...args);
   };
-  return { engine: { scrapeListing: record('scrapeListing'), searchPosts: record('searchPosts') }, calls };
+  return { engine: { scrapeListing: record('scrapeListing'), searchPosts: record('searchPosts'), scrapePost: record('scrapePost') }, calls };
 }
 
 async function app(engine) {
@@ -167,5 +167,86 @@ describe('SearchPosts', () => {
       assert.equal(response.json().code, 'invalidArgument', url);
     }
     assert.deepEqual(calls, []);
+  });
+});
+
+describe('GetPost', () => {
+  const wrongTurn = {
+    post: {
+      provider: 'hdhub4u',
+      url: 'https://new10.hdhub4u.cl/wrong-turn-2003-hindi-bluray-full-movie/',
+      title: 'Wrong Turn (2003) BluRay [Hindi (DD5.1) & English] 1080p 720p & 480p Dual Audio [x264] | Full Movie',
+      year: 2003,
+      imdbId: 'tt0295700',
+      posterUrl: 'https://imgshare.info/images/2026/08/19/Wrong-Turn-2003.jpg',
+      publishedAt: '2026-08-19T04:16:42.000Z',
+    },
+    links: [
+      { url: 'https://greenmotors.club/?id=cUk4cEpVbFU1NW8yUVR1ZVFUM3phNm5QS2Z3TTdCSkVpS1pqdjdkTHQ5bDlqUGNSMTVIWDk5d05BZDVIa3R2QnpzaG9sUGlWYWgyY3A5eVRVeVBaTlVwYVVuUkxNZXZBRG9rbDZqQldYWmc9', label: '720p x264 [850MB]' },
+      { url: 'https://hblinks.lol/archives/121857', label: 'EPiSODE 1 720p · Drive' },
+    ],
+  };
+
+  it("reads the post its name names, on its site's current domain, and names each link by its URL", async (t) => {
+    const { engine, calls } = fakeEngine(() => wrongTurn);
+    const server = await app(engine);
+    t.after(() => server.close());
+
+    const response = await server.inject('/v1/sites/hdhub4u/posts/wrong-turn-2003-hindi-bluray-full-movie');
+
+    assert.deepEqual(calls, [['scrapePost', 'https://new10.hdhub4u.cl/wrong-turn-2003-hindi-bluray-full-movie/']]);
+    assert.deepEqual(response.json(), {
+      name: 'sites/hdhub4u/posts/wrong-turn-2003-hindi-bluray-full-movie',
+      url: 'https://new10.hdhub4u.cl/wrong-turn-2003-hindi-bluray-full-movie/',
+      title: wrongTurn.post.title,
+      year: 2003,
+      imdbId: 'tt0295700',
+      posterUrl: wrongTurn.post.posterUrl,
+      publishTime: '2026-08-19T04:16:42.000Z',
+      links: [
+        { name: `links/${Buffer.from(wrongTurn.links[0].url).toString('base64url')}`, label: '720p x264 [850MB]' },
+        { name: 'links/aHR0cHM6Ly9oYmxpbmtzLmxvbC9hcmNoaXZlcy8xMjE4NTc', label: 'EPiSODE 1 720p · Drive' },
+      ],
+    });
+    assert.equal(Buffer.from(response.json().links[0].name.slice('links/'.length), 'base64url').toString(), wrongTurn.links[0].url);
+  });
+
+  it('makes the URL of a post whose slug is not plain ASCII again, from the decoded name', async (t) => {
+    const { engine, calls } = fakeEngine((url) => ({ post: { ...wrongTurn.post, url }, links: [] }));
+    const server = await app(engine);
+    t.after(() => server.close());
+
+    // As a client sends the name sites/hdhub4u/posts/wall·e-2008-hindi-bluray-full-movie.
+    const response = await server.inject('/v1/sites/hdhub4u/posts/wall%C2%B7e-2008-hindi-bluray-full-movie');
+
+    assert.deepEqual(calls, [['scrapePost', 'https://new10.hdhub4u.cl/wall%C2%B7e-2008-hindi-bluray-full-movie/']]);
+    assert.equal(response.json().name, 'sites/hdhub4u/posts/wall·e-2008-hindi-bluray-full-movie');
+  });
+
+  it('names a post by the URL the site answered at, when it moved the post', async (t) => {
+    const { engine } = fakeEngine(() => ({ post: { ...wrongTurn.post, url: 'https://new10.hdhub4u.cl/wrong-turn-2003-new-slug/' }, links: [] }));
+    const server = await app(engine);
+    t.after(() => server.close());
+
+    const response = await server.inject('/v1/sites/hdhub4u/posts/wrong-turn-2003-hindi-bluray-full-movie');
+
+    assert.equal(response.json().name, 'sites/hdhub4u/posts/wrong-turn-2003-new-slug');
+  });
+
+  it('gives a post the site says is gone as 404, and a post of a site it does not have as 404 without asking', async (t) => {
+    const { engine, calls } = fakeEngine(() => {
+      throw new EngineError('notFound', '4KHDHub says the post does not exist', { url: 'https://4khdhub.one/the-strangers-chapter-3-movie-6020/' });
+    });
+    const server = await app(engine);
+    t.after(() => server.close());
+
+    const gone = await server.inject('/v1/sites/4khdhub/posts/the-strangers-chapter-3-movie-6020');
+    const noSite = await server.inject('/v1/sites/rogmovies/posts/download-akka-2026-season-1-hindi-dubbed-org');
+
+    assert.equal(gone.statusCode, 404);
+    assert.equal(gone.json().detail, '4KHDHub says the post does not exist');
+    assert.equal(noSite.statusCode, 404);
+    assert.equal(noSite.json().detail, 'No site rogmovies');
+    assert.equal(calls.length, 1);
   });
 });

@@ -1,7 +1,7 @@
 # API
 
-**Status:** being built on the branch `engine`, piece by piece, as the engine was: pieces 1 to 3
-are done (ListSites, ListPosts, SearchPosts).
+**Status:** being built on the branch `engine`, piece by piece, as the engine was: pieces 1 to 4
+are done (ListSites, ListPosts, SearchPosts, GetPost).
 
 ```bash
 npm run api                          # http://127.0.0.1:3000

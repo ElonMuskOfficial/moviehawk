@@ -1,7 +1,7 @@
 /**
- * The sites and their posts (docs/api.md): ListSites, ListPosts, SearchPosts.
+ * The sites and their posts (docs/api.md): ListSites, ListPosts, SearchPosts, GetPost.
  */
-import { postName } from './names.js';
+import { linkName, postName, postUrl } from './names.js';
 import { ProblemError } from './problems.js';
 
 // The sites the engine reads posts of. Vegamovies and RogMovies come with their provider.
@@ -34,6 +34,30 @@ const siteParams = {
   type: 'object',
   required: ['site'],
   properties: { site: { type: 'string', examples: SITES } },
+};
+
+const nullable = (type) => ({ type: [type, 'null'] });
+
+const post = {
+  type: 'object',
+  required: ['name', 'url', 'title', 'year', 'imdbId', 'posterUrl', 'publishTime', 'links'],
+  properties: {
+    name: { type: 'string', examples: ['sites/hdhub4u/posts/wrong-turn-2003-hindi-bluray-full-movie'] },
+    url: { type: 'string', description: 'The post on its site' },
+    title: { type: 'string' },
+    year: nullable('integer'),
+    imdbId: nullable('string'),
+    posterUrl: nullable('string'),
+    publishTime: { ...nullable('string'), format: 'date-time' },
+    links: {
+      type: 'array',
+      items: {
+        type: 'object',
+        required: ['name', 'label'],
+        properties: { name: { type: 'string', description: 'Its files: GET /v1/{name}/files' }, label: { type: 'string' } },
+      },
+    },
+  },
 };
 
 /**
@@ -94,5 +118,31 @@ export async function sitesRoutes(app, { engine, domains }) {
     const { site } = request.params;
     const page = Number(request.query.pageToken ?? 1);
     return pageOf(site, page, await engine.searchPosts(siteUrlOf(site), request.query.q, page));
+  });
+
+  app.get('/v1/sites/:site/posts/:post', {
+    schema: {
+      summary: 'GetPost',
+      params: {
+        type: 'object',
+        required: ['site', 'post'],
+        properties: { site: siteParams.properties.site, post: { type: 'string', examples: ['wrong-turn-2003-hindi-bluray-full-movie'] } },
+      },
+      response: { 200: post },
+    },
+  }, async (request) => {
+    const { site } = request.params;
+    const { post: found, links } = await engine.scrapePost(postUrl(siteUrlOf(site), request.params.post));
+    return {
+      // From the URL the site answered at: a post the site renamed is named by its new slug.
+      name: postName(site, found.url),
+      url: found.url,
+      title: found.title,
+      year: found.year,
+      imdbId: found.imdbId,
+      posterUrl: found.posterUrl,
+      publishTime: found.publishedAt,
+      links: links.map(({ url, label }) => ({ name: linkName(url), label })),
+    };
   });
 }
