@@ -9,23 +9,19 @@ export const SITES = ['hdhub4u', '4khdhub'];
 
 // A page number, as the API gives it in nextPageToken: from 1. At most 15 digits, which Number()
 // reads exactly: a 400-digit one is Infinity, which the engine rejects with a TypeError (a 500).
-const pageToken = { type: 'string', pattern: '^[1-9][0-9]*$', maxLength: 15, description: 'The nextPageToken of the page before' };
+const pageToken = { type: 'string', pattern: '^[1-9][0-9]*$', maxLength: 15 };
 
 // Every segment of a name is at least 1 character: "/v1/sites/hdhub4u/posts/" is no post, and
 // would read the site's home page as one.
-const segment = (examples) => ({ type: 'string', minLength: 1, examples });
-const siteParams = { type: 'object', required: ['site'], properties: { site: segment(SITES) } };
-const postParams = {
-  type: 'object',
-  required: ['site', 'post'],
-  properties: { site: segment(SITES), post: segment(['wrong-turn-2003-hindi-bluray-full-movie']) },
-};
+const segment = { type: 'string', minLength: 1 };
+const siteParams = { type: 'object', required: ['site'], properties: { site: segment } };
+const postParams = { type: 'object', required: ['site', 'post'], properties: { site: segment, post: segment } };
 
 const postCard = {
   type: 'object',
   required: ['name', 'title', 'posterUrl'],
   properties: {
-    name: { type: 'string', examples: ['sites/hdhub4u/posts/akka-season-1-hindi-webrip-full-series'] },
+    name: { type: 'string' },
     title: { type: 'string' },
     posterUrl: { type: ['string', 'null'] },
   },
@@ -36,7 +32,7 @@ const postPage = {
   required: ['posts'],
   properties: {
     posts: { type: 'array', items: postCard },
-    nextPageToken: { type: 'string', description: 'Absent on the last page' },
+    nextPageToken: { type: 'string' }, // absent on the last page
   },
 };
 
@@ -44,8 +40,8 @@ const fullPost = {
   type: 'object',
   required: ['name', 'url', 'title', 'year', 'imdbId', 'posterUrl', 'publishTime', 'links'],
   properties: {
-    name: { type: 'string', examples: ['sites/hdhub4u/posts/wrong-turn-2003-hindi-bluray-full-movie'] },
-    url: { type: 'string', description: 'The post on its site' },
+    name: { type: 'string' },
+    url: { type: 'string' },
     title: { type: 'string' },
     year: { type: ['integer', 'null'] },
     imdbId: { type: ['string', 'null'] },
@@ -56,7 +52,7 @@ const fullPost = {
       items: {
         type: 'object',
         required: ['name', 'label'],
-        properties: { name: { type: 'string', description: 'Its files: GET /v1/{name}/files' }, label: { type: 'string' } },
+        properties: { name: { type: 'string' }, label: { type: 'string' } },
       },
     },
   },
@@ -89,12 +85,11 @@ export async function sitesRoutes(app, { config }) {
   });
 
   app.get('/v1/sites', {
-    schema: { operationId: 'ListSites', response: { 200: siteList } },
+    schema: { response: { 200: siteList } },
   }, () => ({ sites: SITES.map((site) => ({ name: `sites/${site}` })) }));
 
   app.get('/v1/sites/:site/posts', {
     schema: {
-      operationId: 'ListPosts',
       params: siteParams,
       querystring: { type: 'object', properties: { pageToken } },
       response: { 200: postPage },
@@ -107,7 +102,6 @@ export async function sitesRoutes(app, { config }) {
 
   app.get('/v1/sites/:site/search', {
     schema: {
-      operationId: 'SearchPosts',
       params: siteParams,
       querystring: { type: 'object', required: ['q'], properties: { q: { type: 'string', minLength: 1 }, pageToken } },
       response: { 200: postPage },
@@ -119,7 +113,7 @@ export async function sitesRoutes(app, { config }) {
   });
 
   app.get('/v1/sites/:site/posts/:post', {
-    schema: { operationId: 'GetPost', params: postParams, response: { 200: fullPost } },
+    schema: { params: postParams, response: { 200: fullPost } },
   }, async (request) => {
     const { site, engine, siteUrl } = siteOf(request);
     const { post, links } = await engine.scrapePost(postUrl(siteUrl, request.params.post));

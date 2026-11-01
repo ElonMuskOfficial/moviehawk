@@ -11,7 +11,6 @@
     "api": "node scripts/api.js"
   },
   "dependencies": {
-    "@fastify/swagger": "9.9.2",
     "cheerio": "1.2.0",
     "fastify": "5.12.7"
   }

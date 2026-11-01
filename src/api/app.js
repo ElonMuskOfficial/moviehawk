@@ -3,7 +3,6 @@
  * (problems.js).
  */
 import { randomUUID } from 'node:crypto';
-import fastifySwagger from '@fastify/swagger';
 import Fastify from 'fastify';
 import { PROBLEM_TYPE, problem, problemOf } from './problems.js';
 import { filesRoutes } from './files.js';
@@ -56,14 +55,6 @@ export async function buildApp({ config, logger = false }) {
 
   app.setNotFoundHandler((request, reply) => sendProblem(reply, problem(404, 'notFound', `No route ${request.method} ${request.url}`)));
 
-  await app.register(fastifySwagger, {
-    openapi: {
-      openapi: '3.1.0',
-      info: { title: 'MovieHawk API', version: '1' },
-    },
-  });
-
-  app.get('/v1/openapi.json', { schema: { hide: true } }, () => app.swagger());
   await app.register(sitesRoutes, { config });
   await app.register(filesRoutes, { config });
 

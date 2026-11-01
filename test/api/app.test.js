@@ -112,16 +112,4 @@ describe('the API server', () => {
     assert.equal(response.headers['content-type'], PROBLEM);
     assert.equal(response.json().code, 'invalidArgument');
   });
-
-  it('serves its OpenAPI 3.1 document, which does not list itself', async (t) => {
-    const server = await app();
-    t.after(() => server.close());
-
-    const response = await server.inject('/v1/openapi.json');
-
-    assert.equal(response.statusCode, 200);
-    assert.equal(response.json().openapi, '3.1.0');
-    assert.ok(response.json().paths['/v1/sites/{site}/posts']);
-    assert.equal(response.json().paths['/v1/openapi.json'], undefined);
-  });
 });

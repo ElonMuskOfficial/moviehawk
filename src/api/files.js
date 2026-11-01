@@ -18,9 +18,9 @@ const linkFile = {
   type: 'object',
   required: ['name', 'host', 'url', 'label'],
   properties: {
-    name: { type: 'string', description: 'Its downloads: GET /v1/{name}' },
-    host: { type: 'string', examples: ['hubcloud'] },
-    url: { type: 'string', description: 'The file\'s page on its host' },
+    name: { type: 'string' },
+    host: { type: 'string' },
+    url: { type: 'string' },
     label: { type: ['string', 'null'] },
   },
 };
@@ -41,7 +41,7 @@ const download = {
   type: 'object',
   required: ['server', 'kind', 'url', 'label'],
   properties: {
-    server: { type: 'string', examples: ['10gbps', 'fsl', 'pixeldrain'] },
+    server: { type: 'string' },
     kind: { type: 'string', enum: ['direct', 'page'] },
     url: { type: 'string' },
     label: { type: 'string' },
@@ -66,7 +66,7 @@ const resolvedFile = {
  */
 export async function filesRoutes(app, { config }) {
   app.get('/v1/links/:link/files', {
-    schema: { operationId: 'ListFiles', params: idParams('link'), response: { 200: fileList } },
+    schema: { params: idParams('link'), response: { 200: fileList } },
   }, async (request) => {
     const url = urlOf(request.params.link, 'link');
     const { files, failures } = await config.current(request.log).engine.scrapeLinks([url]);
@@ -77,7 +77,7 @@ export async function filesRoutes(app, { config }) {
   });
 
   app.get('/v1/files/:file', {
-    schema: { operationId: 'GetFile', params: idParams('file'), response: { 200: resolvedFile } },
+    schema: { params: idParams('file'), response: { 200: resolvedFile } },
   }, async (request) => {
     const url = urlOf(request.params.file, 'file');
     const { filename, sizeBytes, downloads } = await config.current(request.log).engine.resolve(url);

@@ -18,7 +18,6 @@ the live sites through the engine: there is no database.
 | Resources, names, JSON | [Google AIP](https://google.aip.dev), as a guide: where a rule would make the API harder to use and prevents no failure, the API takes the common industry form instead |
 | HTTP methods, status codes, headers | RFC 9110; caching RFC 9111 |
 | Errors | RFC 9457 (`application/problem+json`) |
-| The contract | OpenAPI 3.1, made from the routes' schemas (`@fastify/swagger`) |
 
 Node, [Fastify](https://fastify.dev) 5. JSON is camelCase, as AIP's JSON and the engine are. Where
 the API departs from AIP is in [Departures from AIP](#departures-from-aip), with its reason.
@@ -27,7 +26,7 @@ the API departs from AIP is in [Departures from AIP](#departures-from-aip), with
 
 Each route is one engine function, and reads only what that function reads.
 
-| HTTP | `operationId` | Engine | Requests to the sites |
+| HTTP | Method | Engine | Requests to the sites |
 |---|---|---|---|
 | `GET /v1/sites` | ListSites | (the API's config) | 0 |
 | `GET /v1/sites/{site}/posts?pageToken=` | ListPosts | `scrapeListing` | 1 |
@@ -303,8 +302,7 @@ only their names to ListSites. What was checked for them (live, 2026-11-01, on
 Each piece: an example first, then the code and its tests, one commit.
 
 1. This document, approved.
-2. The server: Fastify, `maxParamLength`, `Request-Id`, the error mapping, OpenAPI at
-   `/v1/openapi.json`.
+2. The server: Fastify, `maxParamLength`, `Request-Id`, the error mapping.
 3. ListSites, ListPosts, SearchPosts.
 4. GetPost: a post's name to its URL and back; a link's name.
 5. ListFiles, GetFile.
