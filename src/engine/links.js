@@ -74,7 +74,7 @@ export async function scrapeLinks(urls, { domains = {}, onEvent = () => {}, ...o
         if (!(error instanceof EngineError)) throw error;
         return fail(error);
       }
-      report('gateway', url, `${gateway.label}: ${next.length} links`);
+      report('gateway', url, `${gateway.id}: ${next.length} links`);
       const files = await Promise.all(next.map((link) => follow(link.url, label ?? link.label)));
       return files.flat();
     }

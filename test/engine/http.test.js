@@ -85,7 +85,7 @@ describe('fetchHtml', () => {
   it('is transient when the host does not answer within the timeout', async () => {
     await assert.rejects(fetchHtml(URL_A, { fetch: stall, timeoutMs: 20 }), (error) => {
       assert.equal(error.code, 'transient');
-      assert.equal(error.message, 'No answer within 20 ms');
+      assert.equal(error.message, 'hubcloud.ist did not answer within 20 ms');
       return true;
     });
   });

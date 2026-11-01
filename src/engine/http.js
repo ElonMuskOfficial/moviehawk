@@ -86,6 +86,9 @@ export function followRedirects(url, options) {
  */
 async function request(url, method, { fetch: fetchFn = fetch, timeoutMs = 8000, signal, headers } = {}, read) {
   const timeout = AbortSignal.timeout(timeoutMs);
+  // The site's hostname, in every message: an API client sees the message alone, and "HTTP 404"
+  // would not say whether the API or the site answered it.
+  const { hostname } = new URL(url);
   try {
     const response = await fetchFn(url, {
       method,
@@ -96,12 +99,12 @@ async function request(url, method, { fetch: fetchFn = fetch, timeoutMs = 8000, 
     if (!response.ok) {
       await response.body?.cancel();
       const code = response.status === 404 || response.status === 410 ? 'notFound' : 'transient';
-      throw new EngineError(code, `HTTP ${response.status}`, { url, status: response.status });
+      throw new EngineError(code, `${hostname} answered HTTP ${response.status}`, { url, status: response.status });
     }
     return await read(response);
   } catch (error) {
     if (error instanceof EngineError || signal?.aborted) throw error;
-    const message = timeout.aborted ? `No answer within ${timeoutMs} ms` : error.message;
+    const message = timeout.aborted ? `${hostname} did not answer within ${timeoutMs} ms` : `${hostname} did not answer: ${error.message}`;
     throw new EngineError('transient', message, { url, cause: error });
   }
 }

@@ -8,12 +8,13 @@ import { expandGreenMotors } from './greenmotors.js';
 import { expandHubDrive } from './hubdrive.js';
 import { expandHubLinks } from './hublinks.js';
 
-// Shapes seen on live posts (2026-10-31): greenmotors.club/?id=<token>, hblinks.lol/archives/<n>,
-// hubdrive.bar/file/<id>, hubdrive.bar/packs/<id>.
+// Each gateway's id is also the hostname label that identifies it. Shapes seen on live posts
+// (2026-10-31): greenmotors.club/?id=<token>, hblinks.lol/archives/<n>, hubdrive.bar/file/<id>,
+// hubdrive.bar/packs/<id>.
 const GATEWAYS = [
-  { label: 'greenmotors', matches: (url) => url.pathname === '/' && url.searchParams.has('id'), expand: expandGreenMotors },
-  { label: 'hblinks', matches: (url) => /^\/archives\/\d+\/?$/.test(url.pathname), expand: expandHubLinks },
-  { label: 'hubdrive', matches: (url) => /^\/(?:file|packs)\/[\w-]+\/?$/.test(url.pathname), expand: expandHubDrive },
+  { id: 'greenmotors', matches: (url) => url.pathname === '/' && url.searchParams.has('id'), expand: expandGreenMotors },
+  { id: 'hblinks', matches: (url) => /^\/archives\/\d+\/?$/.test(url.pathname), expand: expandHubLinks },
+  { id: 'hubdrive', matches: (url) => /^\/(?:file|packs)\/[\w-]+\/?$/.test(url.pathname), expand: expandHubDrive },
 ];
 
 /**
@@ -25,5 +26,5 @@ const GATEWAYS = [
  */
 export function gatewayOf(url) {
   const parsed = webUrlOf(url);
-  return (parsed && GATEWAYS.find(({ label, matches }) => hasLabel(parsed, label) && matches(parsed))) ?? null;
+  return (parsed && GATEWAYS.find(({ id, matches }) => hasLabel(parsed, id) && matches(parsed))) ?? null;
 }

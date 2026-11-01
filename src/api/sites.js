@@ -52,7 +52,7 @@ const fullPost = {
       items: {
         type: 'object',
         required: ['name', 'label'],
-        properties: { name: { type: 'string' }, label: { type: 'string' } },
+        properties: { name: { type: 'string' }, label: { type: ['string', 'null'] } },
       },
     },
   },

@@ -5,7 +5,7 @@
  */
 import * as cheerio from 'cheerio';
 import { EngineError } from '../errors.js';
-import { linkOf } from '../html.js';
+import { linkOf, textOf } from '../html.js';
 import { fetchHtml } from '../http.js';
 
 // HubDrive answers a deleted file with HTTP 200 and one of these headings (live, 2026-10-29 and
@@ -25,7 +25,7 @@ const DELETED = /^(?:File not found|The file has been deleted)\b/i;
 export async function expandHubDrive(url, options) {
   const page = await fetchHtml(url, options);
   const $ = cheerio.load(page.html, { baseURI: page.url });
-  if ($('h1, h2, h3, h4, h5, h6').toArray().some((heading) => DELETED.test($(heading).text().trim()))) {
+  if ($('h1, h2, h3, h4, h5, h6').toArray().some((heading) => DELETED.test(textOf($(heading))))) {
     throw new EngineError('notFound', 'HubDrive says the file is gone', { url });
   }
   const linksOf = (selector) => $(selector).toArray().map((a) => linkOf($, a));
