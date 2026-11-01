@@ -49,6 +49,6 @@ describe('expandHubDrive', () => {
   });
 
   it('passes fetching errors on as they are', async () => {
-    await assert.rejects(expandHubDrive(PACK_URL, answer('', PACK_URL, 404)), { code: 'notFound', status: 404 });
+    await assert.rejects(expandHubDrive(PACK_URL, answer('', PACK_URL, 404)), { code: 'notFound' });
   });
 });

@@ -24,7 +24,7 @@ export function problem(status, code, detail) {
   return { type: 'about:blank', title: STATUS_CODES[status], status, detail, code };
 }
 
-/** An error a route throws to answer with a problem of its own: a site the API does not have. */
+/** An error a route throws to answer with a problem of its own: no such site, a name the API did not make. */
 export class ProblemError extends Error {
   /** @param {number} status @param {string} code @param {string} detail */
   constructor(status, code, detail) {

@@ -62,7 +62,7 @@ describe('scrapePost', () => {
     await assert.rejects(scrapePost(POST_URL, web({ [POST_URL]: 404 })), { code: 'notFound', url: POST_URL });
   });
 
-  it('is unsupported for a site the engine does not read, without a request', async () => {
+  it('is unsupported for a site the engine does not read, and a TypeError for no web URL, without a request', async () => {
     const options = web({});
     await assert.rejects(scrapePost('https://example.com/show/', options), { code: 'unsupported' });
     await assert.rejects(scrapePost('hhttps://new10.hdhub4u.cl/show/', options), TypeError);

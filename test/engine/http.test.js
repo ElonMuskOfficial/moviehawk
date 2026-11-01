@@ -25,7 +25,7 @@ const stall = (requestUrl, { signal }) => new Promise((resolve, reject) => {
 const rejectsWith = (promise, code, status = null) => assert.rejects(promise, (error) => {
   assert.ok(error instanceof EngineError);
   assert.equal(error.code, code);
-  assert.equal(error.status, status);
+  if (status) assert.equal(error.message, `hubcloud.ist answered HTTP ${status}`);
   assert.equal(error.url, URL_A);
   return true;
 });

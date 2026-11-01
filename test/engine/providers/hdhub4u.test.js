@@ -79,7 +79,7 @@ describe('scrapeHdHub4uPost', () => {
   });
 
   it('is notFound when HDHub4u answers HTTP 404, as it does for a missing post', async () => {
-    await assert.rejects(scrapeHdHub4uPost(MOVIE_URL, answer('Page not found', 404)), { code: 'notFound', status: 404 });
+    await assert.rejects(scrapeHdHub4uPost(MOVIE_URL, answer('Page not found', 404)), { code: 'notFound' });
   });
 });
 

@@ -11,6 +11,9 @@ export const SITES = ['hdhub4u', '4khdhub'];
 // reads exactly: a 400-digit one is Infinity, which the engine rejects with a TypeError (a 500).
 const pageToken = { type: 'string', pattern: '^[1-9][0-9]*$', maxLength: 15 };
 
+// A query with text: the engine rejects one of spaces only with a TypeError (a 500).
+const q = { type: 'string', pattern: '\\S' };
+
 // Every segment of a name is at least 1 character: "/v1/sites/hdhub4u/posts/" is no post, and
 // would read the site's home page as one.
 const segment = { type: 'string', minLength: 1 };
@@ -103,7 +106,7 @@ export async function sitesRoutes(app, { config }) {
   app.get('/v1/sites/:site/search', {
     schema: {
       params: siteParams,
-      querystring: { type: 'object', required: ['q'], properties: { q: { type: 'string', minLength: 1 }, pageToken } },
+      querystring: { type: 'object', required: ['q'], properties: { q, pageToken } },
       response: { 200: postPage },
     },
   }, async (request) => {

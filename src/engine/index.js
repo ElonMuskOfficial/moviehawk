@@ -26,7 +26,6 @@ export { EngineError } from './errors.js';
  * @typedef {import('./html.js').Link} Link
  * @typedef {import('./hosts/index.js').HostFile} HostFile
  * @typedef {import('./hosts/index.js').Download} Download
- * @typedef {import('./links.js').EngineEvent} EngineEvent
  */
 
 /**
@@ -38,8 +37,7 @@ export { EngineError } from './errors.js';
  *   (`{ hdhub4u: 'https://new10.hdhub4u.cl', hubcloud: 'https://hubcloud.ist' }`); every URL is
  *   moved to it before it is read. When a domain changes, make a new engine. `fetch`, `timeoutMs`:
  *   for every request (http.js).
- * @returns The engine's functions. A call's own options go with the call: `signal`, and `onEvent`
- *   for scrapeLinks.
+ * @returns The engine's functions. A call's own option goes with the call: `signal`.
  */
 export function createEngine(config = {}) {
   const withConfig = (options) => ({ ...options, ...config });

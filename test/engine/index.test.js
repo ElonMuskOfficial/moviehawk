@@ -20,7 +20,7 @@ describe('the engine\'s entry', () => {
     assert.deepEqual(Object.keys(entry).sort(), ['EngineError', 'createEngine']);
   });
 
-  it('makes an engine whose every call has its config, and the call\'s own options', async () => {
+  it('makes an engine whose every call has its config', async () => {
     const { fetch, requests } = web({
       'https://new10.hdhub4u.cl/show/': '<h1 class="page-title"><span class="material-text">Show</span></h1>'
         + '<main class="page-body"><h3><a href="https://hubdrive.live/file/7">720p [1GB]</a></h3></main>',
@@ -28,13 +28,11 @@ describe('the engine\'s entry', () => {
     });
     const domains = { hdhub4u: 'https://new10.hdhub4u.cl', hubdrive: 'https://hubdrive.bar', hubcloud: 'https://hubcloud.ist' };
     const engine = createEngine({ domains, fetch });
-    const events = [];
 
     const { links } = await engine.scrapePost('https://new9.hdhub4u.cl/show/');
-    const { files } = await engine.scrapeLinks(links.map(({ url }) => url), { onEvent: (event) => events.push(event.type) });
+    const { files } = await engine.scrapeLinks(links.map(({ url }) => url));
 
     assert.deepEqual(requests, ['https://new10.hdhub4u.cl/show/', 'https://hubdrive.bar/file/7']);
     assert.deepEqual(files, [{ host: 'hubcloud', externalId: 'a', url: 'https://hubcloud.ist/drive/a', label: '[HubCloud Server]' }]);
-    assert.deepEqual(events, ['gateway', 'file']);
   });
 });

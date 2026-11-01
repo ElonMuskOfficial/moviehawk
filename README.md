@@ -70,11 +70,11 @@ those belong to its consumers.
 | fetching, timeout, retry | storing results |
 | parsing, following links | caching, rate limits |
 | failure codes (`notFound`, ...) | where the configuration comes from |
-| file ids, moving URLs to current domains | logs (the engine reports through `onEvent`) |
+| file ids, moving URLs to current domains | logs |
 
 `createEngine({ domains, fetch, timeoutMs })` gives the functions below, each with that config, so
-no call can read dead domains for lack of `domains`. A call's own options are `signal`, and
-`onEvent` for `scrapeLinks`. New domains need a new engine: its config never changes.
+no call can read dead domains for lack of `domains`. A call's own option is `signal`.
+New domains need a new engine: its config never changes.
 
 | Function | Reads | Returns |
 |---|---|---|
@@ -122,16 +122,15 @@ no call can read dead domains for lack of `domains`. A call's own options are `s
   label (`{ hblinks: 'https://hblinks.lol' }`). Every URL is moved to it before it is read, files
   too (hubcloud.foo → hubcloud.ist).
 - Nothing found is an empty result (`files: []`, a search's `posts: []`), not an error.
-- `onEvent({ type, url, detail })`: what happened to each link (`gateway`, `file`, `skipped`,
-  `failure`), for logs.
 
 ### Errors
 
 Every function throws `EngineError`, whose `code` says what the site said; `failures` in
-`scrapeLinks` are `EngineError`s too (`code`, `url`, `status`):
+`scrapeLinks` are `EngineError`s too (`code`, `url`, and a message that names the site, such as
+`new10.hdhub4u.cl answered HTTP 404`):
 
 - `notFound`: the site said it is gone: HTTP 404 or 410, or the host's own "not found" page;
-- `transient`: the site did not answer: a timeout, a network error, a 5xx or 429;
+- `transient`: the site did not answer: a timeout, a network error, any HTTP error but 404 and 410;
 - `unrecognized`: a page the engine cannot read: a changed layout or a challenge page;
 - `unsupported`: a URL no provider or host of the engine handles.
 
@@ -194,7 +193,7 @@ files/aHR0cHM6Ly9odWJjbG91ZC5pc3QvZHJpdmUveHVrcWxwNmpic2Y4d2ph
 - A name that is not of a web URL is HTTP 400. A link's name of a URL on no gateway or host the
   engine knows gives `files: []`.
 - Names are long: a GreenMotors link's up to 540 characters, an HDHub4u slug up to 143. Fastify's
-  `maxParamLength` (100 by default) is 2048, or they would be HTTP 404.
+  `maxParamLength` (100 by default) is 2048, or they would be HTTP 414.
 
 ### ListSites
 
@@ -319,7 +318,7 @@ RFC 9457, with the cause as the extension `code`:
 | A name, `pageToken` or `q` the API cannot read | 400 (414 for a name over 2048 characters) | `invalidArgument` |
 | A file on a host the engine does not resolve | 400 | `unsupported` |
 | The site's page could not be read (a changed layout, a challenge page) | 502 | `unrecognized` |
-| The site did not answer (timeout, network error, its 5xx or 429) | 504 | `transient` |
+| The site did not answer (timeout, network error, any HTTP error but 404 and 410) | 504 | `transient` |
 | A bug in the API (its message goes to the log, not the client) | 500 | `internal` |
 
 Every response has a `Request-Id` (RFC 6648: no `X-`), the server's own, to name a request in a

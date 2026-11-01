@@ -68,7 +68,7 @@ describe('ListPosts', () => {
 
   it('gives a page after the last as the engine\'s 404', async (t) => {
     const { engine } = fakeEngine(() => {
-      throw new EngineError('notFound', 'HTTP 404', { url: 'https://new10.hdhub4u.cl/page/99999/', status: 404 });
+      throw new EngineError('notFound', 'new10.hdhub4u.cl answered HTTP 404', { url: 'https://new10.hdhub4u.cl/page/99999/' });
     });
     const server = await app(engine);
     t.after(() => server.close());
@@ -101,20 +101,6 @@ describe('ListPosts', () => {
       assert.equal(response.statusCode, 400, token);
       assert.equal(response.json().code, 'invalidArgument', token);
     }
-    assert.deepEqual(calls, []);
-  });
-});
-
-describe('GetPost, with no post in its path', () => {
-  it("gives ListPosts' path with a trailing slash as 400, and does not read the site's home page as a post", async (t) => {
-    const { engine, calls } = fakeEngine(() => ({ post: {}, links: [] }));
-    const server = await app(engine);
-    t.after(() => server.close());
-
-    const response = await server.inject('/v1/sites/hdhub4u/posts/');
-
-    assert.equal(response.statusCode, 400);
-    assert.equal(response.json().code, 'invalidArgument');
     assert.deepEqual(calls, []);
   });
 });
@@ -152,12 +138,12 @@ describe('SearchPosts', () => {
     assert.deepEqual(response.json(), { posts: [] });
   });
 
-  it('gives a search without q as 400, and asks the engine nothing', async (t) => {
+  it('gives a search without q, or with spaces only, as 400, and asks the engine nothing', async (t) => {
     const { engine, calls } = fakeEngine(() => ({ posts: [], hasNextPage: false }));
     const server = await app(engine);
     t.after(() => server.close());
 
-    for (const url of ['/v1/sites/hdhub4u/search', '/v1/sites/hdhub4u/search?q=']) {
+    for (const url of ['/v1/sites/hdhub4u/search', '/v1/sites/hdhub4u/search?q=', '/v1/sites/hdhub4u/search?q=%20%20']) {
       const response = await server.inject(url);
       assert.equal(response.statusCode, 400, url);
       assert.equal(response.json().code, 'invalidArgument', url);
@@ -244,5 +230,17 @@ describe('GetPost', () => {
     assert.equal(noSite.statusCode, 404);
     assert.equal(noSite.json().detail, 'No site rogmovies');
     assert.equal(calls.length, 1);
+  });
+
+  it("gives ListPosts' path with a trailing slash as 400, and does not read the site's home page as a post", async (t) => {
+    const { engine, calls } = fakeEngine(() => ({ post: {}, links: [] }));
+    const server = await app(engine);
+    t.after(() => server.close());
+
+    const response = await server.inject('/v1/sites/hdhub4u/posts/');
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.json().code, 'invalidArgument');
+    assert.deepEqual(calls, []);
   });
 });

@@ -41,7 +41,8 @@ function destinationOf(html) {
  * Reads one GreenMotors page and returns where it leads. The destination can be another GreenMotors
  * link; following it is the caller's choice.
  *
- * @param {string} url - On GreenMotors' current domain (greenmotors.club costs an extra redirect).
+ * @param {string} url - As a post links it: greenmotors.club, which redirects to greenmotors.cc (live,
+ *   2026-11-01).
  * @param {import('../http.js').RequestOptions} [options]
  * @returns {Promise<{ links: import('../html.js').Link[] }>} The one destination, without a label
  *   (it is in the page's script, not on the page).

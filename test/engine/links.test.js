@@ -120,24 +120,6 @@ describe('scrapeLinks', () => {
     assert.equal(options.requests.length, 2);
   });
 
-  it('reports what happened to each link', async () => {
-    const events = [];
-    const options = web({
-      'https://hubdrive.bar/file/7': hubDrive('https://hubcloud.ist/drive/a'),
-      'https://greenmotors.cc/?id=dead': 'Invalid Link !!',
-    });
-    const urls = ['https://hubdrive.bar/file/7', 'https://wa.me/1', 'https://greenmotors.cc/?id=dead'];
-
-    await scrapeLinks(urls, { ...options, onEvent: (event) => events.push(event) });
-
-    assert.deepEqual(events.map(({ type, url }) => [type, url]).toSorted(), [
-      ['failure', 'https://greenmotors.cc/?id=dead'],
-      ['file', 'https://hubcloud.ist/drive/a'],
-      ['gateway', 'https://hubdrive.bar/file/7'],
-      ['skipped', 'https://wa.me/1'],
-    ]);
-  });
-
   it('skips a gateway page\'s link that is no web URL, as the site gave it', async () => {
     // A HUBLinks page that offers a torrent (live, 2026-10-31).
     const options = web({ 'https://hblinks.lol/archives/1': hubLinks('magnet:?xt=urn:btih:91e6', 'https://hubcloud.ist/drive/a') });

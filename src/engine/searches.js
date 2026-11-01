@@ -31,7 +31,7 @@ export async function searchPosts(url, query, page = 1, { domains = {}, ...optio
   if (typeof query !== 'string' || !query.trim()) throw new TypeError(`Not a search query: ${query}`);
   if (!Number.isInteger(page) || page < 1) throw new TypeError(`Not a search page: ${page}`);
   const provider = providerOf(parsed.href);
-  if (!provider) throw new EngineError('unsupported', 'The engine does not search posts of this site', { url });
+  if (!provider) throw new EngineError('unsupported', `The engine does not search posts of ${parsed.hostname}`, { url });
   const { origin } = new URL(onCurrentDomain(parsed, domains));
   return retry(() => provider.search(origin, query.trim(), page, options));
 }

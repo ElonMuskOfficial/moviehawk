@@ -26,7 +26,7 @@ export async function scrapePost(url, { domains = {}, ...options } = {}) {
   const parsed = webUrlOf(url);
   if (!parsed) throw new TypeError(`Not a web URL: ${url}`);
   const provider = providerOf(parsed.href);
-  if (!provider) throw new EngineError('unsupported', 'The engine does not read posts of this site', { url });
+  if (!provider) throw new EngineError('unsupported', `The engine does not read posts of ${parsed.hostname}`, { url });
   const { post, links } = await retry(() => provider.post(onCurrentDomain(parsed, domains), options));
   return { post, links: links.filter(({ url }) => gatewayOf(url) || hostOf(url)) };
 }

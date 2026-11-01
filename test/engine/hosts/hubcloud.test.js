@@ -159,7 +159,7 @@ describe('resolveHubCloud', () => {
     let requests = 0;
     const options = { fetch: async () => { requests++; return new Response('404 ! File Not Found', { status: 404 }); } };
 
-    await assert.rejects(resolveHubCloud(URL_HC, options), { code: 'notFound', status: 404 });
+    await assert.rejects(resolveHubCloud(URL_HC, options), { code: 'notFound' });
     assert.equal(requests, 1);
   });
 });

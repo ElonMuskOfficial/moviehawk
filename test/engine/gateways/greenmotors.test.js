@@ -48,7 +48,7 @@ describe('expandGreenMotors', () => {
   });
 
   it('passes fetching errors on as they are', async () => {
-    await assert.rejects(expandGreenMotors(URL_GM, answer('', 404)), { code: 'notFound', status: 404 });
-    await assert.rejects(expandGreenMotors(URL_GM, answer('', 503)), { code: 'transient', status: 503 });
+    await assert.rejects(expandGreenMotors(URL_GM, answer('', 404)), { code: 'notFound' });
+    await assert.rejects(expandGreenMotors(URL_GM, answer('', 503)), { code: 'transient' });
   });
 });

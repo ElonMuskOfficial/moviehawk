@@ -9,7 +9,7 @@ import { filesRoutes } from './files.js';
 import { sitesRoutes } from './sites.js';
 
 // Names are long: a GreenMotors link's is up to 540 characters, an HDHub4u post's up to 143
-// (README.md, Names). Fastify's default, 100, would make them HTTP 404.
+// (README.md, Names). Fastify's default, 100, would make them HTTP 414.
 const MAX_PARAM_LENGTH = 2048;
 
 /**

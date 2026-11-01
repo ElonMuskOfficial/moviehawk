@@ -11,5 +11,5 @@ import { createEngine } from '../src/engine/index.js';
 
 const config = await liveConfig({ makeEngine: (domains) => createEngine({ domains }) });
 const app = await buildApp({ config, logger: true });
-if (config.fallbackBecause) app.log.warn(`Started with the fallback domains: the domains URL gave none (${config.fallbackBecause})`);
+if (config.fallbackBecause) app.log.warn(`Started with the fallback domains: the domains URL could not be used (${config.fallbackBecause})`);
 await app.listen({ port: Number(process.env.PORT ?? 3000), host: process.env.HOST ?? '127.0.0.1' });

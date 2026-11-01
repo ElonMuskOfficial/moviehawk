@@ -10,7 +10,6 @@ import { onCurrentDomain, webUrlOf } from './urls.js';
 
 /**
  * @typedef {import('./hosts/index.js').HostFile} HostFile
- * @typedef {{ type: 'gateway' | 'file' | 'skipped' | 'failure', url: string, detail: string | null }} EngineEvent
  */
 
 /**
@@ -26,11 +25,8 @@ import { onCurrentDomain, webUrlOf } from './urls.js';
  *
  * @param {string[]} urls - The links' URLs: all of a post's (`links.map(({ url }) => url)`), or the
  *   one a user picked.
- * @param {import('./http.js').RequestOptions & {
- *   domains?: Record<string, string>,
- *   onEvent?: (event: EngineEvent) => void,
- * }} [options] `domains`: as for onCurrentDomain (urls.js). `onEvent`: what happened to each link,
- *   for logs.
+ * @param {import('./http.js').RequestOptions & { domains?: Record<string, string> }} [options]
+ *   `domains`: as for onCurrentDomain (urls.js).
  * @returns {Promise<{ files: HostFile[], failures: EngineError[] }>} `failures`: every page that did
  *   not lead on, such as a dead GreenMotors link (`notFound`) or a stalled HubDrive (`transient`);
  *   the files of every other link are there.
@@ -39,57 +35,44 @@ import { onCurrentDomain, webUrlOf } from './urls.js';
  *   and is skipped instead.
  * @throws {unknown} The caller's own reason, as it is, when the caller cancels (`signal`).
  */
-export async function scrapeLinks(urls, { domains = {}, onEvent = () => {}, ...options } = {}) {
+export async function scrapeLinks(urls, { domains = {}, ...options } = {}) {
   for (const url of urls) if (!webUrlOf(url)) throw new TypeError(`Not a web URL: ${url}`);
   // Gateway pages, each read once (a post links some twice), for the link that reaches it first:
   // its files take that link's place. A gateway that leads back to a page read already ends there.
   const readPages = new Set();
   const failures = [];
-  const report = (type, url, detail = null) => onEvent({ type, url, detail });
-  const skip = (url, reason) => {
-    report('skipped', url, reason);
-    return [];
-  };
-  const fail = (error) => {
-    failures.push(error);
-    report('failure', error.url, `${error.code}: ${error.message}`);
-    return [];
-  };
 
   // The files `target` leads to, in page order: Promise.all keeps it, although pages load at once.
   // `target`: a URL as given, before it is moved to its current domain. `label`: the first label
   // on its way.
   const follow = async (target, label = null) => {
     const parsed = webUrlOf(target);
-    if (!parsed) return skip(target, 'not a web URL');
+    if (!parsed) return [];
     const url = onCurrentDomain(parsed, domains);
     const gateway = gatewayOf(url);
     if (gateway) {
-      if (readPages.has(url)) return skip(url, 'page read already');
+      if (readPages.has(url)) return [];
       readPages.add(url);
       let next;
       try {
         ({ links: next } = await retry(() => gateway.expand(url, options)));
       } catch (error) {
         if (!(error instanceof EngineError)) throw error;
-        return fail(error);
+        failures.push(error);
+        return [];
       }
-      report('gateway', url, `${gateway.id}: ${next.length} links`);
       const files = await Promise.all(next.map((link) => follow(link.url, label ?? link.label)));
       return files.flat();
     }
-    const host = hostOf(url)?.id;
     const externalId = externalIdOf(url);
-    if (!externalId) return skip(url, host ? 'names no file' : 'no known host');
-    report('file', url, host);
-    return [{ host, externalId, url, label }];
+    if (!externalId) return [];
+    return [{ host: hostOf(url).id, externalId, url, label }];
   };
 
   const files = new Map(); // By "host:externalId": each file as the first link reaches it.
   for (const file of (await Promise.all(urls.map((url) => follow(url)))).flat()) {
     const key = `${file.host}:${file.externalId}`;
-    if (files.has(key)) skip(file.url, 'file found already');
-    else files.set(key, file);
+    if (!files.has(key)) files.set(key, file);
   }
   return { files: [...files.values()], failures };
 }

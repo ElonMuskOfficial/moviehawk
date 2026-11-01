@@ -69,6 +69,6 @@ describe('expandHubLinks', () => {
   });
 
   it('passes fetching errors on as they are', async () => {
-    await assert.rejects(expandHubLinks(URL_HL, answer('', { status: 404 })), { code: 'notFound', status: 404 });
+    await assert.rejects(expandHubLinks(URL_HL, answer('', { status: 404 })), { code: 'notFound' });
   });
 });

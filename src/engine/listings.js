@@ -31,7 +31,7 @@ export async function scrapeListing(url, page = 1, { domains = {}, ...options } 
   if (!parsed) throw new TypeError(`Not a web URL: ${url}`);
   if (!Number.isInteger(page) || page < 1) throw new TypeError(`Not a listing page: ${page}`);
   const provider = providerOf(parsed.href);
-  if (!provider) throw new EngineError('unsupported', 'The engine does not read listings of this site', { url });
+  if (!provider) throw new EngineError('unsupported', `The engine does not read listings of ${parsed.hostname}`, { url });
   const { origin } = new URL(onCurrentDomain(parsed, domains));
   return retry(() => provider.listing(page === 1 ? `${origin}/` : `${origin}/page/${page}/`, options));
 }

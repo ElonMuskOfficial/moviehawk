@@ -71,7 +71,7 @@ describe('GetFile', () => {
 
   it('gives a file of a host the engine does not resolve as 400 unsupported, and a gone file as 404', async (t) => {
     const { engine } = fakeEngine((url) => {
-      if (url.includes('gofile')) throw new EngineError('unsupported', 'The engine does not resolve files of gofile', { url });
+      if (url.includes('gofile')) throw new EngineError('unsupported', 'The engine does not resolve files of gofile.io', { url });
       throw new EngineError('notFound', 'HubCloud says the file is gone', { url });
     });
     const server = await app(engine);

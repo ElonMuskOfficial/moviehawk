@@ -45,7 +45,7 @@ export function fetchJson(url, options) {
     try {
       return JSON.parse(text);
     } catch {
-      throw new EngineError('unrecognized', 'The answer is not JSON', { url });
+      throw new EngineError('unrecognized', `${new URL(url).hostname} answered with no JSON`, { url });
     }
   });
 }
@@ -99,7 +99,7 @@ async function request(url, method, { fetch: fetchFn = fetch, timeoutMs = 8000, 
     if (!response.ok) {
       await response.body?.cancel();
       const code = response.status === 404 || response.status === 410 ? 'notFound' : 'transient';
-      throw new EngineError(code, `${hostname} answered HTTP ${response.status}`, { url, status: response.status });
+      throw new EngineError(code, `${hostname} answered HTTP ${response.status}`, { url });
     }
     return await read(response);
   } catch (error) {
