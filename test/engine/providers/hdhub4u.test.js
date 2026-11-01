@@ -73,6 +73,25 @@ describe('scrapeHdHub4uPost', () => {
     assert.equal(links.length, 30);
   });
 
+  it('reads the JSON-LD past a script that is not JSON', async () => {
+    const page = `<script type="application/ld+json">{"@type": "BlogPosting",}</script>
+      <script type="application/ld+json">{"@type": "BlogPosting", "datePublished": "2026-10-31T08:32:59+00:00"}</script>
+      <h1 class="page-title"><span class="material-text">Show</span></h1><main class="page-body"></main>`;
+
+    const { post } = await scrapeHdHub4uPost(MOVIE_URL, answer(page));
+
+    assert.equal(post.publishedAt, '2026-10-31T08:32:59.000Z');
+  });
+
+  it('states no publication time for a date that is none', async () => {
+    const page = `<script type="application/ld+json">{"@type": "BlogPosting", "datePublished": "yesterday"}</script>
+      <h1 class="page-title"><span class="material-text">Show</span></h1><main class="page-body"></main>`;
+
+    const { post } = await scrapeHdHub4uPost(MOVIE_URL, answer(page));
+
+    assert.equal(post.publishedAt, null);
+  });
+
   it('is unrecognized for a page without the post\'s title', async () => {
     const page = '<html><title>Just a moment...</title><body>Checking your browser</body></html>';
     await assert.rejects(scrapeHdHub4uPost(MOVIE_URL, answer(page)), { code: 'unrecognized', url: MOVIE_URL });
@@ -169,5 +188,12 @@ describe('searchHdHub4u', () => {
 
   it('is unrecognized for an answer without its hits', async () => {
     await assert.rejects(searchHdHub4u(SITE, 'love', 1, api('{"message":"Forbidden"}')), { code: 'unrecognized' });
+  });
+
+  it('is unrecognized for a hit without its post\'s link or title', async () => {
+    for (const document of [{ post_title: 'A' }, { permalink: '/a/', post_title: 'A' }, { permalink: `${SITE}/a/` }]) {
+      const hits = JSON.stringify({ found: 1, page: 1, hits: [{ document }] });
+      await assert.rejects(searchHdHub4u(SITE, 'love', 1, api(hits)), { code: 'unrecognized' }, JSON.stringify(document));
+    }
   });
 });

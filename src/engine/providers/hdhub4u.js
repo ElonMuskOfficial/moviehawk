@@ -7,6 +7,7 @@ import { EngineError } from '../errors.js';
 import { lineOf, lineStartOf, linkOf, textOf } from '../html.js';
 import { fetchHtml, fetchJson } from '../http.js';
 import { jsonLdOf } from '../json-ld.js';
+import { webUrlOf } from '../urls.js';
 
 /** @typedef {import('./index.js').Post} Post
  * @typedef {import('./index.js').PostCard} PostCard
@@ -26,6 +27,14 @@ function imdbIdOf(href) {
   if (!href) return null;
   const { hostname, pathname } = new URL(href);
   return hostname === 'www.imdb.com' ? IMDB_TITLE.exec(pathname)?.[1] ?? null : null;
+}
+
+// The post's publication time, ISO 8601 in UTC; null when the page states none, or one that is no
+// date.
+function isoDateOf(text) {
+  if (typeof text !== 'string') return null;
+  const date = new Date(text);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
 /**
@@ -59,7 +68,7 @@ export async function scrapeHdHub4uPost(url, options) {
       imdbId: imdbIdOf($('[data-attrid="kc:/film/film:reviews"] a[href]').first().prop('href')),
       // The poster is the body's first image.
       posterUrl: body.find('img[src]').first().prop('src') ?? null,
-      publishedAt: datePublished ? new Date(datePublished).toISOString() : null,
+      publishedAt: isoDateOf(datePublished),
     },
     links: body.find('a[href]').toArray().map((a) => linkOf($, a, fileOf($, a))),
   };
@@ -159,6 +168,10 @@ export async function searchHdHub4u(siteUrl, query, page, options) {
   const answer = await fetchJson(api.href, { ...options, headers: { ...options?.headers, Referer: `${new URL(siteUrl).origin}/` } });
   if (!Array.isArray(answer?.hits) || typeof answer.found !== 'number') {
     throw new EngineError('unrecognized', 'No hits in the HDHub4u search answer', { url: api.href });
+  }
+  // Every hit states its post's link and title: a card has both.
+  if (!answer.hits.every((hit) => typeof hit?.document?.post_title === 'string' && webUrlOf(hit.document.permalink))) {
+    throw new EngineError('unrecognized', 'A hit without its post in the HDHub4u search answer', { url: api.href });
   }
   if (answer.hits.length === 0 && page > 1) {
     const last = Math.ceil(answer.found / SEARCH_PAGE_SIZE) || 1;
