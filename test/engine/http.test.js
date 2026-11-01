@@ -190,4 +190,17 @@ describe('retry', () => {
     // 20 ms + 80 ms between the three tries.
     assert.ok(performance.now() - start >= 95);
   });
+
+  it('stops waiting when the caller cancels, with the caller\'s own reason', async () => {
+    const { fn, calls } = failing(['transient', 'transient']);
+    const controller = new AbortController();
+    const reason = new Error('client gone');
+    setTimeout(() => controller.abort(reason), 20);
+    const start = performance.now();
+
+    await assert.rejects(retry(fn, { delayMs: 10_000, signal: controller.signal }), (error) => error === reason);
+
+    assert.ok(performance.now() - start < 1000);
+    assert.equal(calls(), 1);
+  });
 });

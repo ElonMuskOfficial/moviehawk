@@ -55,7 +55,7 @@ export async function scrapeLinks(urls, { domains = {}, ...options } = {}) {
       readPages.add(url);
       let next;
       try {
-        ({ links: next } = await retry(() => gateway.expand(url, options)));
+        ({ links: next } = await retry(() => gateway.expand(url, options), { signal: options.signal }));
       } catch (error) {
         if (!(error instanceof EngineError)) throw error;
         failures.push(error);

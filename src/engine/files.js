@@ -26,5 +26,5 @@ export async function resolve(url, { domains = {}, ...options } = {}) {
   if (!parsed) throw new TypeError(`Not a web URL: ${url}`);
   const read = hostOf(parsed.href)?.resolve;
   if (!read) throw new EngineError('unsupported', `The engine does not resolve files of ${parsed.hostname}`, { url });
-  return retry(() => read(onCurrentDomain(parsed, domains), options));
+  return retry(() => read(onCurrentDomain(parsed, domains), options), { signal: options.signal });
 }

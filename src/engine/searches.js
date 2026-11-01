@@ -33,5 +33,5 @@ export async function searchPosts(url, query, page = 1, { domains = {}, ...optio
   const provider = providerOf(parsed.href);
   if (!provider) throw new EngineError('unsupported', `The engine does not search posts of ${parsed.hostname}`, { url });
   const { origin } = new URL(onCurrentDomain(parsed, domains));
-  return retry(() => provider.search(origin, query.trim(), page, options));
+  return retry(() => provider.search(origin, query.trim(), page, options), { signal: options.signal });
 }

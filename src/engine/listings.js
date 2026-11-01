@@ -33,5 +33,5 @@ export async function scrapeListing(url, page = 1, { domains = {}, ...options } 
   const provider = providerOf(parsed.href);
   if (!provider) throw new EngineError('unsupported', `The engine does not read listings of ${parsed.hostname}`, { url });
   const { origin } = new URL(onCurrentDomain(parsed, domains));
-  return retry(() => provider.listing(page === 1 ? `${origin}/` : `${origin}/page/${page}/`, options));
+  return retry(() => provider.listing(page === 1 ? `${origin}/` : `${origin}/page/${page}/`, options), { signal: options.signal });
 }

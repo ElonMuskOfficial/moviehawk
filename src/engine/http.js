@@ -120,17 +120,23 @@ async function request(url, method, { fetch: fetchFn = fetch, timeoutMs = 8000, 
  *
  * @template T
  * @param {() => Promise<T>} fn
- * @param {{ delayMs?: number }} [options]
+ * @param {{ delayMs?: number, signal?: AbortSignal }} [options] `signal`: the caller's own
+ *   cancellation, which ends a wait between tries at once.
  * @returns {Promise<T>}
+ * @throws {unknown} The caller's own reason, as it is, when the caller cancels during a wait.
  */
-export async function retry(fn, { delayMs = 1000 } = {}) {
+export async function retry(fn, { delayMs = 1000, signal } = {}) {
   for (let attempt = 1; ; attempt++) {
     try {
       return await fn();
     } catch (error) {
       const retriable = error instanceof EngineError && RETRIED.has(error.code);
       if (!retriable || attempt === ATTEMPTS) throw error;
-      await sleep(delayMs * 4 ** (attempt - 1));
     }
+    // The wait rejects only when `signal` aborts, with an AbortError: the caller gets its own
+    // reason instead, as fetchHtml gives it.
+    await sleep(delayMs * 4 ** (attempt - 1), undefined, { signal }).catch(() => {
+      throw signal.reason;
+    });
   }
 }
