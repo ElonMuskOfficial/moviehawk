@@ -1,21 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { web } from './helpers.js';
 import { scrapeListing } from '../../src/engine/listings.js';
 
 // A listing page shaped like HDHub4u's (2026-10-31), small enough to read in a test.
 const hdHub4uListing = (...posts) => `<ul class="recent-movies">${posts.map((post) => `<li><figure><a href="${post}"><img src="https://image.tmdb.org/a.jpg"></a></figure><figcaption><a href="${post}"><p>Post</p></a></figcaption></li>`).join('')}</ul>`;
-
-// A fake web: each URL answers with its page, or with an HTTP status; it records every request.
-function web(pages) {
-  const requests = [];
-  const fetchFn = async (url) => {
-    requests.push(url);
-    const page = pages[url];
-    if (page === undefined) throw new Error(`No fake page for ${url}`);
-    return typeof page === 'number' ? new Response('', { status: page }) : new Response(page);
-  };
-  return { fetch: fetchFn, requests };
-}
 
 describe('scrapeListing', () => {
   it('reads page 1 at the site\'s root and page n at /page/n/', async () => {

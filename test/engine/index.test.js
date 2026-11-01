@@ -1,19 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { web } from './helpers.js';
 import * as entry from '../../src/engine/index.js';
 
 const { createEngine } = entry;
-
-// A fake web: each URL answers with its page; it records every request.
-function web(pages) {
-  const requests = [];
-  const fetchFn = async (url) => {
-    requests.push(url);
-    if (pages[url] === undefined) throw new Error(`No fake page for ${url}`);
-    return new Response(pages[url]);
-  };
-  return { fetch: fetchFn, requests };
-}
 
 describe('the engine\'s entry', () => {
   it('gives a consumer createEngine and EngineError, and nothing else', () => {

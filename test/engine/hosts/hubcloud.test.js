@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
+import { answer } from '../helpers.js';
 import { resolveHubCloud } from '../../../src/engine/hosts/hubcloud.js';
 
 const URL_HC = 'https://hubcloud.ist/drive/lgfzf1cpxyqfo1l';
 // Live pages (2026-10-31): a /drive/ and a /video/ file; the first one's download page, and
 // another file's download page with more servers.
 const fixture = (name) => readFileSync(new URL(`../../fixtures/hubcloud-${name}.html`, import.meta.url), 'utf8');
-const answer = (body, status = 200) => ({ fetch: async () => new Response(body, { status }) });
 // A file page shaped like the live ones, with its download link.
 const pageWith = (filename, size) => `<div class="card-header">${filename}</div><ul><li>File Size<i id="size">${size}</i></li></ul>`
   + '<a id="download" class="btn btn-primary" href="https://gamerxyt.com/hubcloud.php?id=a">Download Here</a>';

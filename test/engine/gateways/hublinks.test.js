@@ -1,18 +1,12 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
+import { answer } from '../helpers.js';
 import { expandHubLinks } from '../../../src/engine/gateways/hublinks.js';
 
 const URL_HL = 'https://hblinks.lol/archives/1';
 // Live pages of each layout (saved 2026-10-28 and 2026-10-29).
 const fixture = (name) => readFileSync(new URL(`../../fixtures/hublinks-${name}.html`, import.meta.url), 'utf8');
-const answer = (body, { status = 200, url = URL_HL } = {}) => ({
-  fetch: async () => {
-    const response = new Response(body, { status });
-    Object.defineProperty(response, 'url', { value: url });
-    return response;
-  },
-});
 const urlsOf = async (name) => (await expandHubLinks(URL_HL, answer(fixture(name)))).links.map(({ url }) => url);
 
 describe('expandHubLinks', () => {

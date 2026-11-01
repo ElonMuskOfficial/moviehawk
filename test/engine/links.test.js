@@ -1,25 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { greenMotorsPage, web } from './helpers.js';
 import { scrapeLinks } from '../../src/engine/links.js';
 
 // Pages shaped like the live ones (2026-10-31), small enough to read in a test.
-const base64 = (text) => Buffer.from(text).toString('base64');
-const rot13 = (text) => text.replace(/[a-z]/gi, (c) => String.fromCharCode(((c.charCodeAt(0) - (c <= 'Z' ? 65 : 97) + 13) % 26) + (c <= 'Z' ? 65 : 97)));
-const greenMotors = (destination) => `<script>s('o','${base64(base64(rot13(base64(JSON.stringify({ o: base64(destination) })))))}')</script>`;
+const greenMotors = (destination) => greenMotorsPage({ o: Buffer.from(destination).toString('base64') });
 const hubLinks = (...links) => `<div class="entry-content">${links.map((link) => `<a href="${link}">Drive</a>`).join('')}</div>`;
 const hubDrive = (link) => `<table><tr><td>File Size</td><td>1 GB</td></tr></table><div class="card-body"><h4><a href="${link}">[HubCloud Server]</a></h4></div>`;
-
-// A fake web: each URL answers with its page, or with an HTTP status; it records every request.
-function web(pages) {
-  const requests = [];
-  const fetchFn = async (url) => {
-    requests.push(url);
-    const page = pages[url];
-    if (page === undefined) throw new Error(`No fake page for ${url}`);
-    return typeof page === 'number' ? new Response('', { status: page }) : new Response(page);
-  };
-  return { fetch: fetchFn, requests };
-}
 
 describe('scrapeLinks', () => {
   it('follows each link through its gateways to the files, in the links\' order', async () => {

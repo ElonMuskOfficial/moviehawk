@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
+import { answer } from '../helpers.js';
 import { scrapeHdHub4uListing, scrapeHdHub4uPost, searchHdHub4u } from '../../../src/engine/providers/hdhub4u.js';
 
 const MOVIE_URL = 'https://new10.hdhub4u.cl/wrong-turn-2003-hindi-bluray-full-movie/';
 // Live pages (2026-10-31): a movie, a series that links TMDB instead of IMDb, and listing page 2;
 // and the search API's answer for "mirzapur".
 const fixture = (name) => readFileSync(new URL(`../../fixtures/hdhub4u-${name}.html`, import.meta.url), 'utf8');
-const answer = (body, status = 200) => ({ fetch: async () => new Response(body, { status }) });
 const hostnamesOf = (links) => links.map(({ url }) => new URL(url).hostname);
 
 describe('scrapeHdHub4uPost', () => {
@@ -79,7 +79,7 @@ describe('scrapeHdHub4uPost', () => {
   });
 
   it('is notFound when HDHub4u answers HTTP 404, as it does for a missing post', async () => {
-    await assert.rejects(scrapeHdHub4uPost(MOVIE_URL, answer('Page not found', 404)), { code: 'notFound' });
+    await assert.rejects(scrapeHdHub4uPost(MOVIE_URL, answer('Page not found', { status: 404 })), { code: 'notFound' });
   });
 });
 

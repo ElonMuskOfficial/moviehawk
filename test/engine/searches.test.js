@@ -1,20 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { web } from './helpers.js';
 import { searchPosts } from '../../src/engine/searches.js';
 
 // A search page shaped like 4KHDHub's (2026-10-31), small enough to read in a test.
 const searchPage = '<div class="card-grid"><a href="/dexter-series-1/"><img src="https://image.tmdb.org/a.jpg"><h3 class="movie-card-title">Dexter</h3></a></div>';
-
-// A fake web: each URL answers with its page; it records every request.
-function web(pages) {
-  const requests = [];
-  const fetchFn = async (url) => {
-    requests.push(url);
-    if (pages[url] === undefined) throw new Error(`No fake page for ${url}`);
-    return new Response(pages[url]);
-  };
-  return { fetch: fetchFn, requests };
-}
 
 describe('searchPosts', () => {
   it('searches the site on its current domain, with the query as typed but trimmed', async () => {

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { web } from './helpers.js';
 import { scrapeLinks } from '../../src/engine/links.js';
 import { scrapePost } from '../../src/engine/posts.js';
 
@@ -8,18 +9,6 @@ const POST_URL = 'https://new10.hdhub4u.cl/show-2026/';
 // A post page shaped like HDHub4u's (2026-10-31), small enough to read in a test.
 const hdHub4uPost = (...links) => `<h1 class="page-title"><span class="material-text">Show (2026)</span></h1>
   <main class="page-body">${links.map((link, i) => `<a href="${link}">Link ${i}</a>`).join('')}</main>`;
-
-// A fake web: each URL answers with its page, or with an HTTP status; it records every request.
-function web(pages) {
-  const requests = [];
-  const fetchFn = async (url) => {
-    requests.push(url);
-    const page = pages[url];
-    if (page === undefined) throw new Error(`No fake page for ${url}`);
-    return typeof page === 'number' ? new Response('', { status: page }) : new Response(page);
-  };
-  return { fetch: fetchFn, requests };
-}
 
 describe('scrapePost', () => {
   it('reads the post page only, and gives its links to a gateway or a known host', async () => {

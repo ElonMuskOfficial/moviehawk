@@ -1,23 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { web } from './helpers.js';
 import { resolve } from '../../src/engine/files.js';
 
 // A HubCloud file page shaped like the live ones (2026-10-31), and its download page.
 const filePage = '<div class="card-header">a.mkv</div><ul><li>File Size<i id="size">1.5 GB</i></li></ul>'
   + '<a id="download" class="btn btn-primary" href="https://gamerxyt.com/hubcloud.php?id=a">Download</a>';
 const downloadPage = '<div class="card-body"><h2><a class="btn" href="https://fsl.example/a.mkv">Download [FSL Server]</a></h2></div>';
-
-// A fake web: each URL answers with its page, or with an HTTP status; it records every request.
-function web(pages) {
-  const requests = [];
-  const fetchFn = async (url) => {
-    requests.push(url);
-    const page = pages[url];
-    if (page === undefined) throw new Error(`No fake page for ${url}`);
-    return typeof page === 'number' ? new Response('', { status: page }) : new Response(page);
-  };
-  return { fetch: fetchFn, requests };
-}
 
 describe('resolve', () => {
   it('reads a file on an old domain on its host\'s current domain', async () => {

@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
+import { answer } from '../helpers.js';
 import { scrape4kHdHubListing, scrape4kHdHubPost, search4kHdHub } from '../../../src/engine/providers/4khdhub.js';
 
 const MOVIE_URL = 'https://4khdhub.one/addicted-movie-7869/';
 // Live pages (2026-10-31): a movie, a series (season packs and episodes), listing page 2, and the
 // search page for "dexter".
 const fixture = (name) => readFileSync(new URL(`../../fixtures/4khdhub-${name}.html`, import.meta.url), 'utf8');
-const answer = (body, status = 200) => ({ fetch: async () => new Response(body, { status }) });
 
 describe('scrape4kHdHubPost', () => {
   it('reads a movie post: title, year and poster; the page states no date and no IMDb id', async () => {
