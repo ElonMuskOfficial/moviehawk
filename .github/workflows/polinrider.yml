@@ -1,0 +1,55 @@
+# Fails when a push carries PolinRider, the DPRK campaign that appends obfuscated JavaScript to
+# repos from infected developer machines (github.com/OpenSourceMalware/PolinRider). The malware
+# pushes with the developer's own access, so a failed run here (GitHub emails it) is the alarm: the
+# fix is a clean machine and new credentials, not only a clean repo.
+name: PolinRider check
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Scan for PolinRider
+        run: |
+          found=0
+          report() { echo "::error::$1"; found=1; }
+
+          # Its payload's markers (both variants), its C2 domains and wallet, its npm packages.
+          markers="rmcej%otb%|Cot%3t=shtP|_\\\$_1e42|function MDy\\(f\\)|global\\['(_V|!)'\\]"
+          markers="$markers|[a-z0-9-]+\\.vercel\\.app/settings/(mac|linux|win)|TMfKQEd7TJJa5xNZJZ2Lep838vrzrs7mAP"
+          markers="$markers|tailwindcss-style-animate|tailwind-(main|auto)animation|tailwind-animationbased"
+          markers="$markers|tailwindcss-(typography-style|style-modify|animate-style)"
+          # This file names the markers itself.
+          for file in $(git grep -E -l "$markers" -- . ':!.github/workflows/polinrider.yml'); do
+            report "PolinRider marker in $file"
+          done
+
+          # The script that amends commits and force-pushes them.
+          for file in $(git ls-files | grep -iE '(^|/)(temp_auto_push|config)\.bat$'); do
+            report "PolinRider push script: $file"
+          done
+
+          # A VS Code task that runs when the folder opens.
+          for file in $(git ls-files | grep -E '(^|/)\.vscode/tasks\.json$'); do
+            grep -q 'folderOpen' "$file" && report "Task that runs on folder open: $file"
+          done
+
+          # Fonts that carry JavaScript.
+          for file in $(git ls-files '*.woff' '*.woff2'); do
+            grep -aqE 'require\(|eval\(|module\.exports' "$file" && report "JavaScript in font $file"
+          done
+
+          if [ "$found" = 1 ]; then
+            echo "PolinRider found. Clean the machine that pushed, rotate its credentials, then remove the code."
+            exit 1
+          fi
+          echo "No PolinRider markers."
