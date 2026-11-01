@@ -1,5 +1,5 @@
 /**
- * Resource names (docs/api.md, Names): what a client sends back, made from the sites' URLs.
+ * Resource names (README.md, Names): what a client sends back, made from the sites' URLs.
  */
 
 /**
@@ -30,7 +30,7 @@ export function postUrl(siteUrl, slug) {
 
 /**
  * A link's name: its URL, as the post gives it, base64url-encoded (RFC 4648 §5), so the API reads
- * the URL back from the name alone (docs/api.md, Names).
+ * the URL back from the name alone (README.md, Names).
  *
  * @param {string} url
  */

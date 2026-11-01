@@ -1,5 +1,5 @@
 /**
- * The HTTP API (docs/api.md). Every response has a `Request-Id`, and every error is a problem
+ * The HTTP API (README.md, The API). Every response has a `Request-Id`, and every error is a problem
  * (problems.js).
  */
 import { randomUUID } from 'node:crypto';
@@ -9,7 +9,7 @@ import { filesRoutes } from './files.js';
 import { sitesRoutes } from './sites.js';
 
 // Names are long: a GreenMotors link's is up to 540 characters, an HDHub4u post's up to 143
-// (docs/api.md, Names). Fastify's default, 100, would make them HTTP 404.
+// (README.md, Names). Fastify's default, 100, would make them HTTP 404.
 const MAX_PARAM_LENGTH = 2048;
 
 /**

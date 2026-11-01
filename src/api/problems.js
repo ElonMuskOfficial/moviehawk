@@ -1,5 +1,5 @@
 /**
- * Errors as RFC 9457 problem details (docs/api.md, Errors): one shape for every error the API
+ * Errors as RFC 9457 problem details (README.md, The API, Errors): one shape for every error the API
  * gives, with the cause as the extension `code`.
  */
 import { STATUS_CODES } from 'node:http';
@@ -7,7 +7,7 @@ import { EngineError } from '../engine/index.js';
 
 export const PROBLEM_TYPE = 'application/problem+json';
 
-// The engine's codes, by what the site said (docs/engine.md).
+// The engine's codes, by what the site said (README.md, The engine, Errors).
 const STATUS_BY_ENGINE_CODE = {
   notFound: 404,
   unsupported: 400,
@@ -17,7 +17,7 @@ const STATUS_BY_ENGINE_CODE = {
 
 /**
  * @param {number} status
- * @param {string} code - `notFound`, `invalidArgument`, ... (docs/api.md, Errors).
+ * @param {string} code - `notFound`, `invalidArgument`, ... (README.md, The API, Errors).
  * @param {string} detail - For the client to read: what failed.
  */
 export function problem(status, code, detail) {

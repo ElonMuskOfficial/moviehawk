@@ -1,5 +1,5 @@
 /**
- * The sites and their posts (docs/api.md): ListSites, ListPosts, SearchPosts, GetPost.
+ * The sites and their posts (README.md, The API): ListSites, ListPosts, SearchPosts, GetPost.
  */
 import { linkName, postName, postUrl } from './names.js';
 import { ProblemError } from './problems.js';

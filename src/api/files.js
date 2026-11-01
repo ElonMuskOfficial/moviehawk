@@ -1,5 +1,5 @@
 /**
- * A link's files and a file's downloads (docs/api.md): ListFiles, GetFile.
+ * A link's files and a file's downloads (README.md, The API): ListFiles, GetFile.
  */
 import { fileName, urlOfId } from './names.js';
 import { ProblemError } from './problems.js';
