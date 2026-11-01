@@ -29,6 +29,23 @@ describe('expandHubDrive', () => {
     assert.deepEqual(links.slice(0, 2).map(({ url }) => url), ['https://hubdrive.bar/file/51828476429', 'https://hubdrive.bar/file/6957876604']);
   });
 
+  it('labels a pack\'s row with its file and size, as the row states them', async () => {
+    const { links } = await expandHubDrive(PACK_URL, answer(fixture('pack')));
+    const show = 'Berlin and the Lady with an Ermine (2026)';
+    const release = '2160p NF 10bit WEB-DL SDR HEVC [Hindi-Tamil-Telugu DDP 5.1 + English-Spanish DDPA 5.1] H.265 (HHWEB-Ionicboy)';
+    assert.deepEqual(links.slice(0, 2).map(({ label }) => label), [
+      `${show} S01 ${release}.zip [55.87 GB]`,
+      `${show} S01E01 ${release}.mkv [7.04 GB]`,
+    ]);
+    assert.ok(links.every(({ label }) => label && !label.includes('HubCloud')));
+  });
+
+  it('labels a pack\'s row without a title with its link\'s text', async () => {
+    const page = '<div class="pack-clean-file"><a class="pack-clean-link" href="/file/1">Open</a></div>';
+    const { links } = await expandHubDrive(PACK_URL, answer(page));
+    assert.deepEqual(links.map(({ label }) => label), ['Open']);
+  });
+
   it('is notFound on HubDrive\'s deleted pages', async () => {
     for (const name of ['file-not-found', 'deleted-the-file']) {
       await assert.rejects(expandHubDrive(FILE_URL, answer(fixture(name))), { code: 'notFound', url: FILE_URL });

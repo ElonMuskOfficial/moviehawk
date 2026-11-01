@@ -31,7 +31,14 @@ export async function expandHubDrive(url, options) {
   const linksOf = (selector) => $(selector).toArray().map((a) => linkOf($, a));
 
   if (new URL(page.url).pathname.startsWith('/packs/')) {
-    const links = linksOf('.pack-clean-file a.pack-clean-link');
+    // A row's link is an icon: its file is the row's title and size ("…S01E01….mkv [7.04 GB]").
+    // Without them, every row would take the label of its file page's server button.
+    const links = $('.pack-clean-file a.pack-clean-link').toArray().map((a) => {
+      const row = $(a).closest('.pack-clean-file');
+      const title = textOf(row.find('.pack-clean-title').first());
+      const size = textOf(row.find('.pack-clean-size').first());
+      return linkOf($, a, '', title ? [title, size && `[${size}]`].filter(Boolean).join(' ') : undefined);
+    });
     if (links.length === 0) throw new EngineError('unrecognized', 'No files on the HubDrive pack page', { url });
     return { links };
   }
