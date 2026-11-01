@@ -68,7 +68,7 @@ export async function readDomains({ url = DOMAINS_URL, fetch = globalThis.fetch 
  * @returns {Promise<{ domains: Record<string, string>, fallbackBecause: string | null }>}
  *   `fallbackBecause`: why the URL's were not used, or null.
  */
-export async function startDomains(options) {
+async function startDomains(options) {
   try {
     return { domains: await readDomains(options), fallbackBecause: null };
   } catch (error) {

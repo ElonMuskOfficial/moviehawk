@@ -10,7 +10,6 @@ running until their replacements use the engine.
 npm test                              # every test, on saved pages (test/fixtures/)
 npm run api                           # the API on http://127.0.0.1:3000
 PORT=8080 HOST=0.0.0.0 npm run api
-node scripts/try-engine.js            # one engine function on live pages; edit the file to pick it
 ```
 
 Node 22 or later. Dependencies: [Fastify](https://fastify.dev) 5 (the API), cheerio (HTML).
@@ -19,7 +18,7 @@ Node 22 or later. Dependencies: [Fastify](https://fastify.dev) 5 (the API), chee
 |---|---|
 | `src/engine/` | The engine. Consumers import only `src/engine/index.js` |
 | `src/api/` | The API: `app.js` (server), `sites.js` and `files.js` (routes), `names.js`, `problems.js` (errors), `domains.js` |
-| `scripts/` | `api.js` runs the API; `try-engine.js` runs the engine |
+| `scripts/` | `api.js` runs the API |
 | `test/` | `test/engine/`, `test/api/`; `test/fixtures/` holds saved live pages |
 
 ## The user flow
