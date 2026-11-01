@@ -18,7 +18,7 @@ Node 22 or later. Dependencies: [Fastify](https://fastify.dev) 5 (the API), chee
 | Folder | What |
 |---|---|
 | `src/engine/` | The engine. Consumers import only `src/engine/index.js` |
-| `src/api/` | The API: `server.js` (runs it: `npm start`), `app.js` (builds it), `sites.js` and `files.js` (routes), `names.js`, `problems.js` (errors), `domains.js` |
+| `src/api/` | The API: `server.js` (runs it: `npm start`), `app.js` (builds it), `sites.js` and `files.js` (routes), `names.js`, `problems.js` (errors), `domains.js`, `cache.js` |
 | `test/` | `test/engine/`, `test/api/`; `test/fixtures/` holds saved live pages |
 
 ## The user flow
@@ -345,6 +345,29 @@ by hand. The API (`src/api/domains.js`) reads the repo's raw `domains.json`:
   reaches the API within half an hour (GitHub caches the raw file for 5).
 - **When the read fails**, the API keeps its domains, and asks again 30 minutes after that try.
 
+### Cache
+
+Each route's answer is kept in memory (`src/api/cache.js`, `lru-cache`, 500 answers at most), by
+its URL, for as long as it stays true:
+
+| Route | Kept | Why |
+|---|---|---|
+| ListPosts | 5 min | new posts come often |
+| SearchPosts | 10 min | |
+| GetPost | 15 min | a site adds links to a post (a series' new episodes) |
+| ListFiles | 1 hour | a link's files hardly change; an answer with `failures` is not kept |
+| GetFile | 5 min | its downloads expire, but not within 5 minutes |
+
+A repeat answers without reading the sites. Errors are not kept: the next request tries again.
+`Cache-Control: public, max-age=<seconds left>` lets the client keep an answer as long. Each
+running copy of the API has its own cache; two requests at once for one URL both read the site.
+
+### Deploy
+
+On Wasmer Edge, at https://moviehawk.wasmer.app: the `main` branch of
+[moviehawk](https://github.com/ElonMuskOfficial/moviehawk), every push deployed. Its Node.js
+engine is Native (V8), its start command `npm start`, and `HOST=0.0.0.0`; Wasmer sets `PORT`.
+
 ### Departures from AIP
 
 - **Search is `GET /v1/sites/{site}/search?q=`**, not AIP-136's `posts:search?query=`: the common
@@ -389,10 +412,8 @@ by hand. The API (`src/api/domains.js`) reads the repo's raw `domains.json`:
 
 ## Not decided yet
 
-- **Cache**: what the API caches, for how long, and where (in memory or Redis), with its
-  `Cache-Control` headers. Decided with the deploy.
-- **Rate limit**: each GetFile sends 2 or 3 requests to HubCloud. Before the API is public.
-- **Deploy**: where the API runs.
+- **Rate limit**: none: the API is for personal use. Each GetFile sends 2 or 3 requests to
+  HubCloud; a limit by IP (`@fastify/rate-limit`, 429 with `Retry-After`) if others use it.
 - **Access**: open, without a key, for now.
 - **Load on the sites**: the engine sets no limit on requests at once, as no site has answered 429
   or stalled. When one does, retrying after its `Retry-After` is added then; nothing before.

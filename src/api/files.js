@@ -61,26 +61,34 @@ const resolvedFile = {
 
 /**
  * @param {import('fastify').FastifyInstance} app
- * @param {{ config: import('./domains.js').LiveConfig }} options `config`: the engine, for each
- *   request.
+ * @param {{ config: import('./domains.js').LiveConfig, cached: ReturnType<typeof import('./cache.js').createCache> }} options
+ *   `config`: the engine, for each request. `cached`: the app's cache.
  */
-export async function filesRoutes(app, { config }) {
+export async function filesRoutes(app, { config, cached }) {
   app.get('/v1/links/:link/files', {
     schema: { params: idParams('link'), response: { 200: fileList } },
-  }, async (request) => {
+  }, async (request, reply) => {
     const url = urlOf(request.params.link, 'link');
-    const { files, failures } = await config.current(request.log).engine.scrapeLinks([url], { signal: request.signal });
-    return {
-      files: files.map((file) => ({ name: fileName(file.url), host: file.host, url: file.url, label: file.label })),
-      failures: failures.map((error) => ({ code: error.code, url: error.url, detail: error.message })),
-    };
+    // A link's files hardly change; an answer with failures is not kept, as a page on the way that
+    // was slow (a stalled HubDrive) gives its files on the next try.
+    const ttl = ({ failures }) => (failures.length > 0 ? 0 : 60 * 60_000);
+    return cached(request, reply, ttl, async () => {
+      const { files, failures } = await config.current(request.log).engine.scrapeLinks([url], { signal: request.signal });
+      return {
+        files: files.map((file) => ({ name: fileName(file.url), host: file.host, url: file.url, label: file.label })),
+        failures: failures.map((error) => ({ code: error.code, url: error.url, detail: error.message })),
+      };
+    });
   });
 
   app.get('/v1/files/:file', {
     schema: { params: idParams('file'), response: { 200: resolvedFile } },
-  }, async (request) => {
+  }, async (request, reply) => {
     const url = urlOf(request.params.file, 'file');
-    const { filename, sizeBytes, downloads } = await config.current(request.log).engine.resolve(url, { signal: request.signal });
-    return { name: fileName(url), filename, sizeBytes, downloads };
+    // Its downloads expire, but not within 5 minutes.
+    return cached(request, reply, 5 * 60_000, async () => {
+      const { filename, sizeBytes, downloads } = await config.current(request.log).engine.resolve(url, { signal: request.signal });
+      return { name: fileName(url), filename, sizeBytes, downloads };
+    });
   });
 }

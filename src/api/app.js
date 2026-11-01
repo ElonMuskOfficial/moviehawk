@@ -4,6 +4,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import Fastify from 'fastify';
+import { createCache } from './cache.js';
 import { PROBLEM_TYPE, problem, problemOf } from './problems.js';
 import { filesRoutes } from './files.js';
 import { sitesRoutes } from './sites.js';
@@ -67,8 +68,9 @@ export async function buildApp({ config, logger = false }) {
 
   app.setNotFoundHandler((request, reply) => sendProblem(reply, problem(404, 'notFound', `No route ${request.method} ${request.url}`)));
 
-  await app.register(sitesRoutes, { config });
-  await app.register(filesRoutes, { config });
+  const cached = createCache();
+  await app.register(sitesRoutes, { config, cached });
+  await app.register(filesRoutes, { config, cached });
 
   return app;
 }

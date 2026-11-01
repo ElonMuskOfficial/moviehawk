@@ -69,10 +69,10 @@ const siteList = {
 
 /**
  * @param {import('fastify').FastifyInstance} app
- * @param {{ config: import('./domains.js').LiveConfig }} options `config`: the engine and the
- *   domains, for each request.
+ * @param {{ config: import('./domains.js').LiveConfig, cached: ReturnType<typeof import('./cache.js').createCache> }} options
+ *   `config`: the engine and the domains, for each request. `cached`: the app's cache.
  */
-export async function sitesRoutes(app, { config }) {
+export async function sitesRoutes(app, { config, cached }) {
   // The site a request names, its current domain, and the engine to read it with.
   const siteOf = (request) => {
     const { site } = request.params;
@@ -97,10 +97,11 @@ export async function sitesRoutes(app, { config }) {
       querystring: { type: 'object', properties: { pageToken } },
       response: { 200: postPage },
     },
-  }, async (request) => {
+  }, async (request, reply) => {
     const { site, engine, siteUrl } = siteOf(request);
     const page = Number(request.query.pageToken ?? 1);
-    return pageOf(site, page, await engine.scrapeListing(siteUrl, page, { signal: request.signal }));
+    // New posts come often.
+    return cached(request, reply, 5 * 60_000, async () => pageOf(site, page, await engine.scrapeListing(siteUrl, page, { signal: request.signal })));
   });
 
   app.get('/v1/sites/:site/search', {
@@ -109,27 +110,30 @@ export async function sitesRoutes(app, { config }) {
       querystring: { type: 'object', required: ['q'], properties: { q, pageToken } },
       response: { 200: postPage },
     },
-  }, async (request) => {
+  }, async (request, reply) => {
     const { site, engine, siteUrl } = siteOf(request);
     const page = Number(request.query.pageToken ?? 1);
-    return pageOf(site, page, await engine.searchPosts(siteUrl, request.query.q, page, { signal: request.signal }));
+    return cached(request, reply, 10 * 60_000, async () => pageOf(site, page, await engine.searchPosts(siteUrl, request.query.q, page, { signal: request.signal })));
   });
 
   app.get('/v1/sites/:site/posts/:post', {
     schema: { params: postParams, response: { 200: fullPost } },
-  }, async (request) => {
+  }, async (request, reply) => {
     const { site, engine, siteUrl } = siteOf(request);
-    const { post, links } = await engine.scrapePost(postUrl(siteUrl, request.params.post), { signal: request.signal });
-    return {
-      // From the URL the site answered at: a post the site renamed is named by its new slug.
-      name: postName(site, post.url),
-      url: post.url,
-      title: post.title,
-      year: post.year,
-      imdbId: post.imdbId,
-      posterUrl: post.posterUrl,
-      publishTime: post.publishedAt,
-      links: links.map(({ url, label }) => ({ name: linkName(url), label })),
-    };
+    // A site adds links to a post (a series' new episodes).
+    return cached(request, reply, 15 * 60_000, async () => {
+      const { post, links } = await engine.scrapePost(postUrl(siteUrl, request.params.post), { signal: request.signal });
+      return {
+        // From the URL the site answered at: a post the site renamed is named by its new slug.
+        name: postName(site, post.url),
+        url: post.url,
+        title: post.title,
+        year: post.year,
+        imdbId: post.imdbId,
+        posterUrl: post.posterUrl,
+        publishTime: post.publishedAt,
+        links: links.map(({ url, label }) => ({ name: linkName(url), label })),
+      };
+    });
   });
 }
