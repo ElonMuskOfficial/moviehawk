@@ -38,13 +38,8 @@ export function linkName(url) {
   return `links/${Buffer.from(url).toString('base64url')}`;
 }
 
-/** A file's name: its URL on its host, encoded as a link's. @param {string} url */
-export function fileName(url) {
-  return `files/${Buffer.from(url).toString('base64url')}`;
-}
-
 /**
- * The URL back from the id of a link's or a file's name.
+ * The URL back from the id of a link's name.
  *
  * @param {string} id - The base64url part, as the router gives it.
  * @returns {string | null} null when it is not of a web URL: the engine takes no other.

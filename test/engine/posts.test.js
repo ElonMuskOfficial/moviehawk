@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { web } from './helpers.js';
-import { scrapeLinks } from '../../src/engine/links.js';
+import { identify } from '../../src/engine/links.js';
 import { scrapePost } from '../../src/engine/posts.js';
 
 const POST_URL = 'https://new10.hdhub4u.cl/show-2026/';
@@ -30,13 +30,12 @@ describe('scrapePost', () => {
     assert.deepEqual(options.requests, [POST_URL]);
   });
 
-  it('gives links whose URLs scrapeLinks follows', async () => {
+  it('gives links that identify knows', async () => {
     const options = web({ [POST_URL]: hdHub4uPost('https://hubcloud.ist/drive/a') });
 
     const { links } = await scrapePost(POST_URL, options);
-    const { files } = await scrapeLinks(links.map(({ url }) => url), options);
 
-    assert.deepEqual(files.map(({ externalId }) => externalId), ['a']);
+    assert.deepEqual(links.map(({ url }) => identify(url)?.externalId), ['a']);
   });
 
   it('reads the post on its site\'s current domain', async () => {

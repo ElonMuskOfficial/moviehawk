@@ -104,11 +104,11 @@ describe('the API server', () => {
   });
 
   it('routes a name as long as a GreenMotors link\'s, and gives a longer one as a problem', async (t) => {
-    const server = await app((s) => s.get('/v1/links/:link', (request) => ({ length: request.params.link.length })));
+    const server = await app((s) => s.get('/v1/test/:link', (request) => ({ length: request.params.link.length })));
     t.after(() => server.close());
 
-    const long = await server.inject(`/v1/links/${'a'.repeat(540)}`);
-    const tooLong = await server.inject(`/v1/links/${'a'.repeat(3000)}`);
+    const long = await server.inject(`/v1/test/${'a'.repeat(540)}`);
+    const tooLong = await server.inject(`/v1/test/${'a'.repeat(3000)}`);
 
     assert.deepEqual(long.json(), { length: 540 });
     assert.equal(tooLong.statusCode, 414);

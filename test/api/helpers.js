@@ -14,7 +14,7 @@ export const DOMAINS = { hdhub4u: 'https://new10.hdhub4u.cl', '4khdhub': 'https:
  */
 export function fakeEngine(answer) {
   const calls = [];
-  const engine = Object.fromEntries(['scrapeListing', 'searchPosts', 'scrapePost', 'scrapeLinks', 'resolve'].map((name) => [
+  const engine = Object.fromEntries(['scrapeListing', 'searchPosts', 'scrapePost', 'expand', 'resolve'].map((name) => [
     name,
     async (...args) => {
       const { signal } = args.pop();

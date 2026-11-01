@@ -6,25 +6,27 @@
  *   engine.scrapeListing(siteUrl, page)      → its posts' cards: URL, title, poster
  *   engine.searchPosts(siteUrl, query, page) → the cards of the posts that match
  *   engine.scrapePost(postUrl)               → the post and its links
- *   engine.scrapeLinks(urls)                 → the files the links' URLs lead to
+ *   identify(linkUrl)                        → what the link is: a gateway page, or a file on a host
+ *   engine.expand(gatewayUrl)                → where the gateway's page leads: its links
  *   engine.resolve(fileUrl)                  → the file's name, size and downloads
  *
  * Every function throws EngineError. The engine keeps no state of its own: the config it is made
  * with is all it knows, and it never changes it.
  */
 import { resolve } from './files.js';
-import { scrapeLinks } from './links.js';
+import { expand } from './links.js';
 import { scrapeListing } from './listings.js';
 import { scrapePost } from './posts.js';
 import { searchPosts } from './searches.js';
 
 export { EngineError } from './errors.js';
+export { identify } from './links.js';
 
 /**
  * @typedef {import('./providers/index.js').Post} Post
  * @typedef {import('./providers/index.js').PostCard} PostCard
  * @typedef {import('./html.js').Link} Link
- * @typedef {import('./hosts/index.js').HostFile} HostFile
+ * @typedef {import('./links.js').LinkKind} LinkKind
  * @typedef {import('./hosts/index.js').Download} Download
  */
 
@@ -45,7 +47,7 @@ export function createEngine(config = {}) {
     scrapeListing: (url, page, options) => scrapeListing(url, page, withConfig(options)),
     searchPosts: (url, query, page, options) => searchPosts(url, query, page, withConfig(options)),
     scrapePost: (url, options) => scrapePost(url, withConfig(options)),
-    scrapeLinks: (urls, options) => scrapeLinks(urls, withConfig(options)),
+    expand: (url, options) => expand(url, withConfig(options)),
     resolve: (url, options) => resolve(url, withConfig(options)),
   };
 }

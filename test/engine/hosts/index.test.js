@@ -36,7 +36,7 @@ describe('hostOf and externalIdOf', () => {
   });
 
   it('give a Streamtape file one id on its page and its player, on each of its names', () => {
-    const urls = ['https://strtape.tech/v/7PB7rmZQw1tJ8L/a.mkv', 'https://streamtape.com/v/7PB7rmZQw1tJ8L', 'https://streamtape.com/e/7PB7rmZQw1tJ8L/'];
+    const urls = ['https://strtape.tech/v/7PB7rmZQw1tJ8L/a.mkv', 'https://stape.fun/v/7PB7rmZQw1tJ8L/a.mkv', 'https://streamtape.com/v/7PB7rmZQw1tJ8L', 'https://streamtape.com/e/7PB7rmZQw1tJ8L/'];
     assert.deepEqual(urls.map((url) => [hostOf(url)?.id, externalIdOf(url)]), urls.map(() => ['streamtape', '7PB7rmZQw1tJ8L']));
   });
 

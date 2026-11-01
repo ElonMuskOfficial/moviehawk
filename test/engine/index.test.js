@@ -6,8 +6,8 @@ import * as entry from '../../src/engine/index.js';
 const { createEngine } = entry;
 
 describe('the engine\'s entry', () => {
-  it('gives a consumer createEngine and EngineError, and nothing else', () => {
-    assert.deepEqual(Object.keys(entry).sort(), ['EngineError', 'createEngine']);
+  it('gives a consumer createEngine, EngineError and identify, and nothing else', () => {
+    assert.deepEqual(Object.keys(entry).sort(), ['EngineError', 'createEngine', 'identify']);
   });
 
   it('makes an engine whose every call has its config', async () => {
@@ -20,9 +20,9 @@ describe('the engine\'s entry', () => {
     const engine = createEngine({ domains, fetch });
 
     const { links } = await engine.scrapePost('https://new9.hdhub4u.cl/show/');
-    const { files } = await engine.scrapeLinks(links.map(({ url }) => url));
+    const { links: servers } = await engine.expand(links[0].url);
 
     assert.deepEqual(requests, ['https://new10.hdhub4u.cl/show/', 'https://hubdrive.bar/file/7']);
-    assert.deepEqual(files, [{ host: 'hubcloud', externalId: 'a', url: 'https://hubcloud.ist/drive/a', label: '[HubCloud Server]' }]);
+    assert.deepEqual(servers, [{ url: 'https://hubcloud.foo/drive/a', label: '[HubCloud Server]' }]);
   });
 });

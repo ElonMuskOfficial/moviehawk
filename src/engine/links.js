@@ -1,6 +1,6 @@
 /**
- * The files a post's links lead to: each link is followed through the gateways until it reaches a
- * host.
+ * What a link is, and where a gateway's page leads: the pieces a consumer makes its own flow of
+ * (the API stops where its user chooses; another consumer may follow every link to its files).
  */
 import { EngineError } from './errors.js';
 import { gatewayOf } from './gateways/index.js';
@@ -9,70 +9,47 @@ import { retry } from './http.js';
 import { onCurrentDomain, webUrlOf } from './urls.js';
 
 /**
- * @typedef {import('./hosts/index.js').HostFile} HostFile
+ * @typedef {{ type: 'gateway', id: string }
+ *   | { type: 'file', host: string, externalId: string, resolves: boolean }} LinkKind
+ *   A gateway page the engine reads (`expand`), or a file on a host: `resolves` when `resolve`
+ *   reads its downloads.
  */
 
 /**
- * Follows links to the files they lead to: every file once (found by its host and externalId), in
- * the order of the links (4KHDHub's HubCloud and HubDrive buttons lead to one file, which it gives
- * once, with the label of the first way to it). A link that is neither a gateway nor a file on a
- * known host is skipped. Every URL is moved to its site's current domain before it is read, files
- * too.
+ * What a link is, from its URL alone (no request).
  *
- * A file's label is the first one on its way, which is the page nearest the post: HUBLinks'
- * "480p · Drive", not the "[HubCloud Server]" of the HubDrive page after it. The post's own label is
- * the caller's, which picked the link.
+ * @param {string} url
+ * @returns {LinkKind | null} null for anything else: a page of a host that names no file (HubCloud's
+ *   "/tg/go" Telegram link), a site the engine does not know, a string that is not a web URL.
+ */
+export function identify(url) {
+  const gateway = gatewayOf(url);
+  if (gateway) return { type: 'gateway', id: gateway.id };
+  const externalId = externalIdOf(url);
+  if (!externalId) return null;
+  const host = hostOf(url);
+  return { type: 'file', host: host.id, externalId, resolves: Boolean(host.resolve) };
+}
+
+/**
+ * Reads one gateway page and returns where it leads, in page order, as the page gives it (1
+ * request; retried): GreenMotors' one destination, HUBLinks' links, a HubDrive file page's server
+ * buttons, a HubDrive pack's file pages. The page is read on its site's current domain.
  *
- * @param {string[]} urls - The links' URLs: all of a post's (`links.map(({ url }) => url)`), or the
- *   one a user picked.
+ * @param {string} url - A gateway page (`identify(url).type === 'gateway'`), on any of its domains.
  * @param {import('./http.js').RequestOptions & { domains?: Record<string, string> }} [options]
  *   `domains`: as for onCurrentDomain (urls.js).
- * @returns {Promise<{ files: HostFile[], failures: EngineError[] }>} `failures`: every page that did
- *   not lead on, such as a dead GreenMotors link (`notFound`) or a stalled HubDrive (`transient`);
- *   the files of every other link are there.
- * @throws {TypeError} For one of `urls` that is not a web URL (a typo, a link `{ url, label }`):
- *   it would be skipped as if the page linked nothing. A URL a gateway page gives is the site's,
- *   and is skipped instead.
+ * @returns {Promise<{ links: import('./html.js').Link[] }>} Every link, as the site gave it: a link
+ *   the engine does not know, or a torrent's, is the caller's to skip (`identify`).
+ * @throws {EngineError} `unsupported` for a URL that is no gateway page, and the gateway's errors.
+ * @throws {TypeError} For a string that is not a web URL.
  * @throws {unknown} The caller's own reason, as it is, when the caller cancels (`signal`).
  */
-export async function scrapeLinks(urls, { domains = {}, ...options } = {}) {
-  for (const url of urls) if (!webUrlOf(url)) throw new TypeError(`Not a web URL: ${url}`);
-  // Gateway pages, each read once (a post links some twice), for the link that reaches it first:
-  // its files take that link's place. A gateway that leads back to a page read already ends there.
-  const readPages = new Set();
-  const failures = [];
-
-  // The files `target` leads to, in page order: Promise.all keeps it, although pages load at once.
-  // `target`: a URL as given, before it is moved to its current domain. `label`: the first label
-  // on its way.
-  const follow = async (target, label = null) => {
-    const parsed = webUrlOf(target);
-    if (!parsed) return [];
-    const url = onCurrentDomain(parsed, domains);
-    const gateway = gatewayOf(url);
-    if (gateway) {
-      if (readPages.has(url)) return [];
-      readPages.add(url);
-      let next;
-      try {
-        ({ links: next } = await retry(() => gateway.expand(url, options), { signal: options.signal }));
-      } catch (error) {
-        if (!(error instanceof EngineError)) throw error;
-        failures.push(error);
-        return [];
-      }
-      const files = await Promise.all(next.map((link) => follow(link.url, label ?? link.label)));
-      return files.flat();
-    }
-    const externalId = externalIdOf(url);
-    if (!externalId) return [];
-    return [{ host: hostOf(url).id, externalId, url, label }];
-  };
-
-  const files = new Map(); // By "host:externalId": each file as the first link reaches it.
-  for (const file of (await Promise.all(urls.map((url) => follow(url)))).flat()) {
-    const key = `${file.host}:${file.externalId}`;
-    if (!files.has(key)) files.set(key, file);
-  }
-  return { files: [...files.values()], failures };
+export async function expand(url, { domains = {}, ...options } = {}) {
+  const parsed = webUrlOf(url);
+  if (!parsed) throw new TypeError(`Not a web URL: ${url}`);
+  const gateway = gatewayOf(parsed.href);
+  if (!gateway) throw new EngineError('unsupported', `The engine reads no gateway page at ${parsed.href}`, { url });
+  const current = onCurrentDomain(parsed, domains);
+  return retry(() => gateway.expand(current, options), { signal: options.signal });
 }

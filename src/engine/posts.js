@@ -9,7 +9,7 @@ import { providerOf } from './providers/index.js';
 import { onCurrentDomain, webUrlOf } from './urls.js';
 
 /**
- * Reads a post page (1 request; retried). scrapeLinks follows the links to their files.
+ * Reads a post page (1 request; retried). identify tells what each link is.
  *
  * @param {string} url - A post page, on any of its site's domains.
  * @param {import('./http.js').RequestOptions & { domains?: Record<string, string> }} [options]

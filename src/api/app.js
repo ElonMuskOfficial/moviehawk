@@ -6,14 +6,14 @@ import { randomUUID } from 'node:crypto';
 import Fastify from 'fastify';
 import { createCache } from './cache.js';
 import { PROBLEM_TYPE, problem, problemOf } from './problems.js';
-import { filesRoutes } from './files.js';
+import { linksRoutes } from './links.js';
 import { sitesRoutes } from './sites.js';
 
 // Names are long: a GreenMotors link's is up to 540 characters, an HDHub4u post's up to 143
 // (README.md, Names). Fastify's default, 100, would make them HTTP 414.
 const MAX_PARAM_LENGTH = 2048;
 
-// The most a request may take. GetFile takes 1 to 6 s live, 10 s when 10Gbps is slow; a host that
+// The most a request may take. GetLink takes 1 to 6 s live, 10 s when 10Gbps is slow; a host that
 // stalls through every retry would hold it about a minute.
 const HANDLER_TIMEOUT_MS = 30_000;
 
@@ -70,7 +70,7 @@ export async function buildApp({ config, logger = false }) {
 
   const cached = createCache();
   await app.register(sitesRoutes, { config, cached });
-  await app.register(filesRoutes, { config, cached });
+  await app.register(linksRoutes, { config, cached });
 
   return app;
 }

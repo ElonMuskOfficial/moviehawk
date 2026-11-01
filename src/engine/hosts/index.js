@@ -31,10 +31,11 @@ const HOSTS = [
   { id: 'hubstream', externalId: (url) => fileId(url.hash.slice(1)) },
   { id: 'vidaraa', externalId: pathId('e') },
   // Its page ("/v/<id>/<file name>") and its player ("/e/<id>") name the same file. strtape.tech
-  // seen live (2026-11-01), behind a GreenMotors WATCH link of an HDHub4u series.
+  // seen live (2026-11-01), behind a GreenMotors WATCH link of an HDHub4u series; stape.fun behind
+  // one of Koffee With Karan's.
   {
     id: 'streamtape',
-    labels: ['streamtape', 'strtape'],
+    labels: ['streamtape', 'strtape', 'stape'],
     externalId: (url) => {
       const segments = url.pathname.split('/').filter(Boolean);
       return ['v', 'e'].includes(segments[0]) && (segments.length === 2 || segments.length === 3) ? fileId(segments[1]) : null;
@@ -70,14 +71,6 @@ export function hostOf(url) {
 export function externalIdOf(url) {
   return hostOf(url)?.externalId(new URL(url)) ?? null;
 }
-
-/**
- * One file on a host, as a link names it. (Not `File`: Node has a global of that name.)
- *
- * @typedef {{ host: string, externalId: string, url: string, label: string | null }} HostFile
- *   `label`: what the pages on the way to the file say of it, from the one nearest the post
- *   ("480p · Drive"); null when none says anything (a link straight to the file).
- */
 
 /**
  * One way to download a file, as the host's download page offers it.

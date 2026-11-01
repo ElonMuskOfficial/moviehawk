@@ -4,15 +4,16 @@ import { EngineError } from '../../src/engine/index.js';
 import { appWith as app, fakeEngine } from './helpers.js';
 
 const id = (url) => Buffer.from(url).toString('base64url');
-const FILE = `/v1/files/${id('https://hubcloud.ist/drive/a')}`;
-const LINK = `/v1/links/${id('https://hblinks.lol/archives/1')}/files`;
+// A link to a file, and one to a page of files: each kind is kept as long as it says.
+const FILE = `/v1/links/${id('https://hubcloud.ist/drive/a')}`;
+const LINK = `/v1/links/${id('https://hblinks.lol/archives/1')}`;
 
 // An engine that answers each function as the test says.
 const answers = {
   scrapeListing: () => ({ posts: [], hasNextPage: false }),
   searchPosts: () => ({ posts: [], hasNextPage: false }),
   scrapePost: () => ({ post: { url: 'https://new10.hdhub4u.cl/show/', title: 'Show', year: null, imdbId: null, posterUrl: null, publishedAt: null }, links: [] }),
-  scrapeLinks: () => ({ files: [], failures: [] }),
+  expand: () => ({ links: [] }),
   resolve: () => ({ filename: 'a.mkv', sizeBytes: 1, downloads: [] }),
 };
 const engineFor = () => {
@@ -96,22 +97,6 @@ describe('the cache', () => {
     assert.equal(failed.statusCode, 504);
     assert.equal(failed.headers['cache-control'], undefined);
     assert.equal(retried.statusCode, 200);
-    assert.equal(calls.length, 2);
-  });
-
-  it('keeps no link\'s files that came with failures: a slow page gives its files on the next try', async (t) => {
-    const { engine, calls } = fakeEngine(() => ({
-      files: [],
-      failures: [new EngineError('transient', 'hubdrive.bar did not answer within 8000 ms', { url: 'https://hubdrive.bar/file/1' })],
-    }));
-    const server = await app(engine);
-    t.after(() => server.close());
-
-    const first = await server.inject(LINK);
-    await server.inject(LINK);
-
-    assert.equal(first.statusCode, 200);
-    assert.equal(first.headers['cache-control'], undefined);
     assert.equal(calls.length, 2);
   });
 });
