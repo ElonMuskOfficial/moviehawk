@@ -25,7 +25,7 @@ function sendProblem(reply, body) {
 }
 
 /**
- * Makes the API's server, not yet listening: the caller listens (scripts/api.js) or injects
+ * Makes the API's server, not yet listening: the caller listens (server.js) or injects
  * requests (the tests).
  *
  * @param {{ config: import('./domains.js').LiveConfig, logger?: boolean }} options `config`: the

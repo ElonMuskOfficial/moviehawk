@@ -1,13 +1,13 @@
 /**
- * Runs the API (README.md, The API): node scripts/api.js
+ * Runs the API (README.md, The API): npm start
  * The current domains come from the moviehawk-domains repo, or FALLBACK_DOMAINS when it cannot be
- * read at start (src/api/domains.js).
+ * read at start (domains.js).
  * PORT (default 3000) and HOST (default 127.0.0.1; 0.0.0.0 to be reached from outside) set where
  * it listens.
  */
-import { buildApp } from '../src/api/app.js';
-import { liveConfig } from '../src/api/domains.js';
-import { createEngine } from '../src/engine/index.js';
+import { buildApp } from './app.js';
+import { liveConfig } from './domains.js';
+import { createEngine } from '../engine/index.js';
 
 const config = await liveConfig({ makeEngine: (domains) => createEngine({ domains }) });
 const app = await buildApp({ config, logger: true });
