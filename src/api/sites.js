@@ -70,16 +70,15 @@ const siteList = {
 
 /**
  * @param {import('fastify').FastifyInstance} app
- * @param {{ config: import('./domains.js').LiveConfig, cached: ReturnType<typeof import('./cache.js').createCache> }} options
- *   `config`: the engine and the domains, for each request. `cached`: the app's cache.
+ * @param {{ engine: ReturnType<typeof import('../engine/index.js').createEngine>, domains: Record<string, string>, cached: ReturnType<typeof import('./cache.js').createCache> }} options
+ *   `domains`: each site's current domain. `cached`: the app's cache.
  */
-export async function sitesRoutes(app, { config, cached }) {
-  // The site a request names, its current domain, and the engine to read it with.
+export async function sitesRoutes(app, { engine, domains, cached }) {
+  // The site a request names, and its current domain.
   const siteOf = (request) => {
     const { site } = request.params;
     if (!SITES.includes(site)) throw new ProblemError(404, 'notFound', `No site ${site}`);
-    const { engine, domains } = config.current(request.log);
-    return { site, engine, siteUrl: domains[site] };
+    return { site, siteUrl: domains[site] };
   };
 
   // The engine's { posts, hasNextPage } as a page of the API.
@@ -99,7 +98,7 @@ export async function sitesRoutes(app, { config, cached }) {
       response: { 200: postPage },
     },
   }, async (request, reply) => {
-    const { site, engine, siteUrl } = siteOf(request);
+    const { site, siteUrl } = siteOf(request);
     const page = Number(request.query.pageToken ?? 1);
     // New posts come often.
     return cached(request, reply, 5 * 60_000, async () => pageOf(site, page, await engine.scrapeListing(siteUrl, page, { signal: request.signal })));
@@ -112,7 +111,7 @@ export async function sitesRoutes(app, { config, cached }) {
       response: { 200: postPage },
     },
   }, async (request, reply) => {
-    const { site, engine, siteUrl } = siteOf(request);
+    const { site, siteUrl } = siteOf(request);
     const page = Number(request.query.pageToken ?? 1);
     return cached(request, reply, 10 * 60_000, async () => pageOf(site, page, await engine.searchPosts(siteUrl, request.query.q, page, { signal: request.signal })));
   });
@@ -120,7 +119,7 @@ export async function sitesRoutes(app, { config, cached }) {
   app.get('/v1/sites/:site/posts/:post', {
     schema: { params: postParams, querystring: queryOf(), response: { 200: fullPost } },
   }, async (request, reply) => {
-    const { site, engine, siteUrl } = siteOf(request);
+    const { site, siteUrl } = siteOf(request);
     // A site adds links to a post (a series' new episodes).
     return cached(request, reply, 15 * 60_000, async () => {
       const { post, links } = await engine.scrapePost(postUrl(siteUrl, request.params.post), { signal: request.signal });

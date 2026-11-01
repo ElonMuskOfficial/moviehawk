@@ -1,9 +1,9 @@
 /**
  * The current domains (of the sites, gateways and hosts whose domain rotates, by hostname label),
  * from the moviehawk-domains repo, which heals them twice a day
- * (github.com/ElonMuskOfficial/moviehawk-domains). Read at start, and again when a request comes
- * and the last read is 30 minutes old: in the background, so no request waits for GitHub
- * (stale-while-revalidate, RFC 5861). No timer: an idle server reads nothing.
+ * (github.com/ElonMuskOfficial/moviehawk-domains). Read once, at start: Wasmer starts the API again
+ * on every deploy, and after a few idle minutes, so new domains reach it then. A site that moved
+ * still answers on its old domain meanwhile, while it redirects to the new one (for days).
  */
 
 export const DOMAINS_URL = 'https://raw.githubusercontent.com/ElonMuskOfficial/moviehawk-domains/main/domains.json';
@@ -22,9 +22,6 @@ export const FALLBACK_DOMAINS = Object.freeze({
   hubcdn: 'https://hubcdn.wiki',
 });
 
-// A domain fixed by hand in the repo reaches the API within 30 minutes (GitHub caches the raw
-// file for 5).
-const MAX_AGE_MS = 30 * 60_000;
 const TIMEOUT_MS = 10_000;
 
 /**
@@ -72,66 +69,10 @@ export async function readDomains({ url = DOMAINS_URL, fetch = globalThis.fetch 
  * @returns {Promise<{ domains: Record<string, string>, fallbackBecause: string | null }>}
  *   `fallbackBecause`: why the URL's were not used, or null.
  */
-async function startDomains(options) {
+export async function startDomains(options) {
   try {
     return { domains: await readDomains(options), fallbackBecause: null };
   } catch (error) {
     return { domains: FALLBACK_DOMAINS, fallbackBecause: error.message };
   }
-}
-
-/**
- * @typedef {{ domains: Record<string, string>, engine: ReturnType<typeof import('../engine/index.js').createEngine> }} Config
- *   The domains and the engine made with them, for one request.
- * @typedef {{ info: (message: string) => void, warn: (message: string) => void }} Log
- *   A request's log (Fastify's request.log is one).
- * @typedef {{ current: (log: Log) => Config, fallbackBecause: string | null }} LiveConfig
- *   `current`: the config for a request; when the last read is 30 minutes old, it starts the next
- *   one, whose domains later requests get, and logs what it found to `log`. `fallbackBecause`:
- *   why it started with FALLBACK_DOMAINS, or null.
- */
-
-/**
- * Reads the domains, and gives the config each request uses.
- *
- * @param {{ makeEngine: (domains: Record<string, string>) => Config['engine'],
- *   url?: string, fetch?: typeof fetch, now?: () => number }} options
- *   `makeEngine`: a new engine for new domains (an engine's config never changes).
- * @returns {Promise<LiveConfig>}
- */
-export async function liveConfig({ makeEngine, url = DOMAINS_URL, fetch = globalThis.fetch, now = Date.now }) {
-  const read = () => readDomains({ url, fetch });
-  const configOf = (domains) => ({ domains, engine: makeEngine(domains) });
-
-  const start = await startDomains({ url, fetch });
-  let config = configOf(start.domains);
-  // From the last try, not the last success: while GitHub fails, it is asked again in 30 minutes,
-  // not by every request.
-  let lastTry = now();
-  let reading = false;
-
-  const refresh = async (log) => {
-    try {
-      const domains = await read();
-      if (JSON.stringify(domains) === JSON.stringify(config.domains)) return;
-      config = configOf(domains);
-      log.info(`Domains changed: ${JSON.stringify(domains)}`);
-    } catch (error) {
-      log.warn(`Domains not read from ${url}: ${error.message}; still ${JSON.stringify(config.domains)}`);
-    } finally {
-      reading = false;
-    }
-  };
-
-  return {
-    current(log) {
-      if (!reading && now() - lastTry >= MAX_AGE_MS) {
-        lastTry = now();
-        reading = true;
-        refresh(log);
-      }
-      return config;
-    },
-    fallbackBecause: start.fallbackBecause,
-  };
 }

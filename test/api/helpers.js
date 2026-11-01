@@ -28,7 +28,7 @@ export function fakeEngine(answer) {
 
 /** The app on `engine` and DOMAINS, ready for requests. */
 export async function appWith(engine) {
-  const app = await buildApp({ config: { current: () => ({ engine, domains: DOMAINS }), fallbackBecause: null } });
+  const app = await buildApp({ engine, domains: DOMAINS });
   await app.ready();
   return app;
 }

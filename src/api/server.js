@@ -6,10 +6,10 @@
  * it listens.
  */
 import { buildApp } from './app.js';
-import { liveConfig } from './domains.js';
+import { startDomains } from './domains.js';
 import { createEngine } from '../engine/index.js';
 
-const config = await liveConfig({ makeEngine: (domains) => createEngine({ domains }) });
-const app = await buildApp({ config, logger: true });
-if (config.fallbackBecause) app.log.warn(`Started with the fallback domains: the domains URL could not be used (${config.fallbackBecause})`);
+const { domains, fallbackBecause } = await startDomains();
+const app = await buildApp({ engine: createEngine({ domains }), domains, logger: true });
+if (fallbackBecause) app.log.warn(`Started with the fallback domains: the domains URL could not be used (${fallbackBecause})`);
 await app.listen({ port: Number(process.env.PORT ?? 3000), host: process.env.HOST ?? '127.0.0.1' });

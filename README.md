@@ -337,17 +337,14 @@ The current domains come from the
 [moviehawk-domains](https://github.com/ElonMuskOfficial/moviehawk-domains) repo. Its workflow heals
 them twice a day: a site that moves redirects its old domain to the new one for days, and the
 workflow follows that redirect. A domain that does not answer opens an issue there, to be fixed
-by hand. The API (`src/api/domains.js`) reads the repo's raw `domains.json`:
+by hand. The API (`src/api/domains.js`) reads the repo's raw `domains.json` once, at start, and
+makes its engine with them. Wasmer starts the API on every deploy, and again after a few idle
+minutes ([Deploy](#deploy)), so new domains reach it then; a site that moved still answers on its
+old domain meanwhile, while it redirects.
 
-- **At start.** When GitHub does not answer, or gives domains that cannot be used (no domain for
-  one of `FALLBACK_DOMAINS`' labels, a domain with a path), the API starts with
-  `FALLBACK_DOMAINS`, those of 2026-11-01. A site that moved since still answers on its old domain
-  while it redirects.
-- **When a request comes and the last read is 30 minutes old**, in the background: that request
-  has the domains read before, the next ones the new (stale-while-revalidate, RFC 5861). No timer:
-  an idle server reads nothing. 30 minutes, not the workflow's 12 hours, so a domain fixed by hand
-  reaches the API within half an hour (GitHub caches the raw file for 5).
-- **When the read fails**, the API keeps its domains, and asks again 30 minutes after that try.
+When GitHub does not answer, or gives domains that cannot be used (no domain for one of
+`FALLBACK_DOMAINS`' labels, a domain with a path), the API starts with `FALLBACK_DOMAINS`, those
+of 2026-11-01, and logs why.
 
 ### Cache
 

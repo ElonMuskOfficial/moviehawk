@@ -102,10 +102,10 @@ const TTL_MS = { files: 60 * 60_000, file: 5 * 60_000, external: 60 * 60_000 };
 
 /**
  * @param {import('fastify').FastifyInstance} app
- * @param {{ config: import('./domains.js').LiveConfig, cached: ReturnType<typeof import('./cache.js').createCache> }} options
- *   `config`: the engine, for each request. `cached`: the app's cache.
+ * @param {{ engine: ReturnType<typeof import('../engine/index.js').createEngine>, cached: ReturnType<typeof import('./cache.js').createCache> }} options
+ *   `cached`: the app's cache.
  */
-export async function linksRoutes(app, { config, cached }) {
+export async function linksRoutes(app, { engine, cached }) {
   app.get('/v1/links/:link', {
     schema: { params: linkParams, querystring: queryOf(), response: { 200: link } },
   }, async (request, reply) => {
@@ -114,7 +114,7 @@ export async function linksRoutes(app, { config, cached }) {
     if (!url) throw new ProblemError(400, 'invalidArgument', `Not the name of a link: links/${id}`);
     return cached(request, reply, ({ kind }) => TTL_MS[kind], async () => ({
       name: linkName(url),
-      ...(await linkOf(config.current(request.log).engine, url, { signal: request.signal })),
+      ...(await linkOf(engine, url, { signal: request.signal })),
     }));
   });
 }

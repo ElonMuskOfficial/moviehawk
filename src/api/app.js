@@ -29,11 +29,11 @@ function sendProblem(reply, body) {
  * Makes the API's server, not yet listening: the caller listens (server.js) or injects
  * requests (the tests).
  *
- * @param {{ config: import('./domains.js').LiveConfig, logger?: boolean }} options `config`: the
- *   engine and the domains for each request (liveConfig). `logger`: Fastify's request log, to
+ * @param {{ engine: ReturnType<typeof import('../engine/index.js').createEngine>, domains: Record<string, string>, logger?: boolean }} options
+ *   `engine`: made with `domains`, the current domains (domains.js). `logger`: Fastify's request log, to
  *   stdout.
  */
-export async function buildApp({ config, logger = false }) {
+export async function buildApp({ engine, domains, logger = false }) {
   const app = Fastify({
     // Pino's lines say "name": "moviehawk", not the machine's hostname and the process id, which
     // name nothing a reader of the log needs (base: undefined drops them).
@@ -69,8 +69,8 @@ export async function buildApp({ config, logger = false }) {
   app.setNotFoundHandler((request, reply) => sendProblem(reply, problem(404, 'notFound', `No route ${request.method} ${request.url}`)));
 
   const cached = createCache();
-  await app.register(sitesRoutes, { config, cached });
-  await app.register(linksRoutes, { config, cached });
+  await app.register(sitesRoutes, { engine, domains, cached });
+  await app.register(linksRoutes, { engine, cached });
 
   return app;
 }

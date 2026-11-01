@@ -7,7 +7,7 @@ import { EngineError } from '../../src/engine/index.js';
 // The app, with routes of the test's own added before it is ready. Its engine is never called.
 async function app(addRoutes = () => {}) {
   const domains = { hdhub4u: 'https://new10.hdhub4u.cl', '4khdhub': 'https://4khdhub.one' };
-  const server = await buildApp({ config: { current: () => ({ engine: {}, domains }) } });
+  const server = await buildApp({ engine: {}, domains });
   addRoutes(server);
   await server.ready();
   return server;
