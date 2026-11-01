@@ -19,6 +19,8 @@ const YEAR = /\((\d{4})\)/;
 const IMDB_TITLE = /^\/title\/(tt\d+)\//;
 // An episode's download button, first in its line: "EPiSODE 1 | WATCH".
 const EPISODE = /^EPiSODE \d+$/i;
+// A player's button: "WATCH", "WATCH-1", "PLAYER-2".
+const PLAYER = /^(WATCH|PLAYER)\b[-\s]*\d*$/i;
 
 // The post's IMDb id, from the one link in the box of its ratings: IMDb's title page
 // ("www.imdb.com/title/tt0295700/reference/?ref_=fn_t_1"), or TMDB's for a title IMDb does not
@@ -70,8 +72,25 @@ export async function scrapeHdHub4uPost(url, options) {
       posterUrl: body.find('img[src]').first().prop('src') ?? null,
       publishedAt: isoDateOf(datePublished),
     },
-    links: body.find('a[href]').toArray().map((a) => linkOf($, a, fileOf($, a))),
+    links: body.find('a[href]').toArray().map((a) => linkOf($, a, fileOf($, a), buttonOf($, a))),
   };
+}
+
+/**
+ * A button's name. A player whose text is only its number is the line's next player, named as the
+ * one before it: "EPiSODE 1 | WATCH-1 | 2" is WATCH-1 and WATCH-2 (live, 2026-11-01: The Great
+ * Indian Kapil Show S05, each episode).
+ *
+ * @returns {string} The button's text, or the player's name for a number after a player.
+ */
+function buttonOf($, a) {
+  const text = textOf($(a));
+  const line = /^\d+$/.test(text) ? lineOf($, a) : null;
+  if (!line) return text;
+  const buttons = line.find('a[href]').toArray();
+  const before = buttons[buttons.indexOf(a) - 1];
+  const player = before && PLAYER.exec(textOf($(before)))?.[1];
+  return player ? `${player}-${text}` : text;
 }
 
 /**
@@ -84,6 +103,7 @@ export async function scrapeHdHub4uPost(url, options) {
  * @returns {string} Such as "EPiSODE 1 720p"; empty when the button states its file itself, or
  *   its line names none ("WATCH | PLAYER-2").
  */
+
 function fileOf($, a) {
   const line = lineOf($, a);
   if (!line) return '';

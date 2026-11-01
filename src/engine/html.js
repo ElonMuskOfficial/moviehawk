@@ -61,8 +61,10 @@ function textBefore(node, stop) {
  * @param {object} a - One of its `a[href]` elements.
  * @param {string} [file] - What the page says of the link's file, for a button that names only its
  *   server: the label is then "<file> · <the button's text>", "EPiSODE 1 720p · Drive".
+ * @param {string} [button] - The button's name, when its text does not say it (a provider's own
+ *   reading); its text by default.
  * @returns {Link}
  */
-export function linkOf($, a, file = '') {
-  return { url: $(a).prop('href'), label: [file, textOf($(a))].filter(Boolean).join(' · ') || null };
+export function linkOf($, a, file = '', button = textOf($(a))) {
+  return { url: $(a).prop('href'), label: [file, button].filter(Boolean).join(' · ') || null };
 }

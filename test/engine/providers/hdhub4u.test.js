@@ -64,6 +64,18 @@ describe('scrapeHdHub4uPost', () => {
     assert.deepEqual(links.map(({ label }) => label), ['EPiSODE 1', 'EPiSODE 1 · WATCH', 'WATCH', 'PLAYER-2', 'HDHub4u']);
   });
 
+  it('names a player that is only its number as the player before it', async () => {
+    // The Great Indian Kapil Show S05 (live, 2026-11-01): "EPiSODE 1 | WATCH-1 | 2". A number that
+    // follows no player keeps its text.
+    const page = `<h1 class="page-title"><span class="material-text">Show</span></h1><main class="page-body">
+      <h3><a href="https://greenmotors.club/?id=1">EPiSODE 1</a> | <a href="https://vidaraa.cc/e/a">WATCH-1</a> | <a href="https://hdstream4u.com/file/b"><span>2</span></a></h3>
+      <h3><a href="https://greenmotors.club/?id=2">EPiSODE 2</a> | <a href="https://hdstream4u.com/file/c">2</a></h3></main>`;
+
+    const { links } = await scrapeHdHub4uPost(MOVIE_URL, answer(page));
+
+    assert.deepEqual(links.map(({ label }) => label), ['EPiSODE 1', 'EPiSODE 1 · WATCH-1', 'EPiSODE 1 · WATCH-2', 'EPiSODE 2', 'EPiSODE 2 · 2']);
+  });
+
   it('has no year and no IMDb id for a series that links TMDB in IMDb\'s box', async () => {
     const { post, links } = await scrapeHdHub4uPost('https://new10.hdhub4u.cl/s/', answer(fixture('series')));
 
