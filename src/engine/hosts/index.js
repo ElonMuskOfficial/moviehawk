@@ -28,6 +28,16 @@ const HOSTS = [
   { id: 'hdstream4u', externalId: pathId('file') },
   { id: 'hubstream', externalId: (url) => fileId(url.hash.slice(1)) },
   { id: 'vidaraa', externalId: pathId('e') },
+  // Its page ("/v/<id>/<file name>") and its player ("/e/<id>") name the same file. strtape.tech
+  // seen live (2026-11-01), behind a GreenMotors WATCH link of an HDHub4u series.
+  {
+    id: 'streamtape',
+    labels: ['streamtape', 'strtape'],
+    externalId: (url) => {
+      const segments = url.pathname.split('/').filter(Boolean);
+      return ['v', 'e'].includes(segments[0]) && (segments.length === 2 || segments.length === 3) ? fileId(segments[1]) : null;
+    },
+  },
   // A player of IMDb's titles: it names no file, so its id is the title's, season's and episode's
   // ("/series/tt29625288/s-01/ep-01").
   { id: 'play4u', externalId: (url) => /^\/series\/(tt\d+\/s-\d+(?:\/ep-\d+)?)\/?$/.exec(url.pathname)?.[1] ?? null },
@@ -44,7 +54,7 @@ const HOSTS = [
  */
 export function hostOf(url) {
   const parsed = webUrlOf(url);
-  return (parsed && HOSTS.find(({ id }) => hasLabel(parsed, id))) ?? null;
+  return (parsed && HOSTS.find(({ id, labels = [id] }) => labels.some((label) => hasLabel(parsed, label)))) ?? null;
 }
 
 /**

@@ -14,6 +14,8 @@ const LIVE = [
   ['https://hdstream4u.com/file/pmmjzrfsn4c9', 'hdstream4u', 'pmmjzrfsn4c9'],
   ['https://hubstream.art/#3ywqve', 'hubstream', '3ywqve'],
   ['https://vidaraa.cc/e/WFwz7q5riBgD', 'vidaraa', 'WFwz7q5riBgD'],
+  // 2026-11-01, behind a GreenMotors link.
+  ['https://strtape.tech/v/7PB7rmZQw1tJ8L/The.Great.Indian.Kapil.Show.S05E06.1080p.Hindi.WEB-DL.5.1.ESub.x264-HDHub4u.Ag', 'streamtape', '7PB7rmZQw1tJ8L'],
   ['https://play4u.org/series/tt29625288/s-01/ep-01', 'play4u', 'tt29625288/s-01/ep-01'],
   ['https://play4u.org/series/tt29625288/s-01/', 'play4u', 'tt29625288/s-01'],
   ['https://new3.multicloudlinks.com/view/sh6ob8', 'multicloudlinks', 'sh6ob8'],
@@ -31,6 +33,11 @@ describe('hostOf and externalIdOf', () => {
   it('give one file the same id on every domain and scheme of its host', () => {
     const ids = ['https://hubcloud.ist/drive/abc', 'http://hubcloud.fit/drive/abc/', 'https://dl.HubCloud.link/drive/abc'].map(externalIdOf);
     assert.deepEqual(ids, ['abc', 'abc', 'abc']);
+  });
+
+  it('give a Streamtape file one id on its page and its player, on each of its names', () => {
+    const urls = ['https://strtape.tech/v/7PB7rmZQw1tJ8L/a.mkv', 'https://streamtape.com/v/7PB7rmZQw1tJ8L', 'https://streamtape.com/e/7PB7rmZQw1tJ8L/'];
+    assert.deepEqual(urls.map((url) => [hostOf(url)?.id, externalIdOf(url)]), urls.map(() => ['streamtape', '7PB7rmZQw1tJ8L']));
   });
 
   it('read GoFile\'s older "?c=<id>" links', () => {
@@ -60,6 +67,8 @@ describe('hostOf and externalIdOf', () => {
       'https://gofile.io/d/',
       'https://new.multicloudlinks.com/player.php/',
       'https://play4u.org/',
+      'https://strtape.tech/',
+      'https://streamtape.com/v/abc/name/extra',
     ];
     for (const url of noFile) {
       assert.notEqual(hostOf(url), null, url);
