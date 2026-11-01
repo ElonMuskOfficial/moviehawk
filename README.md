@@ -318,11 +318,15 @@ RFC 9457, with the cause as the extension `code`:
 | A name, `pageToken` or `q` the API cannot read | 400 (414 for a name over 2048 characters) | `invalidArgument` |
 | A file on a host the engine does not resolve | 400 | `unsupported` |
 | The site's page could not be read (a changed layout, a challenge page) | 502 | `unrecognized` |
-| The site did not answer (timeout, network error, any HTTP error but 404 and 410) | 504 | `transient` |
+| The site did not answer (timeout, network error, any HTTP error but 404 and 410), or the request took over 30 s | 504 | `transient` |
 | A bug in the API (its message goes to the log, not the client) | 500 | `internal` |
 
 Every response has a `Request-Id` (RFC 6648: no `X-`), the server's own, to name a request in a
 bug report.
+
+A request takes 30 s at most (Fastify's `handlerTimeout`): a host that stalls through every retry
+would hold it about a minute. The engine gets the request's `signal`, so it stops reading the
+sites when the request times out or its client disconnects.
 
 ### Domains
 

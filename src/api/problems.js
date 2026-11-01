@@ -38,14 +38,15 @@ export class ProblemError extends Error {
  * The problem an error thrown while answering a request is.
  *
  * @param {unknown} error
- * @returns {ReturnType<typeof problem>} A ProblemError's own; an EngineError by its code; an error
- *   Fastify made for the request (its schema validation, a malformed URL: a 4xx `statusCode`) as
- *   `invalidArgument`; anything else as 500 `internal`, without its message, which is for the log,
- *   not the client.
+ * @returns {ReturnType<typeof problem>} A ProblemError's own; an EngineError by its code; Fastify's
+ *   handler timeout as `transient`, as the sites' own; an error Fastify made for the request (its
+ *   schema validation, a malformed URL: a 4xx `statusCode`) as `invalidArgument`; anything else as
+ *   500 `internal`, without its message, which is for the log, not the client.
  */
 export function problemOf(error) {
   if (error instanceof ProblemError) return error.problem;
   if (error instanceof EngineError) return problem(STATUS_BY_ENGINE_CODE[error.code], error.code, error.message);
+  if (error?.code === 'FST_ERR_HANDLER_TIMEOUT') return problem(504, 'transient', 'The sites did not answer in time');
   const status = error?.statusCode;
   if (Number.isInteger(status) && status >= 400 && status < 500) return problem(status, 'invalidArgument', error.message);
   return problem(500, 'internal', 'The API failed to answer');

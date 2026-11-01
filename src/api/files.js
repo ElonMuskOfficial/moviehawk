@@ -69,7 +69,7 @@ export async function filesRoutes(app, { config }) {
     schema: { params: idParams('link'), response: { 200: fileList } },
   }, async (request) => {
     const url = urlOf(request.params.link, 'link');
-    const { files, failures } = await config.current(request.log).engine.scrapeLinks([url]);
+    const { files, failures } = await config.current(request.log).engine.scrapeLinks([url], { signal: request.signal });
     return {
       files: files.map((file) => ({ name: fileName(file.url), host: file.host, url: file.url, label: file.label })),
       failures: failures.map((error) => ({ code: error.code, url: error.url, detail: error.message })),
@@ -80,7 +80,7 @@ export async function filesRoutes(app, { config }) {
     schema: { params: idParams('file'), response: { 200: resolvedFile } },
   }, async (request) => {
     const url = urlOf(request.params.file, 'file');
-    const { filename, sizeBytes, downloads } = await config.current(request.log).engine.resolve(url);
+    const { filename, sizeBytes, downloads } = await config.current(request.log).engine.resolve(url, { signal: request.signal });
     return { name: fileName(url), filename, sizeBytes, downloads };
   });
 }

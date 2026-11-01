@@ -7,7 +7,8 @@ export const DOMAINS = { hdhub4u: 'https://new10.hdhub4u.cl', '4khdhub': 'https:
 
 /**
  * An engine whose every function answers with `answer(...args)`, and records each call as
- * [function, ...args].
+ * [function, ...args], without its options. Every call must have the request's signal, so the
+ * engine stops when the request times out or its client disconnects.
  *
  * @param {(...args: any[]) => unknown} answer
  */
@@ -16,6 +17,8 @@ export function fakeEngine(answer) {
   const engine = Object.fromEntries(['scrapeListing', 'searchPosts', 'scrapePost', 'scrapeLinks', 'resolve'].map((name) => [
     name,
     async (...args) => {
+      const { signal } = args.pop();
+      if (!(signal instanceof AbortSignal)) throw new Error(`${name} was called without the request's signal`);
       calls.push([name, ...args]);
       return answer(...args);
     },

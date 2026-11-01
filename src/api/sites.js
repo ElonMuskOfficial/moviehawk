@@ -100,7 +100,7 @@ export async function sitesRoutes(app, { config }) {
   }, async (request) => {
     const { site, engine, siteUrl } = siteOf(request);
     const page = Number(request.query.pageToken ?? 1);
-    return pageOf(site, page, await engine.scrapeListing(siteUrl, page));
+    return pageOf(site, page, await engine.scrapeListing(siteUrl, page, { signal: request.signal }));
   });
 
   app.get('/v1/sites/:site/search', {
@@ -112,14 +112,14 @@ export async function sitesRoutes(app, { config }) {
   }, async (request) => {
     const { site, engine, siteUrl } = siteOf(request);
     const page = Number(request.query.pageToken ?? 1);
-    return pageOf(site, page, await engine.searchPosts(siteUrl, request.query.q, page));
+    return pageOf(site, page, await engine.searchPosts(siteUrl, request.query.q, page, { signal: request.signal }));
   });
 
   app.get('/v1/sites/:site/posts/:post', {
     schema: { params: postParams, response: { 200: fullPost } },
   }, async (request) => {
     const { site, engine, siteUrl } = siteOf(request);
-    const { post, links } = await engine.scrapePost(postUrl(siteUrl, request.params.post));
+    const { post, links } = await engine.scrapePost(postUrl(siteUrl, request.params.post), { signal: request.signal });
     return {
       // From the URL the site answered at: a post the site renamed is named by its new slug.
       name: postName(site, post.url),

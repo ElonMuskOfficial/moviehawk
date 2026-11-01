@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { errorCodes } from 'fastify';
 import { buildApp } from '../../src/api/app.js';
 import { EngineError } from '../../src/engine/index.js';
 
@@ -72,6 +73,20 @@ describe('the API server', () => {
     assert.equal(response.headers['content-type'], PROBLEM);
     assert.equal(response.json().code, 'invalidArgument');
     assert.match(response.json().detail, /pageToken/);
+  });
+
+  it('gives Fastify\'s handler timeout as a 504 transient problem, as the sites\' own', async (t) => {
+    const server = await app((s) => s.get('/slow', () => {
+      throw new errorCodes.FST_ERR_HANDLER_TIMEOUT(30_000, '/slow');
+    }));
+    t.after(() => server.close());
+
+    const response = await server.inject('/slow');
+
+    assert.equal(response.statusCode, 504);
+    assert.deepEqual(response.json(), {
+      type: 'about:blank', title: 'Gateway Timeout', status: 504, detail: 'The sites did not answer in time', code: 'transient',
+    });
   });
 
   it('gives any other error as a 500 problem, without its message', async (t) => {
