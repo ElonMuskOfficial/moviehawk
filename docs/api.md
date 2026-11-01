@@ -1,7 +1,7 @@
 # API
 
-**Status:** being built on the branch `engine`, piece by piece, as the engine was: pieces 1 to 4
-are done (ListSites, ListPosts, SearchPosts, GetPost).
+**Status:** being built on the branch `engine`, piece by piece, as the engine was: pieces 1 to 5
+are done: every route.
 
 ```bash
 npm run api                          # http://127.0.0.1:3000
@@ -40,6 +40,10 @@ Each route is one engine function, and reads only what that function reads.
 | `GET /v1/links/{link}/files` | `scrapeLinks([url])` | 1 to 3 |
 | `GET /v1/files/{file}` | `resolve` | 2 or 3 |
 
+Live through the API (2026-11-01): 30 posts of both sites, 3 links of each: 87 links, 83 of them
+to files (167 files), and 75 of 75 HubCloud files resolved; another host's file is 400
+`unsupported` (34 of 34). Slowest: GetPost 1.0 s, ListFiles 2.7 s, GetFile 5.7 s.
+
 ## Names
 
 Every resource has a `name` (AIP-122): the path that reads it, without `/v1/`.
@@ -70,8 +74,9 @@ files/aHR0cHM6Ly9odWJjbG91ZC5pc3QvZHJpdmUveHVrcWxwNmpic2Y4d2ph
   domain when it reads it.
 - Every link of a post has the same URL each time the page is read (live, 2026-11-01: 29 links
   of 3 HDHub4u and 4KHDHub posts, and 4 posts each of Vegamovies and RogMovies, read twice).
-- A name decodes only to a URL the engine reads: one on a gateway or host it knows. Any other URL
-  is HTTP 400; the engine requests nothing for it.
+- A name that is not base64url as the API writes it, or not of a web URL, is HTTP 400. A link's
+  name of a URL on no gateway or host the engine knows gives `files: []`, and nothing is
+  requested for it: the engine reads only the sites it knows.
 - Names are long: a GreenMotors link is up to 540 characters (median 231; 4KHDHub's 199),
   Vegamovies' and RogMovies' NexDrive links under 150, a HubCloud file 56. HDHub4u slugs are up
   to 143 characters (90 over 100). Fastify's `maxParamLength` (100 by default) is set to 2048, or
@@ -156,11 +161,13 @@ GET /v1/links/aHR0cHM6Ly9ncmVlbm1vdG9ycy5jbHViLz9pZD1jVWs0...Wmc5/files
     {
       "name": "files/aHR0cHM6Ly9odWJjbG91ZC5pc3QvZHJpdmUveHVrcWxwNmpic2Y4d2ph",
       "host": "hubcloud",
+      "url": "https://hubcloud.ist/drive/xukqlp6jbsf8wja",
       "label": "[HubCloud Server]"
     },
     {
       "name": "files/aHR0cHM6Ly9uZXcyLm11bHRpY2xvdWRsaW5rcy5jb20vdmlldy9jOHk1ZTI",
       "host": "multicloudlinks",
+      "url": "https://new2.multicloudlinks.com/view/c8y5e2",
       "label": null
     }
   ],
@@ -170,7 +177,8 @@ GET /v1/links/aHR0cHM6Ly9ncmVlbm1vdG9ycy5jbHViLz9pZD1jVWs0...Wmc5/files
 
 Wrong Turn's 720p link, live on 2026-11-01: GreenMotors → HUBLinks → HubCloud and MultiCloudLinks
 (and HubDrive → the same HubCloud file, given once). Every host's file has a name, the same in
-every post that links it.
+every post that links it, and its `url`: the page a client opens for a host the API does not
+resolve (MultiCloudLinks' player, GoFile, HubCDN).
 
 A link that leads nowhere the engine knows is `files: []`, not an error. `failures` are the pages
 on the way that failed, each `{ code, url, detail }` (a HubDrive file that is gone:
@@ -185,7 +193,6 @@ GET /v1/files/aHR0cHM6Ly9odWJjbG91ZC5pc3QvZHJpdmUveHVrcWxwNmpic2Y4d2ph
 ```json
 {
   "name": "files/aHR0cHM6Ly9odWJjbG91ZC5pc3QvZHJpdmUveHVrcWxwNmpic2Y4d2ph",
-  "host": "hubcloud",
   "filename": "Wrong.Turn.2003.720p.BluRay.Hindi.English.DD5.1.x264.ESubs.mkv",
   "sizeBytes": 890922598,
   "downloads": [

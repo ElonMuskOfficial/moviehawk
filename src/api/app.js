@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import fastifySwagger from '@fastify/swagger';
 import Fastify from 'fastify';
 import { PROBLEM_TYPE, problem, problemOf } from './problems.js';
+import { filesRoutes } from './files.js';
 import { SITES, sitesRoutes } from './sites.js';
 
 // Names are long: a GreenMotors link's is up to 540 characters, an HDHub4u post's up to 143
@@ -69,6 +70,7 @@ export async function buildApp({ engine, domains, logger = false }) {
 
   app.get('/v1/openapi.json', { schema: { hide: true } }, () => app.swagger());
   await app.register(sitesRoutes, { engine, domains });
+  await app.register(filesRoutes, { engine });
 
   return app;
 }
