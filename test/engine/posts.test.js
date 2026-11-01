@@ -35,7 +35,7 @@ describe('scrapePost', () => {
 
     const { links } = await scrapePost(POST_URL, options);
 
-    assert.deepEqual(links.map(({ url }) => identify(url)?.externalId), ['a']);
+    assert.deepEqual(links.map(({ url }) => identify(url)), [{ type: 'file', id: 'hubcloud', resolves: true }]);
   });
 
   it('reads the post on its site\'s current domain', async () => {

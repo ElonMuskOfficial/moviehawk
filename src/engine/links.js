@@ -9,10 +9,9 @@ import { retry } from './http.js';
 import { onCurrentDomain, webUrlOf } from './urls.js';
 
 /**
- * @typedef {{ type: 'gateway', id: string }
- *   | { type: 'file', host: string, externalId: string, resolves: boolean }} LinkKind
- *   A gateway page the engine reads (`expand`), or a file on a host: `resolves` when `resolve`
- *   reads its downloads.
+ * @typedef {{ type: 'gateway', id: string } | { type: 'file', id: string, resolves: boolean }} LinkKind
+ *   A gateway page the engine reads (`expand`), or a file on a host. `id`: the gateway's or the
+ *   host's ("greenmotors", "hubcloud"). `resolves`: when `resolve` reads the file's downloads.
  */
 
 /**
@@ -25,10 +24,9 @@ import { onCurrentDomain, webUrlOf } from './urls.js';
 export function identify(url) {
   const gateway = gatewayOf(url);
   if (gateway) return { type: 'gateway', id: gateway.id };
-  const externalId = externalIdOf(url);
-  if (!externalId) return null;
+  if (!externalIdOf(url)) return null;
   const host = hostOf(url);
-  return { type: 'file', host: host.id, externalId, resolves: Boolean(host.resolve) };
+  return { type: 'file', id: host.id, resolves: Boolean(host.resolve) };
 }
 
 /**

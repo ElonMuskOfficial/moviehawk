@@ -80,7 +80,7 @@ those belong to its consumers.
 `createEngine({ domains, fetch, timeoutMs })` gives the functions below, each with that config, so
 no call can read dead domains for lack of `domains`. A call's own option is `signal`.
 New domains need a new engine: its config never changes. Beside them, `identify(url)` says what a
-link is, from its URL alone: `{ type: 'gateway', id }`, `{ type: 'file', host, externalId, resolves }`,
+link is, from its URL alone: `{ type: 'gateway', id }`, `{ type: 'file', id, resolves }`,
 or null. The engine gives the pieces; the consumer makes its own flow of them (the API's: GetLink).
 
 | Function | Reads | Returns |

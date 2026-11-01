@@ -1,7 +1,7 @@
 /**
  * A link (README.md, The API): GetLink, the page a user would choose on, as the sites lead there.
  */
-import { EngineError, identify } from '../engine/index.js';
+import { identify } from '../engine/index.js';
 import { queryOf } from './cache.js';
 import { linkName, urlOfId } from './names.js';
 import { ProblemError } from './problems.js';
@@ -22,12 +22,15 @@ const isHubDriveFile = (url) => identify(url)?.id === 'hubdrive' && new URL(url)
  */
 async function linkOf(engine, url, options) {
   let target = url;
-  if (isGreenMotors(target)) [{ url: target }] = (await engine.expand(target, options)).links;
+  if (isGreenMotors(target)) {
+    const { links } = await engine.expand(target, options);
+    target = links[0].url;
+  }
   if (isHubDriveFile(target)) {
     // The server the engine reads, wherever the page puts it: not its Telegram link.
     const { links } = await engine.expand(target, options);
     target = links.find((link) => identify(link.url)?.resolves)?.url;
-    if (!target) throw new EngineError('notFound', 'The HubDrive file has no HubCloud server', { url });
+    if (!target) throw new ProblemError(404, 'notFound', 'The HubDrive file has no HubCloud server');
   }
 
   const kind = identify(target);
@@ -40,7 +43,7 @@ async function linkOf(engine, url, options) {
       const next = identify(link.url);
       if (!next || seen.has(link.url)) continue;
       seen.add(link.url);
-      files.push({ name: linkName(link.url), url: link.url, label: link.label, host: next.type === 'gateway' ? next.id : next.host });
+      files.push({ name: linkName(link.url), url: link.url, label: link.label, host: next.id });
     }
     return { kind: 'files', files };
   }
@@ -49,7 +52,7 @@ async function linkOf(engine, url, options) {
     return { kind: 'file', filename, sizeBytes, downloads };
   }
   // A host the engine does not read, or a site it does not know: the user opens it there.
-  return { kind: 'external', host: kind?.host ?? null, url: target };
+  return { kind: 'external', host: kind?.id ?? null, url: target };
 }
 
 const linkParams = { type: 'object', required: ['link'], properties: { link: { type: 'string', minLength: 1 } } };

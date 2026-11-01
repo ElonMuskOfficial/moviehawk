@@ -11,9 +11,9 @@ describe('identify', () => {
   it('tells a gateway page from a file, and a file the engine resolves from one it does not', () => {
     assert.deepEqual(identify('https://greenmotors.club/?id=a'), { type: 'gateway', id: 'greenmotors' });
     assert.deepEqual(identify('https://hubdrive.live/packs/uzyeuxoc'), { type: 'gateway', id: 'hubdrive' });
-    assert.deepEqual(identify('https://hubcloud.foo/drive/a'), { type: 'file', host: 'hubcloud', externalId: 'a', resolves: true });
-    assert.deepEqual(identify('https://hubcdn.wiki/file/cdn1'), { type: 'file', host: 'hubcdn', externalId: 'cdn1', resolves: true });
-    assert.deepEqual(identify('https://stape.fun/v/O4zGkRyymqCZ0J7/a.mkv'), { type: 'file', host: 'streamtape', externalId: 'O4zGkRyymqCZ0J7', resolves: false });
+    assert.deepEqual(identify('https://hubcloud.foo/drive/a'), { type: 'file', id: 'hubcloud', resolves: true });
+    assert.deepEqual(identify('https://hubcdn.wiki/file/cdn1'), { type: 'file', id: 'hubcdn', resolves: true });
+    assert.deepEqual(identify('https://stape.fun/v/O4zGkRyymqCZ0J7/a.mkv'), { type: 'file', id: 'streamtape', resolves: false });
   });
 
   it('is null for a page that names no file, a site the engine does not know, or no web URL', () => {
