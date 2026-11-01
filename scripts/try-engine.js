@@ -3,14 +3,16 @@
  * Change SITE_URL and PAGE to read another listing page, QUERY to search, POST_URL to try another
  * post, url to follow another link, and fileUrl to resolve another file. Uncomment a step to run it.
  */
-import { readFile } from 'node:fs/promises';
+import { startDomains } from '../src/api/domains.js';
 import { createEngine } from '../src/engine/index.js';
 
 const SITE_URL = 'https://4khdhub.one'; // or 'https://new10.hdhub4u.cl'
 const PAGE = 1; // of the listing or the search, from 1; a page after the last is notFound
 
-// The current domain of each site whose domain rotates, as the API reads them.
-const domains = JSON.parse(await readFile(new URL('../domains.json', import.meta.url), 'utf8'));
+// The current domain of each site whose domain rotates, as the API reads them: from the domains URL,
+// or the fallback when it cannot be read.
+const { domains, fallbackBecause } = await startDomains();
+if (fallbackBecause) console.warn(`Fallback domains: the domains URL gave none (${fallbackBecause})`);
 
 const engine = createEngine({ domains });
 

@@ -214,7 +214,8 @@ to be fixed by hand.
 The API reads the repo's raw `domains.json` (`src/api/domains.js`):
 
 - **At start.** When GitHub does not answer, or gives domains it cannot use, the API starts with
-  `domains.json` here; with no domain for one of its sites in either, it does not start.
+  `FALLBACK_DOMAINS` in `src/api/domains.js`, those of 2026-11-01: only then. A site that moved
+  since still answers on its old domain while it redirects to the new one.
 - **When a request comes and the last read is 30 minutes old**, in the background: that request
   has the domains read before, the next ones the new (stale-while-revalidate, RFC 5861). No
   timer: an idle server reads nothing. 30 minutes, not the workflow's 12 hours, so a domain fixed

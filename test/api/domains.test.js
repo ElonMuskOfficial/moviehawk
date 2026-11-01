@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { liveConfig } from '../../src/api/domains.js';
+import { FALLBACK_DOMAINS, liveConfig, readDomains } from '../../src/api/domains.js';
 
 const GITHUB = { hdhub4u: 'https://new10.hdhub4u.cl', '4khdhub': 'https://4khdhub.one', hubcloud: 'https://hubcloud.ist' };
-const BUNDLED = { hdhub4u: 'https://new9.hdhub4u.cl', '4khdhub': 'https://4khdhub.fans', hubcloud: 'https://hubcloud.one' };
 const MINUTE = 60_000;
 
 // GitHub, answering each read with the next of `answers` (a domains object, an HTTP status, or an
@@ -33,35 +32,34 @@ describe('liveConfig', () => {
   it('starts with the domains GitHub gives', async () => {
     const { fetch, reads, now } = world(GITHUB);
 
-    const config = await liveConfig({ bundled: BUNDLED, makeEngine, fetch, now });
+    const config = await liveConfig({ makeEngine, fetch, now });
 
     assert.deepEqual(config.current(log()), { domains: GITHUB, engine: { madeFor: GITHUB } });
-    assert.equal(config.startedWith, 'github');
+    assert.equal(config.fallbackBecause, null);
     assert.deepEqual(reads, ['https://raw.githubusercontent.com/ElonMuskOfficial/moviehawk-domains/main/domains.json']);
   });
 
-  it('starts with domains.json when GitHub fails, or gives domains it cannot use', async () => {
+  it('starts with the fallback domains when GitHub fails, or gives domains it cannot use', async () => {
     for (const answer of [new TypeError('fetch failed'), 503, { hdhub4u: 'https://new10.hdhub4u.cl' }, { ...GITHUB, hubcloud: 'http://hubcloud.ist' }]) {
       const { fetch, now } = world(answer);
 
-      const config = await liveConfig({ bundled: BUNDLED, makeEngine, fetch, now });
+      const config = await liveConfig({ makeEngine, fetch, now });
 
-      assert.deepEqual(config.current(log()).domains, BUNDLED);
-      assert.equal(config.startedWith, 'bundled');
-      assert.ok(config.startError);
+      assert.deepEqual(config.current(log()).domains, FALLBACK_DOMAINS);
+      assert.ok(config.fallbackBecause);
     }
   });
 
-  it('will not start when neither GitHub nor domains.json gives a domain for each site', async () => {
-    const { fetch, now } = world(503);
+  it('has fallback domains it would take from GitHub too', async () => {
+    const { fetch } = world(FALLBACK_DOMAINS);
 
-    await assert.rejects(liveConfig({ bundled: { hdhub4u: 'https://new10.hdhub4u.cl' }, makeEngine, fetch, now }), /no domain for 4khdhub/);
+    assert.deepEqual(await readDomains({ fetch }), FALLBACK_DOMAINS);
   });
 
   it('reads GitHub again only when a request comes 30 minutes after the last read', async () => {
     const moved = { ...GITHUB, hdhub4u: 'https://new11.hdhub4u.cl' };
     const { fetch, reads, now, wait } = world(GITHUB, moved);
-    const config = await liveConfig({ bundled: BUNDLED, makeEngine, fetch, now });
+    const config = await liveConfig({ makeEngine, fetch, now });
 
     wait(29 * MINUTE);
     config.current(log());
@@ -81,7 +79,7 @@ describe('liveConfig', () => {
 
   it('keeps its domains and engine when GitHub fails or gives the same, and asks again 30 minutes later', async () => {
     const { fetch, reads, now, wait } = world(GITHUB, new TypeError('fetch failed'), GITHUB);
-    const config = await liveConfig({ bundled: BUNDLED, makeEngine, fetch, now });
+    const config = await liveConfig({ makeEngine, fetch, now });
     const { engine } = config.current(log());
 
     wait(30 * MINUTE);

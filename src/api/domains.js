@@ -8,6 +8,16 @@ import { SITES } from './sites.js';
 
 export const DOMAINS_URL = 'https://raw.githubusercontent.com/ElonMuskOfficial/moviehawk-domains/main/domains.json';
 
+// Only for when DOMAINS_URL cannot be read: the domains of 2026-11-01. A site that moved since
+// still answers on its old domain while it redirects to the new one (for days).
+export const FALLBACK_DOMAINS = Object.freeze({
+  hdhub4u: 'https://new10.hdhub4u.cl',
+  '4khdhub': 'https://4khdhub.one',
+  hblinks: 'https://hblinks.lol',
+  hubdrive: 'https://hubdrive.bar',
+  hubcloud: 'https://hubcloud.ist',
+});
+
 // A domain fixed by hand in the repo reaches the API within 30 minutes (GitHub caches the raw
 // file for 5).
 const MAX_AGE_MS = 30 * 60_000;
@@ -34,6 +44,37 @@ function problemOf(domains) {
 }
 
 /**
+ * Reads the domains from DOMAINS_URL.
+ *
+ * @param {{ url?: string, fetch?: typeof fetch }} [options]
+ * @returns {Promise<Record<string, string>>}
+ * @throws {Error} When the URL does not answer, or gives domains that cannot be used.
+ */
+export async function readDomains({ url = DOMAINS_URL, fetch = globalThis.fetch } = {}) {
+  const response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const domains = await response.json();
+  const problem = problemOf(domains);
+  if (problem) throw new Error(problem);
+  return domains;
+}
+
+/**
+ * The domains to start with: DOMAINS_URL's, or FALLBACK_DOMAINS when it cannot be read.
+ *
+ * @param {{ url?: string, fetch?: typeof fetch }} [options]
+ * @returns {Promise<{ domains: Record<string, string>, fallbackBecause: string | null }>}
+ *   `fallbackBecause`: why the URL's were not used, or null.
+ */
+export async function startDomains(options) {
+  try {
+    return { domains: await readDomains(options), fallbackBecause: null };
+  } catch (error) {
+    return { domains: FALLBACK_DOMAINS, fallbackBecause: error.message };
+  }
+}
+
+/**
  * @typedef {{ domains: Record<string, string>, engine: ReturnType<typeof import('../engine/index.js').createEngine> }} Config
  * @typedef {{ info: (message: string) => void, warn: (message: string) => void }} Log
  */
@@ -41,38 +82,20 @@ function problemOf(domains) {
 /**
  * Reads the domains, and gives the config each request uses.
  *
- * @param {{ bundled: Record<string, string>, makeEngine: (domains: Record<string, string>) => Config['engine'],
+ * @param {{ makeEngine: (domains: Record<string, string>) => Config['engine'],
  *   url?: string, fetch?: typeof fetch, now?: () => number }} options
- *   `bundled`: domains.json in this repo, used when GitHub does not answer at start. `makeEngine`:
- *   a new engine for new domains (an engine's config never changes).
- * @returns {Promise<{ current: (log: Log) => Config, startedWith: 'github' | 'bundled', startError: string | null }>}
+ *   `makeEngine`: a new engine for new domains (an engine's config never changes).
+ * @returns {Promise<{ current: (log: Log) => Config, fallbackBecause: string | null }>}
  *   `current`: the config for a request; when the last read is 30 minutes old, it starts the next
  *   one, whose domains later requests get. `log`: the request's, for what that read found.
- * @throws {TypeError} When GitHub does not answer and `bundled` cannot be used either.
+ *   `fallbackBecause`: why it started with FALLBACK_DOMAINS, or null.
  */
-export async function liveConfig({ bundled, makeEngine, url = DOMAINS_URL, fetch = globalThis.fetch, now = Date.now }) {
-  const read = async () => {
-    const response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const domains = await response.json();
-    const problem = problemOf(domains);
-    if (problem) throw new Error(problem);
-    return domains;
-  };
+export async function liveConfig({ makeEngine, url = DOMAINS_URL, fetch = globalThis.fetch, now = Date.now }) {
+  const read = () => readDomains({ url, fetch });
   const configOf = (domains) => ({ domains, engine: makeEngine(domains) });
 
-  let config;
-  let startedWith = 'github';
-  let startError = null;
-  try {
-    config = configOf(await read());
-  } catch (error) {
-    const problem = problemOf(bundled);
-    if (problem) throw new TypeError(`No domains: ${url}: ${error.message}; domains.json: ${problem}`);
-    config = configOf(bundled);
-    startedWith = 'bundled';
-    startError = error.message;
-  }
+  const start = await startDomains({ url, fetch });
+  let config = configOf(start.domains);
   // From the last try, not the last success: while GitHub fails, it is asked again in 30 minutes,
   // not by every request.
   let lastTry = now();
@@ -100,7 +123,6 @@ export async function liveConfig({ bundled, makeEngine, url = DOMAINS_URL, fetch
       }
       return config;
     },
-    startedWith,
-    startError,
+    fallbackBecause: start.fallbackBecause,
   };
 }
