@@ -8,26 +8,6 @@ npm run api                          # http://127.0.0.1:3000
 PORT=8080 HOST=0.0.0.0 npm run api
 ```
 
-## Domains
-
-The sites' current domains, by hostname label (`{ "hubcloud": "https://hubcloud.ist" }`), come
-from the [moviehawk-domains](https://github.com/ElonMuskOfficial/moviehawk-domains) repo, whose
-workflow heals them twice a day: a site that moves redirects its old domain to the new one for
-days, and the workflow follows that redirect. A domain that does not answer opens an issue there,
-to be fixed by hand.
-
-The API reads the repo's raw `domains.json` (`src/api/domains.js`):
-
-- **At start.** When GitHub does not answer, or gives domains it cannot use, the API starts with
-  `domains.json` here; with no domain for one of its sites in either, it does not start.
-- **When a request comes and the last read is 30 minutes old**, in the background: that request
-  has the domains read before, the next ones the new (stale-while-revalidate, RFC 5861). No
-  timer: an idle server reads nothing. 30 minutes, not the workflow's 12 hours, so a domain fixed
-  by hand reaches the API within half an hour (GitHub caches the raw file for 5).
-- **When the read fails**, the API keeps its domains, and asks again 30 minutes after that try.
-
-New domains make a new engine: an engine's config never changes.
-
 A read-only HTTP API over the engine (`docs/engine.md`) for web and mobile apps. Each request reads
 the live sites through the engine: there is no database.
 
@@ -222,6 +202,26 @@ GET /v1/files/aHR0cHM6Ly9odWJjbG91ZC5pc3QvZHJpdmUveHVrcWxwNmpic2Y4d2ph
 The same file, live on 2026-11-01 (its Buzz, Watch Online and Telegram downloads left out here).
 `downloads` expire within minutes or hours. Only HubCloud's files are resolved; any other host's
 is HTTP 400 `unsupported`, until the engine resolves it.
+
+## Domains
+
+The sites' current domains, by hostname label (`{ "hubcloud": "https://hubcloud.ist" }`), come
+from the [moviehawk-domains](https://github.com/ElonMuskOfficial/moviehawk-domains) repo, whose
+workflow heals them twice a day: a site that moves redirects its old domain to the new one for
+days, and the workflow follows that redirect. A domain that does not answer opens an issue there,
+to be fixed by hand.
+
+The API reads the repo's raw `domains.json` (`src/api/domains.js`):
+
+- **At start.** When GitHub does not answer, or gives domains it cannot use, the API starts with
+  `domains.json` here; with no domain for one of its sites in either, it does not start.
+- **When a request comes and the last read is 30 minutes old**, in the background: that request
+  has the domains read before, the next ones the new (stale-while-revalidate, RFC 5861). No
+  timer: an idle server reads nothing. 30 minutes, not the workflow's 12 hours, so a domain fixed
+  by hand reaches the API within half an hour (GitHub caches the raw file for 5).
+- **When the read fails**, the API keeps its domains, and asks again 30 minutes after that try.
+
+New domains make a new engine: an engine's config never changes.
 
 ## Errors
 
