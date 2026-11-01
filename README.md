@@ -366,7 +366,10 @@ running copy of the API has its own cache; two requests at once for one URL both
 
 On Wasmer Edge, at https://moviehawk.wasmer.app: the `main` branch of
 [moviehawk](https://github.com/ElonMuskOfficial/moviehawk), every push deployed. Its Node.js
-engine is Native (V8), its start command `npm start`, and `HOST=0.0.0.0`; Wasmer sets `PORT`.
+engine is Native (V8) and its start command `npm start`; the API listens on its defaults,
+127.0.0.1:3000, where Wasmer's proxy reaches it. Wasmer stops an instance that has been idle for
+about 3 minutes and starts one on the next request, so the cache lasts as long as a session of
+use, and each start reads the domains again.
 
 ### Departures from AIP
 
