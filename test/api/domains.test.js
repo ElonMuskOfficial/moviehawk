@@ -2,7 +2,14 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { FALLBACK_DOMAINS, liveConfig, readDomains } from '../../src/api/domains.js';
 
-const GITHUB = { hdhub4u: 'https://new10.hdhub4u.cl', '4khdhub': 'https://4khdhub.one', hubcloud: 'https://hubcloud.ist' };
+const GITHUB = {
+  hdhub4u: 'https://new11.hdhub4u.cl',
+  '4khdhub': 'https://4khdhub.one',
+  greenmotors: 'https://greenmotors.club',
+  hblinks: 'https://hblinks.lol',
+  hubdrive: 'https://hubdrive.bar',
+  hubcloud: 'https://hubcloud.ist',
+};
 const MINUTE = 60_000;
 
 // GitHub, answering each read with the next of `answers` (a domains object, an HTTP status, or an
@@ -50,6 +57,18 @@ describe('liveConfig', () => {
     }
   });
 
+  it('takes no domains without one of a gateway or host: its URLs would be read on any domain', async () => {
+    for (const label of ['greenmotors', 'hblinks', 'hubdrive', 'hubcloud']) {
+      const { [label]: _, ...without } = GITHUB;
+      const { fetch, now } = world(without);
+
+      const config = await liveConfig({ makeEngine, fetch, now });
+
+      assert.deepEqual(config.current(log()).domains, FALLBACK_DOMAINS, label);
+      assert.equal(config.fallbackBecause, `no domain for ${label}`);
+    }
+  });
+
   it('has fallback domains it would take from GitHub too', async () => {
     const { fetch } = world(FALLBACK_DOMAINS);
 
@@ -57,7 +76,7 @@ describe('liveConfig', () => {
   });
 
   it('reads GitHub again only when a request comes 30 minutes after the last read', async () => {
-    const moved = { ...GITHUB, hdhub4u: 'https://new11.hdhub4u.cl' };
+    const moved = { ...GITHUB, hdhub4u: 'https://new12.hdhub4u.cl' };
     const { fetch, reads, now, wait } = world(GITHUB, moved);
     const config = await liveConfig({ makeEngine, fetch, now });
 

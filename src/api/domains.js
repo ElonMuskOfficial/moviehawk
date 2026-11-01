@@ -5,15 +5,17 @@
  * and the last read is 30 minutes old: in the background, so no request waits for GitHub
  * (stale-while-revalidate, RFC 5861). No timer: an idle server reads nothing.
  */
-import { SITES } from './sites.js';
 
 export const DOMAINS_URL = 'https://raw.githubusercontent.com/ElonMuskOfficial/moviehawk-domains/main/domains.json';
 
 // Only for when DOMAINS_URL cannot be read: the domains of 2026-11-01. A site that moved since
-// still answers on its old domain while it redirects to the new one (for days).
+// still answers on its old domain while it redirects to the new one (for days). Every site,
+// gateway and host the engine reads has one, so the API reads each on its own domain, never on the
+// one a link names.
 export const FALLBACK_DOMAINS = Object.freeze({
   hdhub4u: 'https://new10.hdhub4u.cl',
   '4khdhub': 'https://4khdhub.one',
+  greenmotors: 'https://greenmotors.club',
   hblinks: 'https://hblinks.lol',
   hubdrive: 'https://hubdrive.bar',
   hubcloud: 'https://hubcloud.ist',
@@ -41,7 +43,8 @@ function unusableBecause(domains) {
     // An origin, without a path: "https://new10.hdhub4u.cl/" would make "https://new10.hdhub4u.cl//<post>/".
     if (url.origin !== origin) return `${label}: not an origin: ${origin}`;
   }
-  const missing = SITES.filter((site) => !domains[site]);
+  // Every label of FALLBACK_DOMAINS, or its URLs would be read on whatever domain a link names.
+  const missing = Object.keys(FALLBACK_DOMAINS).filter((label) => !domains[label]);
   return missing.length ? `no domain for ${missing.join(', ')}` : null;
 }
 

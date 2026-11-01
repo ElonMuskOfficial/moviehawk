@@ -120,7 +120,9 @@ New domains need a new engine: its config never changes.
   link is given, as a page. Some zip packs have no 10Gbps server.
 - `domains`: the current domain of each site, gateway and host whose domain rotates, by hostname
   label (`{ hblinks: 'https://hblinks.lol' }`). Every URL is moved to it before it is read, files
-  too (hubcloud.foo → hubcloud.ist).
+  too (hubcloud.foo → hubcloud.ist), with nothing of its old origin (port, credentials). A label
+  without a domain is read where the link says, so a consumer that reads URLs from strangers (the
+  API) gives a domain for every gateway and host.
 - Nothing found is an empty result (`files: []`, a search's `posts: []`), not an error.
 
 ### Errors
@@ -336,9 +338,10 @@ them twice a day: a site that moves redirects its old domain to the new one for 
 workflow follows that redirect. A domain that does not answer opens an issue there, to be fixed
 by hand. The API (`src/api/domains.js`) reads the repo's raw `domains.json`:
 
-- **At start.** When GitHub does not answer, or gives domains that cannot be used (no domain for a
-  site, a domain with a path), the API starts with `FALLBACK_DOMAINS`, those of 2026-11-01. A site
-  that moved since still answers on its old domain while it redirects.
+- **At start.** When GitHub does not answer, or gives domains that cannot be used (no domain for
+  one of `FALLBACK_DOMAINS`' labels, a domain with a path), the API starts with
+  `FALLBACK_DOMAINS`, those of 2026-11-01. A site that moved since still answers on its old domain
+  while it redirects.
 - **When a request comes and the last read is 30 minutes old**, in the background: that request
   has the domains read before, the next ones the new (stale-while-revalidate, RFC 5861). No timer:
   an idle server reads nothing. 30 minutes, not the workflow's 12 hours, so a domain fixed by hand

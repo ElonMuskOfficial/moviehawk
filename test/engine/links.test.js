@@ -68,6 +68,15 @@ describe('scrapeLinks', () => {
     assert.equal(files[0].url, 'https://hubcloud.ist/drive/a');
   });
 
+  it('reads a gateway on its current domain, whatever host a link names with its label', async () => {
+    const domains = { greenmotors: 'https://greenmotors.club', hblinks: 'https://hblinks.lol' };
+    const options = web({ 'https://greenmotors.club/?id=a': greenMotors('https://hblinks.lol/archives/1'), 'https://hblinks.lol/archives/1': hubLinks() });
+
+    await scrapeLinks(['http://greenmotors.127.0.0.1.nip.io:8080/?id=a'], { ...options, domains });
+
+    assert.deepEqual(options.requests, ['https://greenmotors.club/?id=a', 'https://hblinks.lol/archives/1']);
+  });
+
   it('lists the pages that did not lead on as failures, and keeps every other file', async () => {
     const options = web({
       'https://greenmotors.cc/?id=dead': 'Invalid Link !!',

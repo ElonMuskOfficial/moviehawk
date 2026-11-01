@@ -28,6 +28,10 @@ describe('onCurrentDomain', () => {
     assert.equal(onCurrentDomain(new URL('http://dl.hubcloud.link/drive/a?x=1'), domains), 'https://hubcloud.ist/drive/a?x=1');
   });
 
+  it('keeps nothing of the old origin: not its port, not its credentials', () => {
+    assert.equal(onCurrentDomain(new URL('http://user:pass@hubcloud.127.0.0.1.nip.io:8080/drive/a#x'), domains), 'https://hubcloud.ist/drive/a#x');
+  });
+
   it('leaves a URL of any other site as it is', () => {
     assert.equal(onCurrentDomain(new URL('https://hubcdn.club/file/a'), domains), 'https://hubcdn.club/file/a');
   });

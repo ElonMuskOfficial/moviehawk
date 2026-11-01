@@ -40,9 +40,6 @@ export function hasLabel(url, label) {
 export function onCurrentDomain(url, domains) {
   const label = Object.keys(domains).find((key) => hasLabel(url, key));
   if (!label) return url.href;
-  const current = new URL(domains[label]);
-  const moved = new URL(url);
-  moved.protocol = current.protocol;
-  moved.host = current.host;
-  return moved.href;
+  // The path on the current origin: the link's own port and credentials are not kept.
+  return new URL(`${url.pathname}${url.search}${url.hash}`, domains[label]).href;
 }
