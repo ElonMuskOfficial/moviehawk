@@ -1,6 +1,8 @@
 /**
- * Resource names (README.md, Names): what a client sends back, made from the sites' URLs.
+ * Resource names (README.md, Names): what a client sends back, made from the sites' URLs; and a
+ * link as every answer gives it.
  */
+import { identify } from '../engine/index.js';
 
 /**
  * A post's name: "https://new10.hdhub4u.cl/akka-season-1-hindi-webrip-full-series/" is
@@ -39,6 +41,26 @@ export function linkName(url) {
 }
 
 /**
+ * The site a link is on, as the client shows it: the engine's id of its gateway or host
+ * ("hubcloud"), or its hostname for one the engine does not know ("megaup.net"). Never null: every
+ * link is on some site.
+ *
+ * @param {string} url - A web URL.
+ */
+export function linkHost(url) {
+  return identify(url)?.id ?? new URL(url).hostname.replace(/^www\./, '');
+}
+
+/**
+ * A link as every answer gives it (GetPost's lines, GetLink's pages): its name, URL, label and host.
+ *
+ * @param {{ url: string, label: string | null }} link - As the engine gives it; a web URL.
+ */
+export function namedLink({ url, label }) {
+  return { name: linkName(url), url, label, host: linkHost(url) };
+}
+
+/**
  * The URL back from the id of a link's name.
  *
  * @param {string} id - The base64url part, as the router gives it.
@@ -46,10 +68,18 @@ export function linkName(url) {
  */
 export function urlOfId(id) {
   const text = Buffer.from(id, 'base64url').toString();
+  return isWebUrl(text) ? text : null;
+}
+
+/**
+ * @param {string} text
+ * @returns {boolean} Whether it is a web (http or https) URL: the only links the API names.
+ */
+export function isWebUrl(text) {
   try {
-    const url = new URL(text);
-    return url.protocol === 'https:' || url.protocol === 'http:' ? text : null;
+    const { protocol } = new URL(text);
+    return protocol === 'https:' || protocol === 'http:';
   } catch {
-    return null;
+    return false;
   }
 }

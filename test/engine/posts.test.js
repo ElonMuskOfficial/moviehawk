@@ -20,13 +20,13 @@ describe('scrapePost', () => {
     const { post, sections } = await scrapePost(POST_URL, options);
 
     assert.equal(post.title, 'Show (2026)');
+    const line = (i, url) => ({ title: `Link ${i}`, links: [{ url, label: `Link ${i}` }], file: null, tags: [] });
     assert.deepEqual(sections, [{
       title: null,
-      lines: [
-        { title: 'Link 0', links: [{ url: 'https://greenmotors.cc/?id=a', label: 'Link 0' }] },
-        { title: 'Link 1', links: [{ url: 'https://sugarke.com/a', label: 'Link 1' }] },
-        { title: 'Link 2', links: [{ url: 'https://hubdrive.bar/file/9', label: 'Link 2' }] },
-      ],
+      lines: [line(0, 'https://greenmotors.cc/?id=a'), line(1, 'https://sugarke.com/a'), line(2, 'https://hubdrive.bar/file/9')],
+      tab: null,
+      tags: [],
+      episodes: false,
     }]);
     assert.deepEqual(options.requests, [POST_URL]);
   });

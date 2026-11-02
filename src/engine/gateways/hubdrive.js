@@ -17,8 +17,10 @@ const DELETED = /^(?:File not found|The file has been deleted)\b/i;
  *
  * @param {string} url - On HubDrive's current domain (older posts link hubdrive.live, which is gone).
  * @param {import('../http.js').RequestOptions} [options]
- * @returns {Promise<{ links: import('../html.js').Link[] }>} A file page: its server buttons; none
- *   when the file has no server (an answer, not a failure). A pack page: its rows' file pages.
+ * @returns {Promise<{ links: import('../html.js').Link[], title?: string | null, tags?: string[], sections?: import('./hublinks.js').LinkGroup[] }>}
+ *   A file page: its server buttons; none when the file has no server (an answer, not a failure).
+ *   A pack page: its rows' file pages, each labelled by its file's name; its name and its header's
+ *   tags; and the pack as one group, a line per file with its size as its tag.
  * @throws {EngineError} `notFound` for HubDrive's deleted page; `unrecognized` for a file page
  *   without the file's details (a challenge page) or a pack without rows; and fetchHtml's errors.
  */
@@ -31,16 +33,22 @@ export async function expandHubDrive(url, options) {
   const linksOf = (selector) => $(selector).toArray().map((a) => linkOf($, a));
 
   if (new URL(page.url).pathname.startsWith('/packs/')) {
-    // A row's link is an icon: its file is the row's title and size ("…S01E01….mkv [7.04 GB]").
-    // Without them, every row would take the label of its file page's server button.
-    const links = $('.pack-clean-file a.pack-clean-link').toArray().map((a) => {
+    // A row's link is an icon: its file is named by the row's title ("…S01E01….mkv"), and its size
+    // is the row's own (".pack-clean-size": "7.04 GB"), each read by its class. Without them, every
+    // row would take the label of its file page's server button. The pack is one group, a line per
+    // file, as HUBLinks' groups. The page's header names the pack (".pack-clean-name": "Lupin - S04
+    // 1080p WEB-DL Packs") and states its files and size (".pack-clean-meta-item": "Includes 9
+    // files", "Total Size: 23.61 GB"), as its tags (live, 2026-11-02: 2 of 2 packs).
+    const lines = $('.pack-clean-file a.pack-clean-link').toArray().map((a) => {
       const row = $(a).closest('.pack-clean-file');
-      const title = textOf(row.find('.pack-clean-title').first());
+      const title = textOf(row.find('.pack-clean-title').first()) || null;
       const size = textOf(row.find('.pack-clean-size').first());
-      return linkOf($, a, '', title ? [title, size && `[${size}]`].filter(Boolean).join(' ') : undefined);
+      return { title, links: [linkOf($, a, '', title ?? undefined)], tags: [size].filter(Boolean) };
     });
-    if (links.length === 0) throw new EngineError('unrecognized', 'No files on the HubDrive pack page', { url });
-    return { links };
+    if (lines.length === 0) throw new EngineError('unrecognized', 'No files on the HubDrive pack page', { url });
+    const title = textOf($('.pack-clean-name').first()) || null;
+    const tags = $('.pack-clean-meta-item').toArray().map((item) => textOf($(item))).filter(Boolean);
+    return { links: lines.flatMap((line) => line.links), title, tags, sections: [{ title: null, lines }] };
   }
   // A real file page states the file's size; a challenge page has a title but no details.
   if (!$('tr').toArray().some((row) => /File Size/i.test($(row).text()))) {

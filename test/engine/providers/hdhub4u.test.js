@@ -95,7 +95,13 @@ describe('scrapeHdHub4uPost', () => {
 
     const { sections } = await scrapeHdHub4uPost(MOVIE_URL, answer(page));
 
-    assert.deepEqual(sections, [{ title: null, lines: [{ title: 'Watch Online', links: [{ url: 'https://streamwire.net/e/a', label: 'Watch Online' }] }] }]);
+    assert.deepEqual(sections, [{
+      title: null,
+      lines: [{ title: 'Watch Online', links: [{ url: 'https://streamwire.net/e/a', label: 'Watch Online' }], file: null, tags: [] }],
+      tab: null,
+      tags: [],
+      episodes: false,
+    }]);
   });
 
   it('titles no line of buttons only, and starts no section at a heading with links but no button, or empty', async () => {

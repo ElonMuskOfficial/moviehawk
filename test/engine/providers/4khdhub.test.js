@@ -24,29 +24,42 @@ describe('scrape4kHdHubPost', () => {
     });
   });
 
-  it('gives a movie\'s block as a line of its section, titled by its file, its buttons by their server', async () => {
+  it('gives a movie\'s block as a line: its title, its badges as tags, its file, its buttons by their server', async () => {
     const { sections } = await scrape4kHdHubPost(MOVIE_URL, answer(fixture('movie')));
 
-    assert.deepEqual(sections.map(({ title, lines }) => [title, lines.map((line) => [line.title, line.links.map(({ label }) => label)])]), [
-      ['Download Links', [['Addicted (1080p WEB-DL H264 AVC) 7 GB English WEB-DL', ['Download HubCloud', 'Download HubDrive']]]],
-    ]);
-    for (const { url } of sections[0].lines[0].links) assert.match(url, /^https:\/\/greenmotors\.club\/\?id=/);
+    assert.deepEqual(sections.map(({ title, tab, tags }) => ({ title, tab, tags })), [{ title: 'Download Links', tab: null, tags: [] }]);
+    const [line] = sections[0].lines;
+    assert.deepEqual({ ...line, links: line.links.map(({ label }) => label) }, {
+      title: 'Addicted (1080p WEB-DL H264 AVC)',
+      file: 'Addicted.2014.1080p.AMZN.WEB-DL.English.DDP.5.1.x264-THR.mkv',
+      tags: ['7 GB', 'English', 'WEB-DL'],
+      links: ['Download HubCloud', 'Download HubDrive'],
+    });
+    for (const { url } of line.links) assert.match(url, /^https:\/\/greenmotors\.club\/\?id=/);
   });
 
-  it('reads a series: its year from startDate, its packs, and a section per season\'s episodes', async () => {
+  it('reads a series: its year from startDate, its packs and its seasons\' episodes, each in its tab', async () => {
     // "Download Individual Episodes" holds no block of its own: its seasons' groups do.
     const { post, sections } = await scrape4kHdHubPost('https://4khdhub.one/fallen-series-7872/', answer(fixture('series')));
 
     assert.equal(post.title, 'Fallen');
     assert.equal(post.year, 2024);
-    assert.deepEqual(sections.map(({ title, lines }) => [title, lines.length]), [
-      ['Download Complete Season', 3], ['S01 AVC 1080p WEB-DL H264', 8], ['S01 HEVC 1080p WEB-DL H265', 8], ['S01 1080p WEB-DL AV1', 8],
+    // A season's group of episodes says it is one (.season-item); the packs' section does not.
+    assert.deepEqual(sections.map(({ title, tab, tags, episodes, lines }) => [title, tab, tags, episodes, lines.length]), [
+      ['Download Complete Season', 'Zip/Pack', [], false, 3],
+      ['S01 AVC 1080p WEB-DL H264', "Single EP's", ['Episodes 8', 'English'], true, 8],
+      ['S01 HEVC 1080p WEB-DL H265', "Single EP's", ['Episodes 8', 'English'], true, 8],
+      ['S01 1080p WEB-DL AV1', "Single EP's", ['Episodes 8', 'English'], true, 8],
     ]);
-    assert.equal(sections[0].lines[0].title, 'Fallen S01 AVC (AMZN 1080p WEB-DL H264) 24.26 GB English WEB-DL');
-    assert.deepEqual(sections.at(-1).lines.at(-1), {
-      title: 'Episode-08 756.33 MB',
-      links: sections.at(-1).lines.at(-1).links.map(({ url }, i) => ({ url, label: ['Download HubCloud', 'Download HubDrive'][i] })),
+    assert.deepEqual(sections[0].lines[0].tags, ['24.26 GB', 'English', 'WEB-DL']);
+    const last = sections.at(-1).lines.at(-1);
+    assert.deepEqual({ ...last, links: last.links.map(({ label }) => label) }, {
+      title: 'Episode-08',
+      file: last.file,
+      tags: ['756.33 MB'],
+      links: ['Download HubCloud', 'Download HubDrive'],
     });
+    assert.match(last.file, /^Fallen\.S01E08\..+\.mkv$/);
   });
 
   it('gives the buttons of the blocks only, not the page\'s other links; a block before any section in a null one', async () => {

@@ -45,25 +45,23 @@ pages, of 100 posts). HUBLinks and a HubDrive pack list files: the user chooses 
 |---|---|---|---|---|
 | 0. Find | posters, a next page | `scrapeListing`, `searchPosts` | `GET /v1/sites/{site}/posts`, `/search?q=` | under 1 s |
 | 1. Post | the post, its links (`720p x264 [850MB]`) | `scrapePost` | `GET /v1/sites/{site}/posts/{post}` | up to 1 s |
-| 2. Files, where the sites list them | HUBLinks' or a pack's files (`480p · Drive`) | `expand` | `GET /v1/links/{link}`: `files` | up to 2 s |
+| 2. Files, where the sites list them | HUBLinks' or a pack's files, in its groups (`480p`: `Drive`, `Instant`) | `expand` | `GET /v1/links/{link}`: `files` | up to 2 s |
 | 3. Download | name, size, download servers | `resolve` | `GET /v1/links/{link}`: `file` | 1 to 6 s; 10 s when 10Gbps's redirects are slow; HubCDN 1 to 3 s |
 
 A link straight to a file (HubCloud, HubCDN, a HubDrive file page) opens at step 3. Downloads
 expire within minutes or hours, so step 3 is always live.
 
-The labels, from live posts:
+What a link is for, from live posts: its section and line say it; its label is its button's own
+text.
 
-| Post | A link's label (step 1) | Where it leads |
-|---|---|---|
-| HDHub4u movie (Wrong Turn) | `720p x264 [850MB]` | HubCloud `[HubCloud Server]`, a MultiCloudLinks player |
-| HDHub4u series, packs (Akka) | `720p HEVC [1GB]` | HubCloud `[HubCloud Server]`: the season's zip |
-| HDHub4u series, episode lines | `EPiSODE 1 720p · Drive`, `EPiSODE 1 720p · Instant`, `EPiSODE 1 · WATCH` | the episode's file, or its player |
-| HDHub4u link to a HUBLinks page of lines | the button's own text | `480p · Drive`, `480p · Instant`, ..., `1080p WEB-DL [4.1GB]` |
-| 4KHDHub movie or pack | `<the block's file> · Download HubCloud`, `... · Download HubDrive` | one HubCloud file: both buttons lead to it |
-| 4KHDHub episode | `S02 1080p WEB-DL H264 Episode-01 4.01 GB · Download HubCloud` | the episode's HubCloud file |
-
-`<the block's file>` is its header as 4KHDHub writes it: `A Story of Derry (1080p WEB-DL H264)
-1.78 GB English WEB-DL`.
+| Post | Section | Line | Labels |
+|---|---|---|---|
+| HDHub4u movie (Wrong Turn) | `: DOWNLOAD LINKS :` | `720p x264 [850MB]` | `720p x264 [850MB]` |
+| HDHub4u series, episode lines | `EPiSODE 1` | `720p` | `Drive`, `Instant`, `WATCH` |
+| HDHub4u series, an episode's own line | `: DOWNLOAD LINKS :` | none | `EPiSODE 1`, `WATCH` |
+| 4KHDHub movie or pack | `Download Links`, `Download Complete Season` | its file: `A Story of Derry (1080p WEB-DL H264)` | `Download HubCloud`, `Download HubDrive` |
+| 4KHDHub episode | its season's group: `S02 1080p WEB-DL H264` | `Episode-01` | `Download HubCloud`, `Download HubDrive` |
+| A HUBLinks page (step 2) | `Watch Online`, or none | `480p`, or a server: `Instant⚡Download` | `Drive`, `Instant`, a mirror's URL |
 
 ## The engine
 
@@ -81,7 +79,7 @@ those belong to its consumers.
 no call can read dead domains for lack of `domains`. A call's own option is `signal`.
 New domains need a new engine: its config never changes. Beside them, `identify(url)` says what a
 link is, from its URL alone: `{ type: 'gateway', id }`, `{ type: 'file', id, resolves }`,
-or null. The engine gives the pieces; the consumer makes its own flow of them (the API's: GetLink).
+`{ type: 'post', id }` (a post of a site the engine reads, its path one segment), or null. The engine gives the pieces; the consumer makes its own flow of them (the API's: GetLink).
 
 | Function | Reads | Returns |
 |---|---|---|
@@ -252,17 +250,25 @@ GET /v1/sites/hdhub4u/posts/how-to-ruin-diwali-meet-the-parents-season-1-hindi-w
   "sections": [
     {
       "title": ": DOWNLOAD LINKS :",
+      "tab": null,
+      "tags": [],
+      "episodes": false,
       "lines": [
-        { "title": "480p x264 [200MB]", "links": [{ "name": "links/aHR0cHM6Ly9ncmVlbm1vdG9ycy5jbHViLz9pZD1jVWs0...", "label": "480p x264 [200MB]" }] }
+        { "title": "480p x264 [200MB]", "file": null, "tags": [], "links": [
+          { "name": "links/aHR0cHM6Ly9ncmVlbm1vdG9ycy5jbHViLz9pZD1jVWs0...", "url": "https://greenmotors.club/?id=cUk4...", "label": "480p x264 [200MB]", "host": "greenmotors" }
+        ] }
       ]
     },
     {
       "title": "EPiSODE 1",
+      "tab": null,
+      "tags": [],
+      "episodes": false,
       "lines": [
-        { "title": "720p", "links": [
-          { "name": "links/aHR0cHM6Ly9odWJkcml2ZS5iYXIvZmlsZS8x...", "label": "Drive" },
-          { "name": "links/aHR0cHM6Ly9odWJjZG4uY2x1Yi9maWxlL2Nk...", "label": "Instant" },
-          { "name": "links/aHR0cHM6Ly9oZHN0cmVhbTR1LmNvbS9maWxl...", "label": "WATCH" }
+        { "title": "720p", "file": null, "tags": [], "links": [
+          { "name": "links/aHR0cHM6Ly9odWJkcml2ZS5iYXIvZmlsZS8x...", "url": "https://hubdrive.bar/file/1...", "label": "Drive", "host": "hubdrive" },
+          { "name": "links/aHR0cHM6Ly9odWJjZG4uY2x1Yi9maWxlL2Nk...", "url": "https://hubcdn.club/file/cd...", "label": "Instant", "host": "hubcdn" },
+          { "name": "links/aHR0cHM6Ly9oZHN0cmVhbTR1LmNvbS9maWxl...", "url": "https://hdstream4u.com/file/...", "label": "WATCH", "host": "hdstream4u" }
         ] },
         { "title": "1080p", "links": ["..."] }
       ]
@@ -286,6 +292,15 @@ is named by the URL it answered at. The links come with the post: its screen sho
   heading). A line's `title` is what it names (`720p`, a file); a button alone in its heading
   (`720p x264 [850MB]`) is a line of that title and one link of that label; a line of buttons only
   (`EPiSODE 1 | WATCH`) has none. Every section has a line, and every line a link.
+- What a site states beyond it, by its page's classes, is there too, and null or `[]` where it
+  states none (HDHub4u): a section's `tab`, the label of the site's tab it is in (4KHDHub: `Zip/Pack`,
+  `Single EP's`), its `tags` (`Episodes 4`, `English, Swedish`), and `episodes`, whether it is a
+  season's group of episodes, one line each (4KHDHub's `.season-item`); a line's `file`, its file's name
+  (`Fallen.S01E01.Sword.and.Cross.1080p…mkv`), and its `tags`, its badges as the site gives them
+  (`24.26 GB`, `English`, `WEB-DL`; an episode's size, `3.35 GB`). What each tag is, is not read.
+- A link is `{ name, url, label, host }` here as on every answer (GetLink's pages too): `label`, its
+  button's text; `host`, the site it is on: the engine's id of its gateway or host (`hubdrive`), or
+  the hostname of one it does not know (`sugarke.com`), never null.
 - The grouping is read from the page's structure, never from words: on HDHub4u an episode, a note
   (`[HINDI – TAMIL – TELUGU]`) and a film of a collection are sections alike.
 - They are every download link, whatever gateway or host it leads to, so a host the engine has no
@@ -298,13 +313,19 @@ is named by the URL it answered at. The links come with the post: its screen sho
 
 What a link opens, past the pages that lead to one place: GreenMotors (decoded), then a HubDrive
 file page (its HubCloud server, wherever the page puts it; without one, HTTP 404). Then, by the page
-it reaches, one of three `kind`s:
+it reaches, one of four `kind`s:
 
 | Reaches | `kind` | Its fields |
 |---|---|---|
-| HUBLinks, a HubDrive pack (or any other gateway) | `files` | `files`: each `{ name, url, label, host }`, once, of the gateways and hosts the engine knows; each is a link, read by GetLink again |
-| A file on HubCloud or HubCDN | `file` | `filename`, `sizeBytes`, `downloads` (`resolve`) |
-| A file on another host, or a site the engine does not know | `external` | `host` (null for an unknown site), `url`: the page the user opens |
+| HUBLinks, a HubDrive pack (or any other gateway) | `files` | `title`: what the page calls itself, as it is (HUBLinks: its `<title>`, `Lupin.S04E01 – HUBLinks`; a pack: its header's name, `Lupin - S04 1080p WEB-DL Packs`), or null; `tags`: what the page states of itself, as it gives it (a pack: `Includes 9 files`, `Total Size: 23.61 GB`; HUBLinks: none); `sections`: its groups, each `{ title, lines }`, a line `{ title, tags, links }` (`tags`: what the page states of the line's file beside it, a pack's `3.1 GB`), a link as on GetPost; every web link, as the page orders them (HUBLinks: groups split by `<hr>`; a pack: one group, a line per file); each is a link, read by GetLink again |
+| A file on HubCloud or HubCDN | `file` | `filename`: the file's own name, as its host states it; `sizeBytes`, `downloads` (`resolve`) |
+| A post of a site the API reads (HDHub4u's link to the title's post on 4KHDHub) | `post` | `post`: the post's name, read by GetPost |
+| A file on another host, or a site the engine does not know | `external` | the page the user opens there |
+
+Every kind but `post` also has `url`, the page the link opens on its site (its source:
+`https://hblinks.lol/archives/120993`), and `host`, that site, by the same rule as a link's
+(`hblinks`, `streamtape`, `example.com`). A page of files names itself `title`, which is what its
+site calls the page; a file names itself `filename`, which is the file's.
 
 ```http
 GET /v1/links/aHR0cHM6Ly9ncmVlbm1vdG9ycy5jbHViLz9pZD1jVWs0...Wmc5
@@ -313,9 +334,20 @@ GET /v1/links/aHR0cHM6Ly9ncmVlbm1vdG9ycy5jbHViLz9pZD1jVWs0...Wmc5
 {
   "name": "links/aHR0cHM6Ly9ncmVlbm1vdG9ycy5jbHViLz9pZD1jVWs0...Wmc5",
   "kind": "files",
-  "files": [
-    { "name": "links/aHR0cHM6Ly9odWJkcml2ZS5iYXIvZmlsZS81NzgyNDg0Mzc5", "url": "https://hubdrive.bar/file/5782484379", "label": "480p · Drive", "host": "hubdrive" },
-    { "name": "links/aHR0cHM6Ly9odWJjZG4ud2lraS9maWxlLy4uLg", "url": "https://hubcdn.wiki/file/...", "label": "480p · Instant", "host": "hubcdn" }
+  "host": "hblinks",
+  "url": "https://hblinks.lol/archives/120993",
+  "title": "Make.Me.Tingle.S01E01 – HUBLinks",
+  "sections": [
+    {
+      "title": null,
+      "lines": [
+        { "title": "480p", "links": [
+          { "name": "links/aHR0cHM6Ly9odWJkcml2ZS5iYXIvZmlsZS81NzgyNDg0Mzc5", "url": "https://hubdrive.bar/file/5782484379", "label": "Drive", "host": "hubdrive" },
+          { "name": "links/aHR0cHM6Ly9odWJjZG4ud2lraS9maWxlLy4uLg", "url": "https://hubcdn.wiki/file/...", "label": "Instant", "host": "hubcdn" }
+        ] }
+      ]
+    },
+    { "title": "Watch Online", "lines": [{ "title": null, "links": ["..."] }] }
   ]
 }
 ```
@@ -327,6 +359,8 @@ GET /v1/links/aHR0cHM6Ly9odWJkcml2ZS5iYXIvZmlsZS81NzgyNDg0Mzc5
 {
   "name": "links/aHR0cHM6Ly9odWJkcml2ZS5iYXIvZmlsZS81NzgyNDg0Mzc5",
   "kind": "file",
+  "host": "hubcloud",
+  "url": "https://hubcloud.ist/drive/xukqlp6jbsf8wja",
   "filename": "Wrong.Turn.2003.720p.BluRay.Hindi.English.DD5.1.x264.ESubs.mkv",
   "sizeBytes": 890922598,
   "downloads": [
@@ -341,7 +375,7 @@ GET /v1/links/aHR0cHM6Ly9odWJkcml2ZS5iYXIvZmlsZS81NzgyNDg0Mzc5
 { "name": "links/aHR0cHM6Ly9zdGFwZS5mdW4vdi8uLi4", "kind": "external", "host": "streamtape", "url": "https://stape.fun/v/..." }
 ```
 
-A `files` label is the page's (`480p · Drive`, a pack's `Lupin.S04E01....mkv [3.1 GB]`); a file's
+A `files` label is the page's (`Drive`, under its line `480p`; a pack's `Lupin.S04E01....mkv`, its size its line's tag); a file's
 own name and size come when it is opened. A HubCDN file's `filename` and `sizeBytes` are null when
 its storage did not state them.
 

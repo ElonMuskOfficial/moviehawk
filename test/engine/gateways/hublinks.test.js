@@ -22,10 +22,10 @@ describe('expandHubLinks', () => {
     assert.equal((await urlsOf('episode-drives')).length, 7);
   });
 
-  it('labels a line\'s buttons with the line\'s quality, and a button alone with its own text', async () => {
+  it('labels every link by its own text, the line it is on saying what it is for', async () => {
     const labelsOf = async (name) => (await expandHubLinks(URL_HL, answer(fixture(name)))).links.map(({ label }) => label);
 
-    assert.deepEqual((await labelsOf('episode-lines')).slice(0, 4), ['480p · Drive', '480p · Instant', '480p · Direct', '720p 10Bit HEVC · Drive']);
+    assert.deepEqual((await labelsOf('episode-lines')).slice(0, 4), ['Drive', 'Instant', 'Direct', 'Drive']);
     assert.deepEqual((await labelsOf('episode-drives')).slice(0, 2), ['Episode 1 – 7.2GB', 'Episode 2 – 5.8GB']);
   });
 
@@ -45,6 +45,40 @@ describe('expandHubLinks', () => {
     assert.equal(legacy[0], 'https://uploadbaz.me/n4riqrhm43qd');
     const [torrent] = await urlsOf('torrent-only');
     assert.match(torrent, /^magnet:\?xt=urn:btih:91e696cc/);
+  });
+
+  it('gives the page\'s title as it is, the only place it names the file', async () => {
+    const { title } = await expandHubLinks(URL_HL, answer(fixture('logos')));
+    assert.equal(title, 'The Terminal List: Dark Wolf S01 480p Pack – HUBLinks');
+  });
+
+  it('groups the links as the page does: a group per <hr>, titled by its first block of text', async () => {
+    // Mirrors, then "Watch Online": groups split by <hr>; a mirror's text is its URL.
+    const { links, sections } = await expandHubLinks(URL_HL, answer(fixture('legacy-hosts')));
+
+    assert.deepEqual(sections.map(({ title, lines }) => [title, lines.length]), [[null, 8], [null, 13], ['Watch Online', 2]]);
+    assert.deepEqual(sections[0].lines[0], { title: 'Drive [LinkST 1]', links: [{ url: links[0].url, label: 'Drive [LinkST 1]' }], tags: [] });
+    assert.deepEqual(sections.flatMap(({ lines }) => lines.flatMap((line) => line.links.map(({ url }) => url))), links.map(({ url }) => url));
+  });
+
+  it('titles a line of several buttons by its text before them, and a logo\'s line by none', async () => {
+    const episode = await expandHubLinks(URL_HL, answer(fixture('episode-lines')));
+    const logos = await expandHubLinks(URL_HL, answer(fixture('logos')));
+
+    assert.deepEqual(episode.sections[0].lines.map(({ title, links }) => [title, links.map(({ label }) => label)]), [['480p', ['Drive', 'Instant', 'Direct']]]);
+    assert.deepEqual(logos.sections.map(({ lines }) => lines.map(({ title, links }) => [title, links.map(({ label }) => label)])), [[[null, [null]]], [[null, [null]]], [[null, [null]]]]);
+  });
+
+  it('puts a link in no block in a line of its own, and reads a wrapper\'s blocks, not the wrapper', async () => {
+    const page = `<div class="entry-content"><div><p>Watch Online</p><p><a href="https://a.example/1">a.example/1</a> <a href="https://b.example/2">b.example/2</a></p></div>
+      <hr><a href="https://c.example/3">Instant</a></div>`;
+
+    const { sections } = await expandHubLinks(URL_HL, answer(page));
+
+    assert.deepEqual(sections.map(({ title, lines }) => [title, lines.map(({ title: line, links }) => [line, links.length])]), [
+      ['Watch Online', [[null, 2]]],
+      [null, [['Instant', 1]]],
+    ]);
   });
 
   it('leads nowhere from a removed page, without failing', async () => {

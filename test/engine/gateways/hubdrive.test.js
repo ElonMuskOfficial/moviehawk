@@ -29,14 +29,19 @@ describe('expandHubDrive', () => {
     assert.deepEqual(links.slice(0, 2).map(({ url }) => url), ['https://hubdrive.bar/file/51828476429', 'https://hubdrive.bar/file/6957876604']);
   });
 
-  it('labels a pack\'s row with its file and size, as the row states them', async () => {
-    const { links } = await expandHubDrive(PACK_URL, answer(fixture('pack')));
+  it('gives a pack as its header names it and one group: a line per row, labelled by its file, its size its tag', async () => {
+    const { links, title, tags, sections } = await expandHubDrive(PACK_URL, answer(fixture('pack')));
     const show = 'Berlin and the Lady with an Ermine (2026)';
     const release = '2160p NF 10bit WEB-DL SDR HEVC [Hindi-Tamil-Telugu DDP 5.1 + English-Spanish DDPA 5.1] H.265 (HHWEB-Ionicboy)';
-    assert.deepEqual(links.slice(0, 2).map(({ label }) => label), [
-      `${show} S01 ${release}.zip [55.87 GB]`,
-      `${show} S01E01 ${release}.mkv [7.04 GB]`,
+
+    assert.equal(title, 'Berlin and the Lady with an Ermine - S01 4K/2160p SDR WEB-DL Packs');
+    assert.deepEqual(tags, ['Includes 9 files', 'Total Size: 55.86 GB']);
+    assert.deepEqual(sections.map(({ title: group, lines }) => [group, lines.length]), [[null, 9]]);
+    assert.deepEqual(sections[0].lines.slice(0, 2).map(({ title: file, tags, links: [link] }) => [file, tags, link.label]), [
+      [`${show} S01 ${release}.zip`, ['55.87 GB'], `${show} S01 ${release}.zip`],
+      [`${show} S01E01 ${release}.mkv`, ['7.04 GB'], `${show} S01E01 ${release}.mkv`],
     ]);
+    assert.deepEqual(sections[0].lines.flatMap((line) => line.links), links);
     assert.ok(links.every(({ label }) => label && !label.includes('HubCloud')));
   });
 

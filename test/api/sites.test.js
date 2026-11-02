@@ -163,15 +163,28 @@ describe('GetPost', () => {
       posterUrl: 'https://imgshare.info/images/2026/08/19/Wrong-Turn-2003.jpg',
       publishedAt: '2026-08-19T04:16:42.000Z',
     },
+    // As the engine gives them (sections.js): every field filled, null, [] or false where HDHub4u
+    // states none.
     sections: [
       {
         title: ': DOWNLOAD LINKS :',
+        tab: null,
+        tags: [],
+        episodes: false,
         lines: [{
           title: '720p x264 [850MB]',
+          file: null,
+          tags: [],
           links: [{ url: 'https://greenmotors.club/?id=cUk4cEpVbFU1NW8yUVR1ZVFUM3phNm5QS2Z3TTdCSkVpS1pqdjdkTHQ5bDlqUGNSMTVIWDk5d05BZDVIa3R2QnpzaG9sUGlWYWgyY3A5eVRVeVBaTlVwYVVuUkxNZXZBRG9rbDZqQldYWmc9', label: '720p x264 [850MB]' }],
         }],
       },
-      { title: 'EPiSODE 1', lines: [{ title: '720p', links: [{ url: 'https://hblinks.lol/archives/121857', label: 'Drive' }] }] },
+      {
+        title: 'EPiSODE 1',
+        tab: null,
+        tags: [],
+        episodes: false,
+        lines: [{ title: '720p', file: null, tags: [], links: [{ url: 'https://hblinks.lol/archives/121857', label: 'Drive' }] }],
+      },
     ],
   };
   const firstUrl = wrongTurn.sections[0].lines[0].links[0].url;
@@ -195,12 +208,42 @@ describe('GetPost', () => {
       sections: [
         {
           title: ': DOWNLOAD LINKS :',
-          lines: [{ title: '720p x264 [850MB]', links: [{ name: `links/${Buffer.from(firstUrl).toString('base64url')}`, label: '720p x264 [850MB]' }] }],
+          tab: null,
+          tags: [],
+          episodes: false,
+          lines: [{ title: '720p x264 [850MB]', file: null, tags: [], links: [{ name: `links/${Buffer.from(firstUrl).toString('base64url')}`, url: firstUrl, label: '720p x264 [850MB]', host: 'greenmotors' }] }],
         },
-        { title: 'EPiSODE 1', lines: [{ title: '720p', links: [{ name: 'links/aHR0cHM6Ly9oYmxpbmtzLmxvbC9hcmNoaXZlcy8xMjE4NTc', label: 'Drive' }] }] },
+        {
+          title: 'EPiSODE 1',
+          tab: null,
+          tags: [],
+          episodes: false,
+          lines: [{ title: '720p', file: null, tags: [], links: [{ name: 'links/aHR0cHM6Ly9oYmxpbmtzLmxvbC9hcmNoaXZlcy8xMjE4NTc', url: 'https://hblinks.lol/archives/121857', label: 'Drive', host: 'hblinks' }] }],
+        },
       ],
     });
     assert.equal(Buffer.from(response.json().sections[0].lines[0].links[0].name.slice('links/'.length), 'base64url').toString(), firstUrl);
+  });
+
+  it("gives a section's tab, tags and episodes, and a line's file and tags, as the site states them", async (t) => {
+    // 4KHDHub's shape (live, 2026-11-02): a season's group of episodes in the "Single EP's" tab.
+    const episode = { title: 'Episode-01', file: 'Fallen.S01E01.mkv', tags: ['3.35 GB'], links: [{ url: 'https://greenmotors.club/?id=e1', label: 'Download HubCloud' }] };
+    const { engine } = fakeEngine(() => ({
+      post: { ...wrongTurn.post, url: 'https://4khdhub.one/fallen-series-7872/' },
+      sections: [{ title: 'S01 AVC 1080p WEB-DL H264', tab: "Single EP's", tags: ['Episodes 8', 'English'], episodes: true, lines: [episode] }],
+    }));
+    const server = await app(engine);
+    t.after(() => server.close());
+
+    const [section] = (await server.inject('/v1/sites/4khdhub/posts/fallen-series-7872')).json().sections;
+
+    assert.deepEqual(section, {
+      title: 'S01 AVC 1080p WEB-DL H264',
+      tab: "Single EP's",
+      tags: ['Episodes 8', 'English'],
+      episodes: true,
+      lines: [{ title: 'Episode-01', file: 'Fallen.S01E01.mkv', tags: ['3.35 GB'], links: [{ name: `links/${Buffer.from('https://greenmotors.club/?id=e1').toString('base64url')}`, url: 'https://greenmotors.club/?id=e1', label: 'Download HubCloud', host: 'greenmotors' }] }],
+    });
   });
 
   it('makes the URL of a post whose slug is not plain ASCII again, from the decoded name', async (t) => {

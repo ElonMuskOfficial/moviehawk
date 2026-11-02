@@ -6,12 +6,14 @@ import { EngineError } from './errors.js';
 import { gatewayOf } from './gateways/index.js';
 import { externalIdOf, hostOf } from './hosts/index.js';
 import { retry } from './http.js';
+import { providerOf } from './providers/index.js';
 import { onCurrentDomain, webUrlOf } from './urls.js';
 
 /**
- * @typedef {{ type: 'gateway', id: string } | { type: 'file', id: string, resolves: boolean }} LinkKind
- *   A gateway page the engine reads (`expand`), or a file on a host. `id`: the gateway's or the
- *   host's ("greenmotors", "hubcloud"). `resolves`: when `resolve` reads the file's downloads.
+ * @typedef {{ type: 'gateway', id: string } | { type: 'file', id: string, resolves: boolean } | { type: 'post', id: string }} LinkKind
+ *   A gateway page the engine reads (`expand`), a file on a host, or a post of a site the engine
+ *   reads (`scrapePost`). `id`: the gateway's, the host's or the site's ("greenmotors", "hubcloud",
+ *   "4khdhub"). `resolves`: when `resolve` reads the file's downloads.
  */
 
 /**
@@ -19,11 +21,16 @@ import { onCurrentDomain, webUrlOf } from './urls.js';
  *
  * @param {string} url
  * @returns {LinkKind | null} null for anything else: a page of a host that names no file (HubCloud's
- *   "/tg/go" Telegram link), a site the engine does not know, a string that is not a web URL.
+ *   "/tg/go" Telegram link), a page of a site the engine reads that is no post (a category), a site
+ *   the engine does not know, a string that is not a web URL.
  */
 export function identify(url) {
   const gateway = gatewayOf(url);
   if (gateway) return { type: 'gateway', id: gateway.id };
+  // A post of a site the engine reads: its path is one segment on every one of them (HDHub4u links
+  // the same title's post on 4KHDHub, live 2026-11-02: 26 of 729 posts).
+  const provider = providerOf(url);
+  if (provider) return new URL(url).pathname.split('/').filter(Boolean).length === 1 ? { type: 'post', id: provider.id } : null;
   if (!externalIdOf(url)) return null;
   const host = hostOf(url);
   return { type: 'file', id: host.id, resolves: Boolean(host.resolve) };
@@ -37,8 +44,12 @@ export function identify(url) {
  * @param {string} url - A gateway page (`identify(url).type === 'gateway'`), on any of its domains.
  * @param {import('./http.js').RequestOptions & { domains?: Record<string, string> }} [options]
  *   `domains`: as for onCurrentDomain (urls.js).
- * @returns {Promise<{ links: import('./html.js').Link[] }>} Every link, as the site gave it: a link
- *   the engine does not know, or a torrent's, is the caller's to skip (`identify`).
+ * @returns {Promise<{ links: import('./html.js').Link[], title?: string | null, tags?: string[], sections?: import('./gateways/hublinks.js').LinkGroup[] }>}
+ *   Every link, as the site gave it: a link the engine does not know, or a torrent's, is the
+ *   caller's to skip (`identify`). A page where the user chooses among files (HUBLinks, a
+ *   HubDrive pack) also gives its title, its tags (what its header states: a pack's files and
+ *   size; [] for HUBLinks) and its groups; a page that leads to one place (GreenMotors,
+ *   a HubDrive file page) has none.
  * @throws {EngineError} `unsupported` for a URL that is no gateway page, and the gateway's errors.
  * @throws {TypeError} For a string that is not a web URL.
  * @throws {unknown} The caller's own reason, as it is, when the caller cancels (`signal`).

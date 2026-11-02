@@ -2,7 +2,7 @@
  * The sites and their posts (README.md, The API): ListSites, ListPosts, SearchPosts, GetPost.
  */
 import { queryOf } from './cache.js';
-import { linkName, postName, postUrl } from './names.js';
+import { namedLink, postName, postUrl } from './names.js';
 import { ProblemError } from './problems.js';
 
 // The sites the engine reads posts of. Vegamovies and RogMovies come with their provider.
@@ -51,27 +51,35 @@ const fullPost = {
     imdbId: { type: ['string', 'null'] },
     posterUrl: { type: ['string', 'null'] },
     publishTime: { type: ['string', 'null'], format: 'date-time' },
-    // The site's sections of the post's download links: each a title and lines of buttons.
+    // The site's sections of the post's download links (the engine's Section): each a title and
+    // lines of buttons; its tab, tags and whether it is a season's episodes, a line's file and tags,
+    // where the site states them (null, [] and false where not).
     sections: {
       type: 'array',
       items: {
         type: 'object',
-        required: ['title', 'lines'],
+        required: ['title', 'tab', 'tags', 'episodes', 'lines'],
         properties: {
           title: { type: ['string', 'null'] },
+          tab: { type: ['string', 'null'] },
+          tags: { type: 'array', items: { type: 'string' } },
+          episodes: { type: 'boolean' },
           lines: {
             type: 'array',
             items: {
               type: 'object',
-              required: ['title', 'links'],
+              required: ['title', 'file', 'tags', 'links'],
               properties: {
                 title: { type: ['string', 'null'] },
+                file: { type: ['string', 'null'] },
+                tags: { type: 'array', items: { type: 'string' } },
                 links: {
                   type: 'array',
                   items: {
                     type: 'object',
-                    required: ['name', 'label'],
-                    properties: { name: { type: 'string' }, label: { type: ['string', 'null'] } },
+                    // As every answer gives a link (namedLink).
+                    required: ['name', 'url', 'label', 'host'],
+                    properties: { name: { type: 'string' }, url: { type: 'string' }, label: { type: ['string', 'null'] }, host: { type: 'string' } },
                   },
                 },
               },
@@ -153,9 +161,12 @@ export async function sitesRoutes(app, { engine, domains, cached }) {
         imdbId: post.imdbId,
         posterUrl: post.posterUrl,
         publishTime: post.publishedAt,
-        sections: sections.map(({ title, lines }) => ({
+        sections: sections.map(({ title, tab, tags, episodes, lines }) => ({
           title,
-          lines: lines.map((line) => ({ title: line.title, links: line.links.map(({ url, label }) => ({ name: linkName(url), label })) })),
+          tab,
+          tags,
+          episodes,
+          lines: lines.map(({ title: line, file, tags: lineTags, links }) => ({ title: line, file, tags: lineTags, links: links.map(namedLink) })),
         })),
       };
     });

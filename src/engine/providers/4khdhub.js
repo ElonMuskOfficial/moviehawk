@@ -9,6 +9,7 @@ import { EngineError } from '../errors.js';
 import { linkOf, textOf } from '../html.js';
 import { fetchHtml } from '../http.js';
 import { jsonLdOf } from '../json-ld.js';
+import { newLine, newSection } from '../sections.js';
 
 /** @typedef {import('./index.js').Post} Post
  * @typedef {import('./index.js').PostCard} PostCard
@@ -56,31 +57,43 @@ export async function scrape4kHdHubPost(url, options) {
 /**
  * The page's blocks, as it groups them: a section per `h2.section-title` ("Download Links" for a
  * movie, "Download Complete Season" for a series' packs), and per season's group of episodes
- * (`.season-item`, titled by its `h3.episode-title`: "S01 AVC 1080p WEB-DL H264"); a line per block,
- * titled by its file (fileOf), its buttons "Download HubDrive" and "Download HubCloud" (live,
- * 2026-11-02: 100 posts, 4,836 blocks, each in a section, each with a file and 2 buttons). A section
- * without blocks ("Download Individual Episodes", whose blocks are in its seasons' groups; "You May
- * Also Like") is left out.
+ * (`.season-item`, titled by its `h3.episode-title`: "S01 AVC 1080p WEB-DL H264", tagged with its
+ * badges: "Episodes 4", "English, Swedish"; `episodes`, as it is one); a line per block
+ * (lineOfBlock), its buttons "Download
+ * HubDrive" and "Download HubCloud". A series shows its sections in two tabs, "Zip/Pack" and
+ * "Single EP's": each section has the label of the tab it is in, by the tab's `data-tab`, which is
+ * its content's `id` (live, 2026-11-02: 100 posts, 59 series, 4,836 blocks, each in a section, each
+ * with its file and 2 buttons). A section without blocks ("Download Individual Episodes", whose
+ * blocks are in its seasons' groups; "You May Also Like") is left out.
  *
  * @returns {Section[]} In page order.
  */
 function sectionsOf($) {
   const sections = [];
   let section = null;
-  const open = (title) => {
-    section = { title: title || null, lines: [] };
+  const open = (element, stated) => {
+    const content = element.closest('.series-tab-content').attr('id');
+    const tab = content ? textOf($('.series-tab').filter((_, button) => $(button).attr('data-tab') === content).first()) : null;
+    section = newSection({ ...stated, tab });
     sections.push(section);
   };
   for (const element of $(`h2.section-title, .season-item, ${BLOCK}`).toArray()) {
     const $element = $(element);
-    if ($element.is('h2.section-title')) open(textOf($element));
-    else if ($element.is('.season-item')) open(textOf($element.find('.episode-title').first()));
-    else if ($element.parents(BLOCK).length === 0) {
-      if (!section) open(null);
-      section.lines.push({ title: fileOf($element) || null, links: $element.find('a[href]').toArray().map((a) => linkOf($, a)) });
+    if ($element.is('h2.section-title')) open($element, { title: textOf($element) });
+    else if ($element.is('.season-item')) {
+      const tags = badgesOf($, $element.find('.episode-meta').first());
+      open($element, { title: textOf($element.find('.episode-title').first()), tags, episodes: true });
+    } else if ($element.parents(BLOCK).length === 0) {
+      if (!section) open($element, {});
+      section.lines.push(lineOfBlock($, $element));
     }
   }
   return sections.filter(({ lines }) => lines.length > 0);
+}
+
+/** @returns {string[]} The texts of an element's badges, as the page gives them, in its order. */
+function badgesOf($, element) {
+  return element.find('.badge').toArray().map((badge) => textOf($(badge))).filter(Boolean);
 }
 
 // A page's number in its URL: "/page/2/" is 2, "/" is 1 (listing and search pages alike).
@@ -152,18 +165,31 @@ function cardsOf($, url) {
 }
 
 /**
- * What a block says of its file; its buttons name only their server. A movie's or a season pack's
- * block: its header ("Addicted (1080p WEB-DL H264 AVC) 7 GB English WEB-DL"). An episode's: its
- * number and size ("Episode-01 4.01 GB"); its season is its section's title. Live, 2026-11-02:
- * 4,836 of 4,836 blocks of 100 posts.
+ * A block as a line, with what it says of its file; its buttons name only their server. Each part
+ * is read by its class, never by its words (live, 2026-11-02: 100 posts):
+ * - a movie's or a season pack's block (`.download-item`, 403 of 403): its title, the header's text
+ *   ("Addicted (1080p WEB-DL H264 AVC)"); its tags, the header's badges as the page gives them
+ *   ("7 GB", "English", "WEB-DL": always 3, of one class, so what each is is not read); its file's
+ *   name, `.file-title` ("Addicted.2014.1080p.WEB-DL.H264-4kHdHub.Com.mkv");
+ * - an episode's (`.episode-download-item`, 4,433 of 4,433): its title, `.badge-psa`
+ *   ("Episode-01"); its tag, its size, `.badge-size` ("4.01 GB"); its file's name,
+ *   `.episode-file-title`. Its season is its section's title.
  *
  * @param {import('cheerio').Cheerio<any>} block
- * @returns {string}
+ * @returns {import('./index.js').Line}
  */
-function fileOf(block) {
-  return block.is('.episode-download-item')
-    ? textOf(block.find('.episode-file-info').first())
-    : textOf(block.find('.download-header .flex-1').first());
+function lineOfBlock($, block) {
+  const links = block.find('a[href]').toArray().map((a) => linkOf($, a));
+  if (block.is('.episode-download-item')) {
+    return newLine(textOf(block.find('.badge-psa').first()), links, {
+      file: textOf(block.find('.episode-file-title').first()),
+      tags: [textOf(block.find('.badge-size').first())].filter(Boolean),
+    });
+  }
+  const header = block.find('.download-header .flex-1').first();
+  const name = header.clone();
+  name.find('code, .badge').remove();
+  return newLine(textOf(name), links, { file: textOf(block.find('.file-title').first()), tags: badgesOf($, header) });
 }
 
 /** @returns {boolean} Whether the page is 4KHDHub's answer for a post it does not have. */

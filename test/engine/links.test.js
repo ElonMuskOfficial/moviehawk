@@ -16,6 +16,13 @@ describe('identify', () => {
     assert.deepEqual(identify('https://stape.fun/v/O4zGkRyymqCZ0J7/a.mkv'), { type: 'file', id: 'streamtape', resolves: false });
   });
 
+  it('tells a post of a site the engine reads, on any of its domains, by its path of one segment', () => {
+    // HDHub4u links the same title's post on 4KHDHub (live, 2026-11-02); a category is no post.
+    assert.deepEqual(identify('https://4khdhub.fans/dexter-resurrection-series-2297/'), { type: 'post', id: '4khdhub' });
+    assert.deepEqual(identify('https://new10.hdhub4u.cl/wrong-turn-2003-hindi-bluray-full-movie/'), { type: 'post', id: 'hdhub4u' });
+    assert.equal(identify('https://4khdhub.one/category/movies/'), null);
+  });
+
   it('is null for a page that names no file, a site the engine does not know, or no web URL', () => {
     // HubCloud's Telegram link, on a HubDrive file page (live, 2026-11-01).
     for (const url of ['https://hubcloud.ist/tg/go?id=3Ofp3dyuoq', 'https://hblinks.lol/', 'https://example.com/a', 'magnet:?xt=urn:btih:91e6', 'not a url']) {

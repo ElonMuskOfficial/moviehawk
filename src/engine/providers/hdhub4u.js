@@ -7,6 +7,7 @@ import { EngineError } from '../errors.js';
 import { lineOf, lineStartOf, linkOf, textOf } from '../html.js';
 import { fetchHtml, fetchJson } from '../http.js';
 import { jsonLdOf } from '../json-ld.js';
+import { newLine, newSection } from '../sections.js';
 import { hasLabel, webUrlOf } from '../urls.js';
 
 /** @typedef {import('./index.js').Post} Post
@@ -54,22 +55,22 @@ function isButton($, a) {
  */
 function sectionsOf($, body) {
   const sections = [];
-  let section = { title: null, lines: [] };
+  let section = newSection();
   sections.push(section);
   for (const heading of body.find(HEADING).toArray()) {
     if ($(heading).parents(HEADING).length > 0) continue; // part of the heading around it
     const links = $(heading).find('a[href]').toArray();
     if (links.length === 0) {
       if (!textOf($(heading))) continue;
-      section = { title: textOf($(heading)), lines: [] };
+      section = newSection({ title: textOf($(heading)) });
       sections.push(section);
       continue;
     }
     const buttons = links.filter((a) => isButton($, a));
     if (buttons.length === 0) continue;
     // lineOf is null for a button alone in its heading, which names its file itself.
-    const title = lineOf($, buttons[0]) ? lineStartOf($(heading)) || null : textOf($(heading));
-    section.lines.push({ title, links: buttons.map((a) => linkOf($, a, '', buttonOf($, a))) });
+    const title = lineOf($, buttons[0]) ? lineStartOf($(heading)) : textOf($(heading));
+    section.lines.push(newLine(title, buttons.map((a) => linkOf($, a, '', buttonOf($, a)))));
   }
   return sections.filter(({ lines }) => lines.length > 0);
 }
