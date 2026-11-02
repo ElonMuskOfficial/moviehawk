@@ -21,29 +21,36 @@ const IMDB_TITLE = /^\/title\/(tt\d+)\//;
 // A player's button: "WATCH", "WATCH-1", "PLAYER-2".
 const PLAYER = /^(WATCH|PLAYER)\b[-\s]*\d*$/i;
 const HEADING = 'h1, h2, h3, h4, h5, h6';
+// What a post's buttons are in: a heading, or for the 2017–18 posts' servers, a paragraph.
+const LINE = `${HEADING}, p`;
 
 /**
- * Whether a link of the post's body is a download button. Every button is a link in a heading:
+ * Whether a link of the post's body is a download button. A button is a link in a heading:
  * "480p x264 [1GB]", "720p – Drive | Instant | WATCH" (live, 2026-11-02: 729 posts of 2017 to 2026,
- * 5,076 links with text in headings off the site, all downloads or players but for one IMDb link).
- * The other links are in the post's prose (a paragraph, the info box) or are an image: the site's
- * promo, its genres and the screenshots, which GreenMotors leads to the site's own pages; and the
- * 2017–18 posts' servers, on hosts the engine does not know. A link to the site itself, on any of
- * its domains ("[How To Download]", another post), is not a download either. Which gateways and
- * hosts the engine knows does not matter here: a button to another one is a download all the same.
+ * 5,076 links with text in headings off the site, all downloads or players but for one IMDb link);
+ * or a link that is its paragraph's whole text, as the 2017–18 posts' servers are: "Openload.co",
+ * "LINKSTAKER HIGH SPEED", "Torrent Link" (live, 2026-11-02: 296 posts, 79 with such links, all
+ * servers). The other links are in a sentence or a line of the info box, or are an image: the
+ * site's promo ("VISIT & SHARE HDHub4u"), its genres ("Genre: Action | Crime"), IMDb's rating and
+ * the cast, the screenshots; or have no text (WhatsApp). A link to the site itself, on any of its
+ * domains ("[How To Download]", another post), is not a download either. Which gateways and hosts
+ * the engine knows does not matter here: a button to another one is a download all the same.
  *
  * @returns {boolean}
  */
 function isButton($, a) {
-  if ($(a).closest(HEADING).length === 0 || !textOf($(a))) return false;
+  const text = textOf($(a));
+  if (!text) return false;
+  if ($(a).closest(HEADING).length === 0 && textOf($(a).closest('p')) !== text) return false;
   const url = webUrlOf($(a).prop('href'));
   return url !== null && !hasLabel(url, 'hdhub4u');
 }
 
 /**
- * The post's download buttons, as the page groups them: a heading with buttons is a line; a heading
- * without links is the title of the lines under it, up to the next one: ": DOWNLOAD LINKS :" over
- * "480p x264 [1GB]", "EPiSODE 1" over "720p – Drive | Instant | WATCH" (live, 2026-11-02: 729 posts,
+ * The post's download buttons, as the page groups them: a heading or a paragraph with buttons is a
+ * line; a heading without links is the title of the lines under it, up to the next one:
+ * ": DOWNLOAD LINKS :" over "480p x264 [1GB]", "EPiSODE 1" over "720p – Drive | Instant | WATCH",
+ * "Download Links" over "Torrent Link" (live, 2026-11-02: 729 posts,
  * 5,076 buttons in 3,500 lines, each line under such a heading). What a heading says plays no part:
  * an episode, a note ("[HINDI – TAMIL – TELUGU]") and a film of a collection are titles alike. A
  * heading with links but no button ("[How To Download]", the screenshots) is neither, nor is an
@@ -57,19 +64,19 @@ function sectionsOf($, body) {
   const sections = [];
   let section = newSection();
   sections.push(section);
-  for (const heading of body.find(HEADING).toArray()) {
-    if ($(heading).parents(HEADING).length > 0) continue; // part of the heading around it
-    const links = $(heading).find('a[href]').toArray();
+  for (const element of body.find(LINE).toArray()) {
+    if ($(element).parents(LINE).length > 0) continue; // part of the line around it
+    const links = $(element).find('a[href]').toArray();
     if (links.length === 0) {
-      if (!textOf($(heading))) continue;
-      section = newSection({ title: textOf($(heading)) });
+      if ($(element).is('p') || !textOf($(element))) continue; // a paragraph titles nothing
+      section = newSection({ title: textOf($(element)) });
       sections.push(section);
       continue;
     }
     const buttons = links.filter((a) => isButton($, a));
     if (buttons.length === 0) continue;
-    // lineOf is null for a button alone in its heading, which names its file itself.
-    const title = lineOf($, buttons[0]) ? lineStartOf($(heading)) : textOf($(heading));
+    // lineOf is null for a button alone in its heading or paragraph, which names its file itself.
+    const title = lineOf($, buttons[0]) ? lineStartOf($(element)) : textOf($(element));
     section.lines.push(newLine(title, buttons.map((a) => linkOf($, a, '', buttonOf($, a)))));
   }
   return sections.filter(({ lines }) => lines.length > 0);

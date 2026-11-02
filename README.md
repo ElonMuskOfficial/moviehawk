@@ -109,8 +109,8 @@ link is, from its URL alone: `{ type: 'gateway', id }`, `{ type: 'file', id, res
 - `scrape*` reads a page and returns what it states, which does not expire. `resolve` follows
   redirects to make `downloads`, which expire: a different job, so a different verb.
 - `scrapePost`'s `sections` hold the post's download links, as each site's provider reads its page
-  (HDHub4u: a link in a heading; 4KHDHub: a block's buttons), whatever gateway or host they lead
-  to; not WhatsApp, IMDb, the site's own pages, or a link in a paragraph. `identify` tells which
+  (HDHub4u: a link in a heading, or alone in its paragraph; 4KHDHub: a block's buttons), whatever
+  gateway or host they lead to; not WhatsApp, IMDb, the site's own pages, or a link in a sentence. `identify` tells which
   the engine can open. A link's label is its button's text (`Drive`, `Download HubCloud`); what the
   button is for is its line's title (`720p`, `Episode-01 4.01 GB`) and its section's (`EPiSODE 1`,
   `S01 1080p WEB-DL H264`). A button that states its file (`720p x264 [850MB]`) is its line's title
@@ -306,8 +306,10 @@ is named by the URL it answered at. The links come with the post: its screen sho
 - They are every download link, whatever gateway or host it leads to, so a host the engine has no
   extractor for loses no link: GetLink answers it `external`, and the user opens it in the browser.
   The site's own links are left out (HDHub4u's promo, genres, screenshots and "[How To Download]"),
-  and so are links in a post's paragraphs (live, 2026-11-02: in 1 to 3 of 729 HDHub4u posts a real
-  one, and the 2017–18 posts' servers, on hosts the engine does not know).
+  read by where they are, not by what they say: a link in a sentence or the info box. A link alone
+  in its paragraph is a server, as the 2017–18 posts give theirs (`Openload.co`, `Torrent Link`),
+  and is in its post's sections as the site shows it (live, 2026-11-02: 296 posts, 79 with such
+  links, all servers).
 
 ### GetLink
 

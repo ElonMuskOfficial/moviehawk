@@ -77,12 +77,18 @@ describe('scrapeHdHub4uPost', () => {
     assert.deepEqual(linksOf(sections).map(({ label }) => label), ['480p Links [350MB]', '720p Links [1GB]', '1080p Links [1.9GB]', '1080p Links [Untouch]']);
   });
 
-  it('gives no section for a post whose links are all in paragraphs', async () => {
+  it('reads an old post\'s servers, each a paragraph of its own, under its headings', async () => {
     // Drive (2011), posted in 2019, live 2026-11-02: its servers (9xplay, Openload, ClickNupload,
-    // ...) are links in paragraphs, to hosts the engine does not know.
+    // ...) are links alone in their paragraphs, to hosts the engine does not know.
     const { sections } = await scrapeHdHub4uPost(MOVIE_URL, answer(fixture('prose')));
 
-    assert.deepEqual(sections, []);
+    assert.deepEqual(sections.map(({ title, lines }) => [title, lines.map(({ title: line, links }) => [line, links.map(({ label }) => label)])]), [
+      ['Watch Online', [['9xplay', ['9xplay']], ['Openload.co', ['Openload.co']], ['LINKSTAKER HIGH SPEED', ['LINKSTAKER HIGH SPEED']]]],
+      ['Download Links', [
+        ['Torrent Link', ['Torrent Link']], ['LINKSTAKER DIRECT FAST', ['LINKSTAKER DIRECT FAST']], ['Indishare.me', ['Indishare.me']],
+        ['ClickNupload', ['ClickNupload']], ['uploadBaz', ['uploadBaz']], ['Openload', ['Openload']], ['More Download Links', ['More Download Links']],
+      ]],
+    ]);
   });
 
   it('leaves out a link in a heading to the site on any domain, an image, and no web URL', async () => {
