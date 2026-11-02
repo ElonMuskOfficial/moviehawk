@@ -64,7 +64,7 @@ export async function scrape4kHdHubPost(url, options) {
  * "Single EP's": each section has the label of the tab it is in, by the tab's `data-tab`, which is
  * its content's `id` (live, 2026-11-02: 100 posts, 59 series, 4,836 blocks, each in a section, each
  * with its file and 2 buttons). A section without blocks ("Download Individual Episodes", whose
- * blocks are in its seasons' groups; "You May Also Like") is left out.
+ * blocks are in its seasons' groups; "You May Also Like") is left out, as is a block without buttons.
  *
  * @returns {Section[]} In page order.
  */
@@ -83,7 +83,7 @@ function sectionsOf($) {
     else if ($element.is('.season-item')) {
       const tags = badgesOf($, $element.find('.episode-meta').first());
       open($element, { title: textOf($element.find('.episode-title').first()), tags, episodes: true });
-    } else if ($element.parents(BLOCK).length === 0) {
+    } else if ($element.parents(BLOCK).length === 0 && $element.find('a[href]').length > 0) {
       if (!section) open($element, {});
       section.lines.push(lineOfBlock($, $element));
     }

@@ -91,7 +91,7 @@ describe('scrapeHdHub4uPost', () => {
     ]);
   });
 
-  it('leaves out a link in a heading to the site on any domain, an image, and no web URL', async () => {
+  it('leaves out a link in a heading to the site on any domain, and an image; gives one that is no web URL as it is', async () => {
     const page = `<h1 class="page-title"><span class="material-text">Show</span></h1><main class="page-body">
       <h2><a href="/how-to-download/">[How To Download]</a></h2>
       <h4><a href="https://hdhub4u.gratis/show-season-1/">DOWNLOAD S01 HERE</a></h4>
@@ -103,7 +103,11 @@ describe('scrapeHdHub4uPost', () => {
 
     assert.deepEqual(sections, [{
       title: null,
-      lines: [{ title: 'Watch Online', links: [{ url: 'https://streamwire.net/e/a', label: 'Watch Online' }], file: null, tags: [] }],
+      // A typo or a magnet is the page's link all the same: identify tells a consumer it opens nothing.
+      lines: [
+        { title: '720p', links: [{ url: 'hhttps://hubdrive.bar/file/1', label: '720p' }], file: null, tags: [] },
+        { title: 'Watch Online', links: [{ url: 'https://streamwire.net/e/a', label: 'Watch Online' }], file: null, tags: [] },
+      ],
       tab: null,
       tags: [],
       episodes: false,
@@ -195,6 +199,12 @@ describe('scrapeHdHub4uListing', () => {
     const last = '<ul class="recent-movies"><li><figcaption><a href="/a/"><p>A</p></a></figcaption></li></ul>'
       + '<ul class="pagination"><li><a class="prev page-numbers" href="/page/970/">Previous</a></li><li><span aria-current="page" class="page-numbers current">971</span></li></ul>';
     assert.equal((await scrapeHdHub4uListing('https://new10.hdhub4u.cl/page/971/', answer(last))).hasNextPage, false);
+  });
+
+  it("leaves out a card without its post's link", async () => {
+    const page = '<ul class="recent-movies"><li><figcaption><a href="/a/"><p>A</p></a></figcaption></li><li><figcaption><p>Ad</p></figcaption></li></ul>';
+    const { posts } = await scrapeHdHub4uListing('https://new10.hdhub4u.cl/page/2/', answer(page));
+    assert.deepEqual(posts.map(({ url }) => url), ['https://new10.hdhub4u.cl/a/']);
   });
 
   it('is unrecognized for a page without posts', async () => {

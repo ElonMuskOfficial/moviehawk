@@ -43,7 +43,7 @@ export async function expandHubDrive(url, options) {
       const row = $(a).closest('.pack-clean-file');
       const title = textOf(row.find('.pack-clean-title').first()) || null;
       const size = textOf(row.find('.pack-clean-size').first());
-      return { title, links: [linkOf($, a, '', title ?? undefined)], tags: [size].filter(Boolean) };
+      return { title, links: [linkOf($, a, title ?? undefined)], tags: [size].filter(Boolean) };
     });
     if (lines.length === 0) throw new EngineError('unrecognized', 'No files on the HubDrive pack page', { url });
     const title = textOf($('.pack-clean-name').first()) || null;

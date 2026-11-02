@@ -6,8 +6,9 @@ import * as entry from '../../src/engine/index.js';
 const { createEngine } = entry;
 
 describe('the engine\'s entry', () => {
-  it('gives a consumer createEngine, EngineError and identify, and nothing else', () => {
-    assert.deepEqual(Object.keys(entry).sort(), ['EngineError', 'createEngine', 'identify']);
+  it('gives a consumer createEngine, EngineError, identify and providerIds, and nothing else', () => {
+    assert.deepEqual(Object.keys(entry).sort(), ['EngineError', 'createEngine', 'identify', 'providerIds']);
+    assert.deepEqual(entry.providerIds, ['hdhub4u', '4khdhub']);
   });
 
   it('makes an engine whose every call has its config', async () => {

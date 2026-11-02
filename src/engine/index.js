@@ -6,7 +6,8 @@
  *   engine.scrapeListing(siteUrl, page)      → its posts' cards: URL, title, poster
  *   engine.searchPosts(siteUrl, query, page) → the cards of the posts that match
  *   engine.scrapePost(postUrl)               → the post and its download links, in sections
- *   identify(linkUrl)                        → what the link is: a gateway page, or a file on a host
+ *   identify(linkUrl)                        → what the link is: a gateway page, a file on a host, a post
+ *   providerIds                              → the sites the engine reads: "hdhub4u", "4khdhub"
  *   engine.expand(gatewayUrl)                → where the gateway's page leads: its links
  *   engine.resolve(fileUrl)                  → the file's name, size and downloads
  *
@@ -21,6 +22,7 @@ import { searchPosts } from './searches.js';
 
 export { EngineError } from './errors.js';
 export { identify } from './links.js';
+export { providerIds } from './providers/index.js';
 
 /**
  * @typedef {import('./providers/index.js').Post} Post

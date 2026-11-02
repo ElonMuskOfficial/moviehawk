@@ -62,9 +62,10 @@ describe('scrape4kHdHubPost', () => {
     assert.match(last.file, /^Fallen\.S01E08\..+\.mkv$/);
   });
 
-  it('gives the buttons of the blocks only, not the page\'s other links; a block before any section in a null one', async () => {
+  it("gives the buttons of the blocks only, not the page's other links nor a block without buttons; a block before any section in a null one", async () => {
     const page = `<h1 class="page-title">Show</h1><a href="https://new10.hdhub4u.cl/">HDHub4U Team</a>
       <div class="download-item"><a href="https://greenmotors.club/?id=first">Download HubCloud</a></div>
+      <div class="download-item"><span>Coming soon</span></div>
       <div class="season-item"><h3 class="episode-title">S01</h3><div class="episode-download-item"><a href="https://greenmotors.club/?id=e1">Download HubCloud</a></div></div>
       <h2 class="section-title">You May Also Like</h2><a href="https://4khdhub.one/other-movie-1/">Other</a>`;
 

@@ -35,6 +35,9 @@ const PROVIDERS = [
   { id: '4khdhub', post: scrape4kHdHubPost, listing: scrape4kHdHubListing, search: search4kHdHub },
 ];
 
+/** The ids of the providers the engine reads: "hdhub4u", "4khdhub". */
+export const providerIds = Object.freeze(PROVIDERS.map(({ id }) => id));
+
 /**
  * @param {string} url
  * @returns {typeof PROVIDERS[number] | null} null when the URL is on no site the engine reads.

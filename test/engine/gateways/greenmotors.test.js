@@ -25,11 +25,17 @@ describe('expandGreenMotors', () => {
     }
   });
 
+  it("gives a destination that is no web URL (a magnet) as it is: which to follow is the caller's", async () => {
+    const page = greenMotorsPage({ o: Buffer.from('magnet:?xt=urn:btih:abc').toString('base64') });
+    assert.deepEqual(await expandGreenMotors(URL_GM, answer(page)), { links: [{ url: 'magnet:?xt=urn:btih:abc', label: null }] });
+  });
+
   it('is unrecognized for a page without a destination', async () => {
     const pages = [
       '<html><title>greenmountmotors.com</title><body>Cars for sale</body></html>', // its home page
       "<script>s('o','not base64 json');</script>",
       greenMotorsPage({ w: 10 }), // a token without a destination
+      greenMotorsPage({ o: Buffer.from('not a url').toString('base64') }), // a destination that is no URL
       '<p>Invalid Link !! Try another</p>', // the marker inside a real page is not the dead-link answer
     ];
     for (const page of pages) {

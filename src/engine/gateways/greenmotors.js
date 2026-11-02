@@ -24,14 +24,16 @@ const rot13 = (text) => text.replace(/[a-z]/gi, (letter) => {
  * JSON object, whose `o` is the destination in base64 (live, 2026-10-31: 39 of 39 links).
  *
  * @param {string} html
- * @returns {string | null} null when the page has no token, or one that does not decode.
+ * @returns {string | null} Any URL, as the page states it (a torrent's magnet too: which to follow is
+ *   the caller's); null when the page has no token, or one that does not decode to a URL.
  */
 function destinationOf(html) {
   const token = TOKEN.exec(html)?.[1];
   if (!token) return null;
   try {
     const { o } = JSON.parse(fromBase64(rot13(fromBase64(fromBase64(token)))));
-    return typeof o === 'string' && o ? fromBase64(o) : null;
+    const destination = typeof o === 'string' ? fromBase64(o) : '';
+    return URL.canParse(destination) ? destination : null;
   } catch {
     return null; // Not JSON: the token is not one GreenMotors' script would read either.
   }

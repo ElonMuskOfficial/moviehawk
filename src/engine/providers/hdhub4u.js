@@ -42,8 +42,9 @@ function isButton($, a) {
   const text = textOf($(a));
   if (!text) return false;
   if ($(a).closest(HEADING).length === 0 && textOf($(a).closest('p')) !== text) return false;
+  // Any URL, a torrent's magnet too: which to follow is the consumer's (identify).
   const url = webUrlOf($(a).prop('href'));
-  return url !== null && !hasLabel(url, 'hdhub4u');
+  return !(url && hasLabel(url, 'hdhub4u'));
 }
 
 /**
@@ -77,7 +78,7 @@ function sectionsOf($, body) {
     if (buttons.length === 0) continue;
     // lineOf is null for a button alone in its heading or paragraph, which names its file itself.
     const title = lineOf($, buttons[0]) ? lineStartOf($(element)) : textOf($(element));
-    section.lines.push(newLine(title, buttons.map((a) => linkOf($, a, '', buttonOf($, a)))));
+    section.lines.push(newLine(title, buttons.map((a) => linkOf($, a, buttonOf($, a)))));
   }
   return sections.filter(({ lines }) => lines.length > 0);
 }
@@ -86,9 +87,8 @@ function sectionsOf($, body) {
 // ("www.imdb.com/title/tt0295700/reference/?ref_=fn_t_1"), or TMDB's for a title IMDb does not
 // have (live, 2026-10-31: 18 and 3 of 21 posts).
 function imdbIdOf(href) {
-  if (!href) return null;
-  const { hostname, pathname } = new URL(href);
-  return hostname === 'www.imdb.com' ? IMDB_TITLE.exec(pathname)?.[1] ?? null : null;
+  const url = webUrlOf(href);
+  return url?.hostname === 'www.imdb.com' ? IMDB_TITLE.exec(url.pathname)?.[1] ?? null : null;
 }
 
 // The post's publication time, ISO 8601 in UTC; null when the page states none, or one that is no
@@ -167,11 +167,12 @@ function buttonOf($, a) {
 export async function scrapeHdHub4uListing(url, options) {
   const page = await fetchHtml(url, options);
   const $ = cheerio.load(page.html, { baseURI: page.url });
+  // A card without its post's link is no post's card.
   const posts = $('ul.recent-movies li').toArray().map((card) => ({
     url: $(card).find('figcaption a[href]').first().prop('href'),
     title: textOf($(card).find('figcaption').first()),
     posterUrl: $(card).find('img[src]').first().prop('src') ?? null,
-  }));
+  })).filter(({ url }) => url);
   if (posts.length === 0) throw new EngineError('unrecognized', 'No posts on the HDHub4u listing page', { url });
   return { posts, hasNextPage: $('.pagination a.next[href]').length > 0 };
 }
