@@ -3,37 +3,18 @@
  */
 import { identify } from '../engine/index.js';
 import { queryOf } from './cache.js';
-import { isWebUrl, linkHost, linkName, namedLink, postName, urlOfId } from './names.js';
+import { isWebUrl, linkHost, linkName, namedSections, postName, urlOfId } from './names.js';
 import { ProblemError } from './problems.js';
 
-// The pages opened on the way, as a user would: each leads to one place. GreenMotors gives one
-// destination; a HubDrive file page, one HubCloud file, at times with a Telegram link (live,
-// 2026-11-01: 327 GreenMotors pages, 224 HubDrive file pages, of 100 posts). A HubDrive pack and
-// HUBLinks are where the user chooses.
-const isGreenMotors = (url) => identify(url)?.id === 'greenmotors';
-const isHubDriveFile = (url) => identify(url)?.id === 'hubdrive' && new URL(url).pathname.startsWith('/file/');
+// The most gateway pages a link opens: the sites chain up to three (GreenMotors, HUBLinks, HubDrive).
+const MAX_GATEWAYS = 3;
 
 /**
- * A gateway page's groups as the client reads them, each link named (namedLink). The engine gives
- * every link; this is where they are chosen: every web link is kept, whatever host it is on, as on
- * a post (a host without an extractor opens in the browser); a link that is no web URL (a magnet)
- * cannot be named, and goes, and so do a line and a group left without links.
- *
- * @param {import('../engine/index.js').Section[]} sections
- */
-function namedSectionsOf(sections) {
-  return sections
-    .map(({ title, lines }) => ({
-      title,
-      lines: lines
-        .map(({ title: line, tags, links }) => ({ title: line, tags, links: links.filter(({ url }) => isWebUrl(url)).map(namedLink) }))
-        .filter(({ links }) => links.length > 0),
-    }))
-    .filter(({ lines }) => lines.length > 0);
-}
-
-/**
- * What a link opens, past the pages that only lead on.
+ * What a link opens, past the gateway pages that only lead on. The engine says which those are: a
+ * page where the user chooses among files (HUBLinks, a HubDrive pack) has `sections`; one that
+ * leads to one place (GreenMotors, a HubDrive file page) has only its `links`, and is followed to
+ * the first the engine resolves (a HubDrive file page's HubCloud server, wherever the page puts it;
+ * not its Telegram link), or else its first.
  *
  * @param {ReturnType<typeof import('../engine/index.js').createEngine>} engine
  * @param {string} url - The link's URL.
@@ -41,32 +22,27 @@ function namedSectionsOf(sections) {
  */
 async function linkOf(engine, url, options) {
   let target = url;
-  if (isGreenMotors(target)) {
-    const { links } = await engine.expand(target, options);
-    target = links[0].url;
-  }
-  if (isHubDriveFile(target)) {
-    // The server the engine reads, wherever the page puts it: not its Telegram link.
-    const { links } = await engine.expand(target, options);
-    target = links.find((link) => identify(link.url)?.resolves)?.url;
-    if (!target) throw new ProblemError(404, 'notFound', 'The HubDrive file has no HubCloud server');
-  }
+  for (let opened = 0; ; opened++) {
+    const kind = identify(target);
+    // A post of a site the API reads (HDHub4u links the title's post on 4KHDHub): the app's own.
+    if (kind?.type === 'post') return { kind: 'post', post: postName(kind.id, target) };
+    if (kind?.type === 'file' && kind.resolves) {
+      const { filename, sizeBytes, downloads } = await engine.resolve(target, options);
+      return { kind: 'file', host: linkHost(target), url: target, filename, sizeBytes, downloads };
+    }
+    // A host the engine does not read, or a site it does not know: the user opens it there.
+    if (kind?.type !== 'gateway') return { kind: 'external', host: linkHost(target), url: target };
+    if (opened === MAX_GATEWAYS) throw new ProblemError(502, 'unrecognized', `The link leads through more than ${MAX_GATEWAYS} gateway pages`);
 
-  const kind = identify(target);
-  // A post of a site the API reads (HDHub4u links the title's post on 4KHDHub): the app's own.
-  if (kind?.type === 'post') return { kind: 'post', post: postName(kind.id, target) };
-  if (kind?.type === 'gateway') {
-    // Where the user chooses: the page's links in its groups and lines, as the engine reads them
-    // (HUBLinks; a HubDrive pack, one group).
     const page = await engine.expand(target, options);
-    return { kind: 'files', host: linkHost(target), url: target, title: page.title, tags: page.tags, sections: namedSectionsOf(page.sections) };
+    if (page.sections) {
+      return { kind: 'files', host: linkHost(target), url: target, title: page.title, tags: page.tags, sections: namedSections(page.sections) };
+    }
+    const links = page.links.filter((link) => isWebUrl(link.url));
+    const next = links.find((link) => identify(link.url)?.resolves) ?? links[0];
+    if (!next) throw new ProblemError(404, 'notFound', `The ${linkHost(target)} page leads to no file`);
+    target = next.url;
   }
-  if (kind?.resolves) {
-    const { filename, sizeBytes, downloads } = await engine.resolve(target, options);
-    return { kind: 'file', host: linkHost(target), url: target, filename, sizeBytes, downloads };
-  }
-  // A host the engine does not read, or a site it does not know: the user opens it there.
-  return { kind: 'external', host: linkHost(target), url: target };
 }
 
 const linkParams = { type: 'object', required: ['link'], properties: { link: { type: 'string', minLength: 1 } } };

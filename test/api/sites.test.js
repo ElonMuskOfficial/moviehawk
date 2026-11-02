@@ -246,6 +246,35 @@ describe('GetPost', () => {
     });
   });
 
+  it('leaves out a link that is no web URL (a magnet), and a line and a section left without links', async (t) => {
+    const magnet = { url: 'magnet:?xt=urn:btih:91e6', label: 'Magnet' };
+    const drive = { url: 'https://hblinks.lol/archives/1', label: 'Drive' };
+    const { engine } = fakeEngine(() => ({
+      post: wrongTurn.post,
+      sections: [
+        { title: 'Torrent', tab: null, tags: [], episodes: false, lines: [{ title: null, file: null, tags: [], links: [magnet] }] },
+        { title: '720p', tab: null, tags: [], episodes: false, lines: [{ title: null, file: null, tags: [], links: [magnet, drive] }] },
+      ],
+    }));
+    const server = await app(engine);
+    t.after(() => server.close());
+
+    const { sections } = (await server.inject('/v1/sites/hdhub4u/posts/wrong-turn-2003-hindi-bluray-full-movie')).json();
+
+    assert.deepEqual(sections.map(({ title, lines }) => [title, lines.flatMap(({ links }) => links.map(({ url }) => url))]), [['720p', [drive.url]]]);
+  });
+
+  it('names a post URL with a malformed escape as it is, rather than failing the page with a 500', async (t) => {
+    const { engine } = fakeEngine(() => ({ posts: [{ url: 'https://new10.hdhub4u.cl/bad-%E0%A4-slug/', title: 'Bad', posterUrl: null }], hasNextPage: false }));
+    const server = await app(engine);
+    t.after(() => server.close());
+
+    const response = await server.inject('/v1/sites/hdhub4u/posts');
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().posts[0].name, 'sites/hdhub4u/posts/bad-%E0%A4-slug');
+  });
+
   it('makes the URL of a post whose slug is not plain ASCII again, from the decoded name', async (t) => {
     const { engine, calls } = fakeEngine((url) => ({ post: { ...wrongTurn.post, url }, sections: [] }));
     const server = await app(engine);

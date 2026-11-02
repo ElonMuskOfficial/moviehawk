@@ -14,7 +14,15 @@ import { identify } from '../engine/index.js';
  * @param {string} url - The post's URL: one path segment on every site (live, 2026-11-01).
  */
 export function postName(site, url) {
-  const slug = decodeURIComponent(new URL(url).pathname.replace(/^\/|\/$/g, ''));
+  const path = new URL(url).pathname.replace(/^\/|\/$/g, '');
+  let slug = path;
+  try {
+    slug = decodeURIComponent(path);
+  } catch {
+    // A malformed escape ("%E0%A4"): kept as it is, so the name is not a 500. No post has one (the
+    // sites answer HTTP 404 for it, live 2026-11-02), so only a URL a client made gets here, and
+    // GetPost on the name answers 404 as the site does.
+  }
   return `sites/${site}/posts/${slug}`;
 }
 
@@ -58,6 +66,26 @@ export function linkHost(url) {
  */
 export function namedLink({ url, label }) {
   return { name: linkName(url), url, label, host: linkHost(url) };
+}
+
+/**
+ * Sections of links as every answer gives them (GetPost's, GetLink's pages of files), each link named
+ * (namedLink). The engine gives every link as the page gives it; a link that is no web URL (a
+ * magnet) cannot be named, and goes, and so do a line and a section left without links. Every other
+ * field of a section and a line is kept as the engine gives it.
+ *
+ * @template {{ lines: Array<{ links: Array<{ url: string, label: string | null }> }> }} S
+ * @param {S[]} sections
+ */
+export function namedSections(sections) {
+  return sections
+    .map((section) => ({
+      ...section,
+      lines: section.lines
+        .map((line) => ({ ...line, links: line.links.filter(({ url }) => isWebUrl(url)).map(namedLink) }))
+        .filter(({ links }) => links.length > 0),
+    }))
+    .filter(({ lines }) => lines.length > 0);
 }
 
 /**

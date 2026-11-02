@@ -79,14 +79,16 @@ those belong to its consumers.
 no call can read dead domains for lack of `domains`. A call's own option is `signal`.
 New domains need a new engine: its config never changes. Beside them, `identify(url)` says what a
 link is, from its URL alone: `{ type: 'gateway', id }`, `{ type: 'file', id, resolves }`,
-`{ type: 'post', id }` (a post of a site the engine reads, its path one segment), or null. The engine gives the pieces; the consumer makes its own flow of them (the API's: GetLink).
+`{ type: 'post', id }` (a post of a site the engine reads, its path one segment), or null; and
+`providerIds` names the sites it reads (`['hdhub4u', '4khdhub']`). The engine gives the pieces; the
+consumer makes its own flow of them (the API's: GetLink).
 
 | Function | Reads | Returns |
 |---|---|---|
 | `scrapeListing(url, page)` | a listing page of the site `url` is on (1 request) | `{ posts, hasNextPage }`: each card's `{ url, title, posterUrl }` |
 | `searchPosts(url, query, page)` | a page of the site's search, as its search box asks it (1 request) | `{ posts, hasNextPage }`, as `scrapeListing` |
-| `scrapePost(url)` | a post page (1 request) | `{ post, links }` |
-| `expand(url)` | a gateway page (1 request) | `{ links }`: where it leads, as the page gives it |
+| `scrapePost(url)` | a post page (1 request) | `{ post, sections }` |
+| `expand(url)` | a gateway page (1 request) | `{ links }`: where it leads, as the page gives it; a page where the user chooses among files (HUBLinks, a HubDrive pack) also `{ title, tags, sections }`, a page that leads to one place (GreenMotors, a HubDrive file page) none |
 | `resolve(url)` | the file's page, its download page, then 10Gbps's redirects (2 or 3 requests) | `{ filename, sizeBytes, downloads }` |
 
 ### Names
@@ -110,7 +112,7 @@ link is, from its URL alone: `{ type: 'gateway', id }`, `{ type: 'file', id, res
   redirects to make `downloads`, which expire: a different job, so a different verb.
 - `scrapePost`'s `sections` hold the post's download links, as each site's provider reads its page
   (HDHub4u: a link in a heading, or alone in its paragraph; 4KHDHub: a block's buttons), whatever
-  gateway or host they lead to; not WhatsApp, IMDb, the site's own pages, or a link in a sentence. `identify` tells which
+  gateway or host they lead to, a URL that is no web page too (a magnet); not WhatsApp, IMDb, the site's own pages, or a link in a sentence. `identify` tells which
   the engine can open. A link's label is its button's text (`Drive`, `Download HubCloud`); what the
   button is for is its line's title (`720p`, `Episode-01 4.01 GB`) and its section's (`EPiSODE 1`,
   `S01 1080p WEB-DL H264`). A button that states its file (`720p x264 [850MB]`) is its line's title
@@ -166,7 +168,7 @@ Each route but GetLink is one engine function, and reads only what that function
 
 | HTTP | Method | Engine | Requests to the sites |
 |---|---|---|---|
-| `GET /v1/sites` | ListSites | (the API's list) | 0 |
+| `GET /v1/sites` | ListSites | `providerIds` | 0 |
 | `GET /v1/sites/{site}/posts?pageToken=` | ListPosts | `scrapeListing` | 1 |
 | `GET /v1/sites/{site}/search?q=&pageToken=` | SearchPosts | `searchPosts` | 1 |
 | `GET /v1/sites/{site}/posts/{post}` | GetPost | `scrapePost` | 1 |
@@ -300,7 +302,8 @@ is named by the URL it answered at. The links come with the post: its screen sho
   (`24.26 GB`, `English`, `WEB-DL`; an episode's size, `3.35 GB`). What each tag is, is not read.
 - A link is `{ name, url, label, host }` here as on every answer (GetLink's pages too): `label`, its
   button's text; `host`, the site it is on: the engine's id of its gateway or host (`hubdrive`), or
-  the hostname of one it does not know (`sugarke.com`), never null.
+  the hostname of one it does not know (`sugarke.com`), never null. A link that is no web URL (a magnet) has no
+  name, so it is left out, as is a line or a section left without links.
 - The grouping is read from the page's structure, never from words: on HDHub4u an episode, a note
   (`[HINDI – TAMIL – TELUGU]`) and a film of a collection are sections alike.
 - They are every download link, whatever gateway or host it leads to, so a host the engine has no
@@ -314,12 +317,15 @@ is named by the URL it answered at. The links come with the post: its screen sho
 ### GetLink
 
 What a link opens, past the pages that lead to one place: GreenMotors (decoded), then a HubDrive
-file page (its HubCloud server, wherever the page puts it; without one, HTTP 404). Then, by the page
-it reaches, one of four `kind`s:
+file page. The engine says which pages those are (`expand` gives no `sections` for them), and each
+is followed to its first link the engine resolves (a HubDrive file page's HubCloud server, wherever
+the page puts it), or else its first (a file on Telegram only); a page without links is HTTP 404,
+and a link through more than three gateway pages, 502 `unrecognized`. Then, by the page it reaches,
+one of four `kind`s:
 
 | Reaches | `kind` | Its fields |
 |---|---|---|
-| HUBLinks, a HubDrive pack (or any other gateway) | `files` | `title`: what the page calls itself, as it is (HUBLinks: its `<title>`, `Lupin.S04E01 – HUBLinks`; a pack: its header's name, `Lupin - S04 1080p WEB-DL Packs`), or null; `tags`: what the page states of itself, as it gives it (a pack: `Includes 9 files`, `Total Size: 23.61 GB`; HUBLinks: none); `sections`: its groups, each `{ title, lines }`, a line `{ title, tags, links }` (`tags`: what the page states of the line's file beside it, a pack's `3.1 GB`), a link as on GetPost; every web link, as the page orders them (HUBLinks: groups split by `<hr>`; a pack: one group, a line per file); each is a link, read by GetLink again |
+| HUBLinks, a HubDrive pack (any gateway page where the user chooses: the engine gives its `sections`) | `files` | `title`: what the page calls itself, as it is (HUBLinks: its `<title>`, `Lupin.S04E01 – HUBLinks`; a pack: its header's name, `Lupin - S04 1080p WEB-DL Packs`), or null; `tags`: what the page states of itself, as it gives it (a pack: `Includes 9 files`, `Total Size: 23.61 GB`; HUBLinks: none); `sections`: its groups, each `{ title, lines }`, a line `{ title, tags, links }` (`tags`: what the page states of the line's file beside it, a pack's `3.1 GB`), a link as on GetPost; every web link, as the page orders them (HUBLinks: groups split by `<hr>`; a pack: one group, a line per file); each is a link, read by GetLink again |
 | A file on HubCloud or HubCDN | `file` | `filename`: the file's own name, as its host states it; `sizeBytes`, `downloads` (`resolve`) |
 | A post of a site the API reads (HDHub4u's link to the title's post on 4KHDHub) | `post` | `post`: the post's name, read by GetPost |
 | A file on another host, or a site the engine does not know | `external` | the page the user opens there |
@@ -481,8 +487,8 @@ use, and each start reads the domains again.
   that lists the hosts of the file or of every episode: VCloud (`vcloud.beer/<id>`), VegaDrive,
   G-Direct, Filepress; zip packs also GoFile, 1fichier, VikingFile, MegaUp. VCloud's and VegaDrive's
   pages state the filename and size, like HubCloud's. The route has HDHub4u's shape (post →
-  gateway → host), so they are new modules (a provider, NexDrive, VCloud), and in the API only
-  their names in ListSites; GetLink's flow is the API's, and takes them as it takes HDHub4u's.
+  gateway → host), so they are new modules (a provider, NexDrive, VCloud), and nothing in the API:
+  ListSites names the engine's providers, and GetLink's flow takes them as it takes HDHub4u's.
 - They state their data differently: Vegamovies' date is in its `Movie` JSON-LD (`dateCreated`),
   RogMovies' in `BlogPosting` and `article:published_time`. One provider or two is decided when
   they are added.

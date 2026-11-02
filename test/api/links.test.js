@@ -150,15 +150,41 @@ describe('GetLink', () => {
     assert.deepEqual(calls, []);
   });
 
-  it('gives a HubDrive file page without a HubCloud server as 404', async (t) => {
-    const { engine } = fakeEngine(() => ({ links: [{ url: TELEGRAM, label: 'Telegram File' }] }));
+  it('follows a HubDrive file page without a HubCloud server to its first link, and gives one without links as 404', async (t) => {
+    const { engine } = fakeEngine((url) => ({ links: url === HUBDRIVE ? [{ url: TELEGRAM, label: 'Telegram File' }] : [] }));
     const server = await app(engine);
     t.after(() => server.close());
 
-    const response = await get(server, HUBDRIVE);
+    const telegram = (await get(server, HUBDRIVE)).json();
+    const empty = await get(server, 'https://hubdrive.bar/file/0');
+
+    assert.deepEqual([telegram.kind, telegram.url], ['external', TELEGRAM]);
+    assert.equal(empty.statusCode, 404);
+    assert.equal(empty.json().code, 'notFound');
+  });
+
+  it('gives a GreenMotors link to no web URL (a magnet) as 404: the API names web links only', async (t) => {
+    const { engine } = fakeEngine(() => ({ links: [{ url: 'magnet:?xt=urn:btih:abc', label: null }] }));
+    const server = await app(engine);
+    t.after(() => server.close());
+
+    const response = await get(server, GREENMOTORS);
 
     assert.equal(response.statusCode, 404);
     assert.equal(response.json().code, 'notFound');
+  });
+
+  it('opens three gateway pages in a row at most', async (t) => {
+    // GreenMotors that leads to GreenMotors, again and again.
+    const { engine, calls } = fakeEngine((url) => ({ links: [{ url: `${url}x`, label: null }] }));
+    const server = await app(engine);
+    t.after(() => server.close());
+
+    const response = await get(server, GREENMOTORS);
+
+    assert.equal(response.statusCode, 502);
+    assert.equal(response.json().code, 'unrecognized');
+    assert.equal(calls.length, 3);
   });
 
   it('gives a dead link as 404, as the engine says', async (t) => {

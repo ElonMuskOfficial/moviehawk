@@ -1,12 +1,10 @@
 /**
  * The sites and their posts (README.md, The API): ListSites, ListPosts, SearchPosts, GetPost.
  */
+import { providerIds } from '../engine/index.js';
 import { queryOf } from './cache.js';
-import { namedLink, postName, postUrl } from './names.js';
+import { namedSections, postName, postUrl } from './names.js';
 import { ProblemError } from './problems.js';
-
-// The sites the engine reads posts of. Vegamovies and RogMovies come with their provider.
-export const SITES = ['hdhub4u', '4khdhub'];
 
 // A page number, as the API gives it in nextPageToken: from 1. At most 15 digits, which Number()
 // reads exactly: a 400-digit one is Infinity, which the engine rejects with a TypeError (a 500).
@@ -106,7 +104,7 @@ export async function sitesRoutes(app, { engine, domains, cached }) {
   // The site a request names, and its current domain.
   const siteOf = (request) => {
     const { site } = request.params;
-    if (!SITES.includes(site)) throw new ProblemError(404, 'notFound', `No site ${site}`);
+    if (!providerIds.includes(site)) throw new ProblemError(404, 'notFound', `No site ${site}`);
     return { site, siteUrl: domains[site] };
   };
 
@@ -118,7 +116,7 @@ export async function sitesRoutes(app, { engine, domains, cached }) {
 
   app.get('/v1/sites', {
     schema: { response: { 200: siteList } },
-  }, () => ({ sites: SITES.map((site) => ({ name: `sites/${site}` })) }));
+  }, () => ({ sites: providerIds.map((site) => ({ name: `sites/${site}` })) }));
 
   app.get('/v1/sites/:site/posts', {
     schema: {
@@ -161,13 +159,7 @@ export async function sitesRoutes(app, { engine, domains, cached }) {
         imdbId: post.imdbId,
         posterUrl: post.posterUrl,
         publishTime: post.publishedAt,
-        sections: sections.map(({ title, tab, tags, episodes, lines }) => ({
-          title,
-          tab,
-          tags,
-          episodes,
-          lines: lines.map(({ title: line, file, tags: lineTags, links }) => ({ title: line, file, tags: lineTags, links: links.map(namedLink) })),
-        })),
+        sections: namedSections(sections),
       };
     });
   });
