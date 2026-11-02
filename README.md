@@ -110,8 +110,10 @@ or null. The engine gives the pieces; the consumer makes its own flow of them (t
 
 - `scrape*` reads a page and returns what it states, which does not expire. `resolve` follows
   redirects to make `downloads`, which expire: a different job, so a different verb.
-- `scrapePost`'s links are its links to a gateway or a known host (not WhatsApp, IMDb, the site's
-  own pages). A link's label is what the page says: a button that states its file has its own
+- `scrapePost`'s links are the post's download links, as each site's provider reads its page
+  (HDHub4u: a link in a heading; 4KHDHub: a block's buttons), whatever gateway or host they lead
+  to; not WhatsApp, IMDb, the site's own pages, or a link in a paragraph. `identify` tells which
+  the engine can open. A link's label is what the page says: a button that states its file has its own
   text (`720p x264 [850MB]`); a button that names only its server has the page's words for its
   file, then the button (`EPiSODE 1 720p · Drive`, `Addicted (1080p WEB-DL H264 AVC) 7 GB English
   WEB-DL · Download HubCloud`). A movie's players (`WATCH`, `PLAYER-2`) name no file.
@@ -256,6 +258,14 @@ GET /v1/sites/hdhub4u/posts/wrong-turn-2003-hindi-bluray-full-movie
 
 The engine's `post` and `links`; `publishedAt` is `publishTime` (AIP-142). A post the site moved
 is named by the URL it answered at. The links come with the post: its screen shows both.
+
+`links` are the post's download links, as its site lays them out: on HDHub4u the links in a
+heading, on 4KHDHub the buttons of a block. They are every download link, whatever gateway or host
+it leads to, so a host the engine has no extractor for loses no link: GetLink answers it
+`external`, and the user opens it in the browser. The site's own links are left out (HDHub4u's
+promo, genres, screenshots and "[How To Download]"), and so are links in a post's paragraphs (live,
+2026-11-02: in 1 to 3 of 729 HDHub4u posts a real one, and the 2017–18 posts' servers, on hosts
+the engine does not know).
 
 ### GetLink
 

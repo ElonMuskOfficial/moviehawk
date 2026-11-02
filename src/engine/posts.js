@@ -1,9 +1,7 @@
 /**
- * A post page, read by its provider: the post, and its links that lead somewhere the engine knows.
+ * A post page, read by its provider: the post, and its download links.
  */
 import { EngineError } from './errors.js';
-import { gatewayOf } from './gateways/index.js';
-import { hostOf } from './hosts/index.js';
 import { retry } from './http.js';
 import { providerOf } from './providers/index.js';
 import { onCurrentDomain, webUrlOf } from './urls.js';
@@ -15,8 +13,8 @@ import { onCurrentDomain, webUrlOf } from './urls.js';
  * @param {import('./http.js').RequestOptions & { domains?: Record<string, string> }} [options]
  *   `domains`: as for onCurrentDomain (urls.js).
  * @returns {Promise<{ post: import('./providers/index.js').Post, links: import('./html.js').Link[] }>}
- *   `links`: the post's links to a gateway or a known host, in page order; none can be a glitch of
- *   the site. The others (the site's own pages, WhatsApp, IMDb, screenshots) are left out.
+ *   `links`: the post's download links, in page order, as its provider tells them on its page;
+ *   whatever gateway or host they lead to, so a host the engine does not know yet loses no link.
  * @throws {EngineError} `unsupported` for a URL on no site the engine reads, and the provider's
  *   errors.
  * @throws {TypeError} For a string that is not a web URL.
@@ -27,6 +25,5 @@ export async function scrapePost(url, { domains = {}, ...options } = {}) {
   if (!parsed) throw new TypeError(`Not a web URL: ${url}`);
   const provider = providerOf(parsed.href);
   if (!provider) throw new EngineError('unsupported', `The engine does not read posts of ${parsed.hostname}`, { url });
-  const { post, links } = await retry(() => provider.post(onCurrentDomain(parsed, domains), options), { signal: options.signal });
-  return { post, links: links.filter(({ url }) => gatewayOf(url) || hostOf(url)) };
+  return retry(() => provider.post(onCurrentDomain(parsed, domains), options), { signal: options.signal });
 }

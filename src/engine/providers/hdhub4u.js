@@ -7,7 +7,7 @@ import { EngineError } from '../errors.js';
 import { lineOf, lineStartOf, linkOf, textOf } from '../html.js';
 import { fetchHtml, fetchJson } from '../http.js';
 import { jsonLdOf } from '../json-ld.js';
-import { webUrlOf } from '../urls.js';
+import { hasLabel, webUrlOf } from '../urls.js';
 
 /** @typedef {import('./index.js').Post} Post
  * @typedef {import('./index.js').PostCard} PostCard
@@ -21,6 +21,25 @@ const IMDB_TITLE = /^\/title\/(tt\d+)\//;
 const EPISODE = /^EPiSODE \d+$/i;
 // A player's button: "WATCH", "WATCH-1", "PLAYER-2".
 const PLAYER = /^(WATCH|PLAYER)\b[-\s]*\d*$/i;
+const HEADING = 'h1, h2, h3, h4, h5, h6';
+
+/**
+ * Whether a link of the post's body is a download button. Every button is a link in a heading:
+ * "480p x264 [1GB]", "720p – Drive | Instant | WATCH" (live, 2026-11-02: 729 posts of 2017 to 2026,
+ * 5,076 links with text in headings off the site, all downloads or players but for one IMDb link).
+ * The other links are in the post's prose (a paragraph, the info box) or are an image: the site's
+ * promo, its genres and the screenshots, which GreenMotors leads to the site's own pages; and the
+ * 2017–18 posts' servers, on hosts the engine does not know. A link to the site itself, on any of
+ * its domains ("[How To Download]", another post), is not a download either. Which gateways and
+ * hosts the engine knows does not matter here: a button to another one is a download all the same.
+ *
+ * @returns {boolean}
+ */
+function isButton($, a) {
+  if ($(a).closest(HEADING).length === 0 || !textOf($(a))) return false;
+  const url = webUrlOf($(a).prop('href'));
+  return url !== null && !hasLabel(url, 'hdhub4u');
+}
 
 // The post's IMDb id, from the one link in the box of its ratings: IMDb's title page
 // ("www.imdb.com/title/tt0295700/reference/?ref_=fn_t_1"), or TMDB's for a title IMDb does not
@@ -44,8 +63,8 @@ function isoDateOf(text) {
  *
  * @param {string} url - On HDHub4u's current domain.
  * @param {import('../http.js').RequestOptions} [options]
- * @returns {Promise<{ post: Post, links: Link[] }>} `links`: every link in the post's body, in
- *   page order, as the page gives them (gateways, hosts, screenshots, IMDb). A quality button's
+ * @returns {Promise<{ post: Post, links: Link[] }>} `links`: the post's download buttons (isButton),
+ *   in page order, whatever gateway or host they lead to. A quality button's
  *   label is its own text, which states its file ("720p x264 [850MB]"); an episode line's button
  *   names only its server, so its label is its file and then the button ("EPiSODE 1 720p ·
  *   Drive").
@@ -72,7 +91,7 @@ export async function scrapeHdHub4uPost(url, options) {
       posterUrl: body.find('img[src]').first().prop('src') ?? null,
       publishedAt: isoDateOf(datePublished),
     },
-    links: body.find('a[href]').toArray().map((a) => linkOf($, a, fileOf($, a), buttonOf($, a))),
+    links: body.find('a[href]').toArray().filter((a) => isButton($, a)).map((a) => linkOf($, a, fileOf($, a), buttonOf($, a))),
   };
 }
 

@@ -6,17 +6,15 @@ import { scrapePost } from '../../src/engine/posts.js';
 
 const POST_URL = 'https://new10.hdhub4u.cl/show-2026/';
 
-// A post page shaped like HDHub4u's (2026-10-31), small enough to read in a test.
+// A post page shaped like HDHub4u's (2026-10-31), small enough to read in a test: each link a
+// button alone in its heading.
 const hdHub4uPost = (...links) => `<h1 class="page-title"><span class="material-text">Show (2026)</span></h1>
-  <main class="page-body">${links.map((link, i) => `<a href="${link}">Link ${i}</a>`).join('')}</main>`;
+  <main class="page-body">${links.map((link, i) => `<h3><a href="${link}">Link ${i}</a></h3>`).join('')}</main>`;
 
 describe('scrapePost', () => {
-  it('reads the post page only, and gives its links to a gateway or a known host', async () => {
+  it('reads the post page only, and gives its provider\'s download links, whatever they lead to', async () => {
     const options = web({
-      [POST_URL]: hdHub4uPost(
-        'https://greenmotors.cc/?id=a', 'https://wa.me/123', 'https://www.imdb.com/title/tt1/', 'https://hubcdn.club/file/cdn1',
-        'https://new10.hdhub4u.cl/how-to-download/', 'https://hubdrive.bar/file/9',
-      ),
+      [POST_URL]: hdHub4uPost('https://greenmotors.cc/?id=a', 'https://sugarke.com/a', 'https://hubdrive.bar/file/9'),
     });
 
     const { post, links } = await scrapePost(POST_URL, options);
@@ -24,8 +22,8 @@ describe('scrapePost', () => {
     assert.equal(post.title, 'Show (2026)');
     assert.deepEqual(links, [
       { url: 'https://greenmotors.cc/?id=a', label: 'Link 0' },
-      { url: 'https://hubcdn.club/file/cdn1', label: 'Link 3' },
-      { url: 'https://hubdrive.bar/file/9', label: 'Link 5' },
+      { url: 'https://sugarke.com/a', label: 'Link 1' },
+      { url: 'https://hubdrive.bar/file/9', label: 'Link 2' },
     ]);
     assert.deepEqual(options.requests, [POST_URL]);
   });
