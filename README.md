@@ -17,8 +17,9 @@ Node 22 or later. Dependencies: [Fastify](https://fastify.dev) 5 (the API), chee
 
 | Folder | What |
 |---|---|
-| `src/engine/` | The engine. Consumers import only `src/engine/index.js` |
-| `src/api/` | The API: `server.js` (runs it: `npm start`), `app.js` (builds it), `sites.js` and `links.js` (routes), `names.js`, `problems.js` (errors), `domains.js`, `cache.js` |
+| `engine/` | The engine. Consumers import only `engine/index.js` |
+| `src/` | The API: `server.js` (runs it: `npm start`, Vercel's entrypoint), `setup.js` (its Fastify options and setup), `sites.js` and `links.js` (routes), `names.js`, `problems.js` (errors), `domains.js`, `cache.js` |
+| `vercel.json` | Vercel's config: the region ([Deploy](#deploy)) |
 | `test/` | `test/engine/`, `test/api/`; `test/fixtures/` holds saved live pages |
 
 ## The user flow
@@ -416,8 +417,8 @@ The current domains come from the
 [moviehawk-domains](https://github.com/ElonMuskOfficial/moviehawk-domains) repo. Its workflow heals
 them twice a day: a site that moves redirects its old domain to the new one for days, and the
 workflow follows that redirect. A domain that does not answer opens an issue there, to be fixed
-by hand. The API (`src/api/domains.js`) reads the repo's raw `domains.json` once, at start, and
-makes its engine with them. Wasmer starts the API on every deploy, and again after a few idle
+by hand. The API (`src/domains.js`) reads the repo's raw `domains.json` once, at start, and
+makes its engine with them. The host starts the API on every deploy, and again after a few idle
 minutes ([Deploy](#deploy)), so new domains reach it then; a site that moved still answers on its
 old domain meanwhile, while it redirects.
 
@@ -427,7 +428,7 @@ of 2026-11-01, and logs why.
 
 ### Cache
 
-Each route's answer is kept in memory (`src/api/cache.js`, `lru-cache`, 500 answers at most), by
+Each route's answer is kept in memory (`src/cache.js`, `lru-cache`, 500 answers at most), by
 what the request asks (its route, its names, and the query the route reads, in any order: a query
 it does not read is dropped), for as long as it stays true:
 
@@ -445,12 +446,18 @@ running copy of the API has its own cache; two requests at once for one URL both
 
 ### Deploy
 
-On Wasmer Edge, at https://moviehawk.wasmer.app: the `main` branch of
-[moviehawk](https://github.com/ElonMuskOfficial/moviehawk), every push deployed. Its Node.js
-engine is Native (V8) and its start command `npm start`; the API listens on its defaults,
-127.0.0.1:3000, where Wasmer's proxy reaches it. Wasmer stops an instance that has been idle for
-about 3 minutes and starts one on the next request, so the cache lasts as long as a session of
-use, and each start reads the domains again.
+**Vercel**, at https://moviehawk-api.vercel.app (project `moviehawk-api`, Hobby): the `main` branch
+of [moviehawk](https://github.com/ElonMuskOfficial/moviehawk) through Vercel's GitHub integration,
+every push deployed. Vercel's Fastify preset finds `src/server.js` (an entrypoint that imports
+Fastify) and serves its default export as one Vercel Function, in `bom1` (Mumbai, beside the web
+app; `vercel.json`). Each instance starts the app once and has its own cache; Vercel stops it when
+traffic stops. A client that disconnects does not end its request there: the API reads on, 30 s
+at most. HubCDN answers HTTP 429 to many requests at once from Vercel (live, 2026-11-02); one at a
+time they pass.
+
+**Wasmer Edge**, at https://moviehawk.wasmer.app, deployed from `main` too while it stays: its
+start command `npm start`, the API on its defaults, 127.0.0.1:3000, where Wasmer's proxy reaches
+it. Wasmer stops an instance idle for about 3 minutes, which empties its cache.
 
 ### Departures from AIP
 

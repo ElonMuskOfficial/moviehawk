@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { web } from './helpers.js';
-import { searchPosts } from '../../src/engine/searches.js';
+import { searchPosts } from '../../engine/searches.js';
 
 // A search page shaped like 4KHDHub's (2026-10-31), small enough to read in a test.
 const searchPage = '<div class="card-grid"><a href="/dexter-series-1/"><img src="https://image.tmdb.org/a.jpg"><h3 class="movie-card-title">Dexter</h3></a></div>';

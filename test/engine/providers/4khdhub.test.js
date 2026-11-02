@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { answer } from '../helpers.js';
-import { scrape4kHdHubListing, scrape4kHdHubPost, search4kHdHub } from '../../../src/engine/providers/4khdhub.js';
+import { scrape4kHdHubListing, scrape4kHdHubPost, search4kHdHub } from '../../../engine/providers/4khdhub.js';
 
 const MOVIE_URL = 'https://4khdhub.one/addicted-movie-7869/';
 // Live pages (2026-10-31): a movie, a series (season packs and episodes, in 3 seasons' groups),

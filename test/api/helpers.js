@@ -1,7 +1,7 @@
 /**
  * What the API's route tests share: an engine that answers as the test says, and the app on it.
  */
-import { buildApp } from '../../src/api/app.js';
+import { buildApp } from '../../src/setup.js';
 
 export const DOMAINS = { hdhub4u: 'https://new10.hdhub4u.cl', '4khdhub': 'https://4khdhub.one' };
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { web } from './helpers.js';
-import { resolve } from '../../src/engine/files.js';
+import { resolve } from '../../engine/files.js';
 
 // A HubCloud file page shaped like the live ones (2026-10-31), and its download page.
 const filePage = '<div class="card-header">a.mkv</div><ul><li>File Size<i id="size">1.5 GB</i></li></ul>'

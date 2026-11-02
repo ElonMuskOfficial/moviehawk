@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { answer } from '../helpers.js';
-import { resolveHubCloud } from '../../../src/engine/hosts/hubcloud.js';
+import { resolveHubCloud } from '../../../engine/hosts/hubcloud.js';
 
 const URL_HC = 'https://hubcloud.ist/drive/lgfzf1cpxyqfo1l';
 // Live pages (2026-10-31): a /drive/ and a /video/ file; the first one's download page, and

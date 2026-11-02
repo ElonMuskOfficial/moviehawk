@@ -26,15 +26,14 @@ function sendProblem(reply, body) {
 }
 
 /**
- * Makes the API's server, not yet listening: the caller listens (server.js) or injects
- * requests (the tests).
+ * The API's Fastify options. The server's entrypoint (server.js) makes its Fastify with them, as
+ * Fastify's own boilerplate does, and so does buildApp.
  *
- * @param {{ engine: ReturnType<typeof import('../engine/index.js').createEngine>, domains: Record<string, string>, logger?: boolean }} options
- *   `engine`: made with `domains`, the current domains (domains.js). `logger`: Fastify's request log, to
- *   stdout.
+ * @param {{ logger?: boolean }} [options] `logger`: Fastify's request log, to stdout.
+ * @returns {import('fastify').FastifyServerOptions}
  */
-export async function buildApp({ engine, domains, logger = false }) {
-  const app = Fastify({
+export function appOptions({ logger = false } = {}) {
+  return {
     // Pino's lines say "name": "moviehawk", not the machine's hostname and the process id, which
     // name nothing a reader of the log needs (base: undefined drops them).
     logger: logger && { name: 'moviehawk', base: undefined },
@@ -51,8 +50,18 @@ export async function buildApp({ engine, domains, logger = false }) {
       reply.header('request-id', request.id);
       return sendProblem(reply, problem(error.statusCode ?? 400, 'invalidArgument', error.message));
     },
-  });
+  };
+}
 
+/**
+ * Sets the API up on a Fastify made with appOptions: every response's `Request-Id`, every error as
+ * a problem, and the routes.
+ *
+ * @param {import('fastify').FastifyInstance} app
+ * @param {{ engine: ReturnType<typeof import('../engine/index.js').createEngine>, domains: Record<string, string> }} options
+ *   `engine`: made with `domains`, the current domains (domains.js).
+ */
+export async function setUpApp(app, { engine, domains }) {
   app.addHook('onRequest', async (request, reply) => {
     reply.header('request-id', request.id);
   });
@@ -71,6 +80,15 @@ export async function buildApp({ engine, domains, logger = false }) {
   const cached = createCache();
   await app.register(sitesRoutes, { engine, domains, cached });
   await app.register(linksRoutes, { engine, cached });
+}
 
+/**
+ * The API's server, not yet listening, for requests a caller injects (the tests).
+ *
+ * @param {{ engine: ReturnType<typeof import('../engine/index.js').createEngine>, domains: Record<string, string>, logger?: boolean }} options
+ */
+export async function buildApp({ engine, domains, logger = false }) {
+  const app = Fastify(appOptions({ logger }));
+  await setUpApp(app, { engine, domains });
   return app;
 }

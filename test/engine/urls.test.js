@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { hasLabel, onCurrentDomain, webUrlOf } from '../../src/engine/urls.js';
+import { hasLabel, onCurrentDomain, webUrlOf } from '../../engine/urls.js';
 
 describe('webUrlOf', () => {
   it('parses http and https URLs only', () => {

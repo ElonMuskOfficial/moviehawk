@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { answer } from '../helpers.js';
-import { expandHubDrive } from '../../../src/engine/gateways/hubdrive.js';
+import { expandHubDrive } from '../../../engine/gateways/hubdrive.js';
 
 const FILE_URL = 'https://hubdrive.bar/file/1976154028';
 const PACK_URL = 'https://hubdrive.bar/packs/nqhtppaz';

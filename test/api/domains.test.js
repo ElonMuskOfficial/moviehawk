@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { FALLBACK_DOMAINS, readDomains, startDomains } from '../../src/api/domains.js';
+import { FALLBACK_DOMAINS, readDomains, startDomains } from '../../src/domains.js';
 
 const GITHUB = {
   hdhub4u: 'https://new11.hdhub4u.cl',

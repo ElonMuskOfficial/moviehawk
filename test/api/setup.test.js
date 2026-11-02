@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { errorCodes } from 'fastify';
-import { buildApp } from '../../src/api/app.js';
-import { EngineError } from '../../src/engine/index.js';
+import { buildApp } from '../../src/setup.js';
+import { EngineError } from '../../engine/index.js';
 
 // The app, with routes of the test's own added before it is ready. Its engine is never called.
 async function app(addRoutes = () => {}) {

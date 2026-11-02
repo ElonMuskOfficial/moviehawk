@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { providerOf } from '../../../src/engine/providers/index.js';
+import { providerOf } from '../../../engine/providers/index.js';
 
 describe('providerOf', () => {
   it('knows each provider by a label of the hostname, on any of its domains', () => {

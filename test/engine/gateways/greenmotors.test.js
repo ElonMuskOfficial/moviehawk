@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { answer, greenMotorsPage } from '../helpers.js';
-import { expandGreenMotors } from '../../../src/engine/gateways/greenmotors.js';
+import { expandGreenMotors } from '../../../engine/gateways/greenmotors.js';
 
 const URL_GM = 'https://greenmotors.cc/?id=abc';
 // A live page (2026-10-31), from a button of 4KHDHub's "The Furious".

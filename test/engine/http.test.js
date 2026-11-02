@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { EngineError } from '../../src/engine/errors.js';
-import { fetchHead, fetchHtml, fetchJson, followRedirects, retry } from '../../src/engine/http.js';
+import { EngineError } from '../../engine/errors.js';
+import { fetchHead, fetchHtml, fetchJson, followRedirects, retry } from '../../engine/http.js';
 
 const URL_A = 'https://hubcloud.ist/drive/abc';
 

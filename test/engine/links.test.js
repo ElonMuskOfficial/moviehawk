@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { greenMotorsPage, web } from './helpers.js';
-import { expand, identify } from '../../src/engine/links.js';
+import { expand, identify } from '../../engine/links.js';
 
 // Pages shaped like the live ones (2026-10-31), small enough to read in a test.
 const greenMotors = (destination) => greenMotorsPage({ o: Buffer.from(destination).toString('base64') });

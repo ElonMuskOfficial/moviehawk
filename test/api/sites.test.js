@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { EngineError } from '../../src/engine/index.js';
+import { EngineError } from '../../engine/index.js';
 import { appWith as app, fakeEngine } from './helpers.js';
 
 const card = (url, title = 'A post') => ({ url, title, posterUrl: 'https://image.tmdb.org/t/p/w342/a.jpg' });

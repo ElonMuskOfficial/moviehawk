@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { answer } from '../helpers.js';
-import { filenameOf, resolveHubCdn } from '../../../src/engine/hosts/hubcdn.js';
+import { filenameOf, resolveHubCdn } from '../../../engine/hosts/hubcdn.js';
 
 const URL_HCDN = 'https://hubcdn.wiki/file/JZ1g9Nmax0tgKnubILv9co6ZC';
 // Live pages (2026-11-01): Mirzapur: The Movie's 480p file, and a deleted file's page.

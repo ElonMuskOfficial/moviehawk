@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { web } from './helpers.js';
-import * as entry from '../../src/engine/index.js';
+import * as entry from '../../engine/index.js';
 
 const { createEngine } = entry;
 

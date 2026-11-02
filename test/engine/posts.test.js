@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { web } from './helpers.js';
-import { identify } from '../../src/engine/links.js';
-import { scrapePost } from '../../src/engine/posts.js';
+import { identify } from '../../engine/links.js';
+import { scrapePost } from '../../engine/posts.js';
 
 const POST_URL = 'https://new10.hdhub4u.cl/show-2026/';
 

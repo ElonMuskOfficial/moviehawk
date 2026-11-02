@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { gatewayOf } from '../../../src/engine/gateways/index.js';
-import { expandGreenMotors } from '../../../src/engine/gateways/greenmotors.js';
-import { expandHubDrive } from '../../../src/engine/gateways/hubdrive.js';
-import { expandHubLinks } from '../../../src/engine/gateways/hublinks.js';
+import { gatewayOf } from '../../../engine/gateways/index.js';
+import { expandGreenMotors } from '../../../engine/gateways/greenmotors.js';
+import { expandHubDrive } from '../../../engine/gateways/hubdrive.js';
+import { expandHubLinks } from '../../../engine/gateways/hublinks.js';
 
 describe('gatewayOf', () => {
   it('knows each gateway page by its site and its path, as seen live', () => {

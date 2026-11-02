@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { externalIdOf, hostOf } from '../../../src/engine/hosts/index.js';
+import { externalIdOf, hostOf } from '../../../engine/hosts/index.js';
 
 // Real URLs from live posts (2026-10-31).
 const LIVE = [

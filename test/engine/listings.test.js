@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { web } from './helpers.js';
-import { scrapeListing } from '../../src/engine/listings.js';
+import { scrapeListing } from '../../engine/listings.js';
 
 // A listing page shaped like HDHub4u's (2026-10-31), small enough to read in a test.
 const hdHub4uListing = (...posts) => `<ul class="recent-movies">${posts.map((post) => `<li><figure><a href="${post}"><img src="https://image.tmdb.org/a.jpg"></a></figure><figcaption><a href="${post}"><p>Post</p></a></figcaption></li>`).join('')}</ul>`;

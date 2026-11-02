@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { EngineError } from '../../src/engine/errors.js';
+import { EngineError } from '../../engine/errors.js';
 
 describe('EngineError', () => {
   it('carries the code and what failed', () => {

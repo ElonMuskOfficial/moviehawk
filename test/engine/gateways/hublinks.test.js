@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { answer } from '../helpers.js';
-import { expandHubLinks } from '../../../src/engine/gateways/hublinks.js';
+import { expandHubLinks } from '../../../engine/gateways/hublinks.js';
 
 const URL_HL = 'https://hblinks.lol/archives/1';
 // Live pages of each layout (saved 2026-10-28 and 2026-10-29).

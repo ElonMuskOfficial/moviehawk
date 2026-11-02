@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { EngineError } from '../../src/engine/index.js';
+import { EngineError } from '../../engine/index.js';
 import { appWith as app, fakeEngine } from './helpers.js';
 
 const id = (url) => Buffer.from(url).toString('base64url');
