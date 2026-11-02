@@ -5,7 +5,7 @@
  *   const engine = createEngine({ domains });
  *   engine.scrapeListing(siteUrl, page)      → its posts' cards: URL, title, poster
  *   engine.searchPosts(siteUrl, query, page) → the cards of the posts that match
- *   engine.scrapePost(postUrl)               → the post and its links
+ *   engine.scrapePost(postUrl)               → the post and its download links, in sections
  *   identify(linkUrl)                        → what the link is: a gateway page, or a file on a host
  *   engine.expand(gatewayUrl)                → where the gateway's page leads: its links
  *   engine.resolve(fileUrl)                  → the file's name, size and downloads
@@ -25,6 +25,8 @@ export { identify } from './links.js';
 /**
  * @typedef {import('./providers/index.js').Post} Post
  * @typedef {import('./providers/index.js').PostCard} PostCard
+ * @typedef {import('./providers/index.js').Section} Section
+ * @typedef {import('./providers/index.js').Line} Line
  * @typedef {import('./html.js').Link} Link
  * @typedef {import('./links.js').LinkKind} LinkKind
  * @typedef {import('./hosts/index.js').Download} Download

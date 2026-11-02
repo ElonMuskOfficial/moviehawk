@@ -11,14 +11,12 @@ import { hasLabel, webUrlOf } from '../urls.js';
 
 /** @typedef {import('./index.js').Post} Post
  * @typedef {import('./index.js').PostCard} PostCard
- * @typedef {import('../html.js').Link} Link */
+ * @typedef {import('./index.js').Section} Section */
 
 // A movie's title states its year, "Wrong Turn (2003) BluRay ..."; a series' does not,
 // "MobLand (Season 2) ..." (live, 2026-10-31: 15 of 15 movies, 6 of 6 series).
 const YEAR = /\((\d{4})\)/;
 const IMDB_TITLE = /^\/title\/(tt\d+)\//;
-// An episode's download button, first in its line: "EPiSODE 1 | WATCH".
-const EPISODE = /^EPiSODE \d+$/i;
 // A player's button: "WATCH", "WATCH-1", "PLAYER-2".
 const PLAYER = /^(WATCH|PLAYER)\b[-\s]*\d*$/i;
 const HEADING = 'h1, h2, h3, h4, h5, h6';
@@ -39,6 +37,41 @@ function isButton($, a) {
   if ($(a).closest(HEADING).length === 0 || !textOf($(a))) return false;
   const url = webUrlOf($(a).prop('href'));
   return url !== null && !hasLabel(url, 'hdhub4u');
+}
+
+/**
+ * The post's download buttons, as the page groups them: a heading with buttons is a line; a heading
+ * without links is the title of the lines under it, up to the next one: ": DOWNLOAD LINKS :" over
+ * "480p x264 [1GB]", "EPiSODE 1" over "720p – Drive | Instant | WATCH" (live, 2026-11-02: 729 posts,
+ * 5,076 buttons in 3,500 lines, each line under such a heading). What a heading says plays no part:
+ * an episode, a note ("[HINDI – TAMIL – TELUGU]") and a film of a collection are titles alike. A
+ * heading with links but no button ("[How To Download]", the screenshots) is neither, nor is an
+ * empty one.
+ *
+ * @returns {Section[]} In page order; a line's title is its text before its first button ("720p"),
+ *   or, for a button alone in its heading, its text ("720p x264 [850MB]"), or null for a line of
+ *   buttons only ("EPiSODE 1 | WATCH"); a link's label is its button's name (buttonOf).
+ */
+function sectionsOf($, body) {
+  const sections = [];
+  let section = { title: null, lines: [] };
+  sections.push(section);
+  for (const heading of body.find(HEADING).toArray()) {
+    if ($(heading).parents(HEADING).length > 0) continue; // part of the heading around it
+    const links = $(heading).find('a[href]').toArray();
+    if (links.length === 0) {
+      if (!textOf($(heading))) continue;
+      section = { title: textOf($(heading)), lines: [] };
+      sections.push(section);
+      continue;
+    }
+    const buttons = links.filter((a) => isButton($, a));
+    if (buttons.length === 0) continue;
+    // lineOf is null for a button alone in its heading, which names its file itself.
+    const title = lineOf($, buttons[0]) ? lineStartOf($(heading)) || null : textOf($(heading));
+    section.lines.push({ title, links: buttons.map((a) => linkOf($, a, '', buttonOf($, a))) });
+  }
+  return sections.filter(({ lines }) => lines.length > 0);
 }
 
 // The post's IMDb id, from the one link in the box of its ratings: IMDb's title page
@@ -63,11 +96,8 @@ function isoDateOf(text) {
  *
  * @param {string} url - On HDHub4u's current domain.
  * @param {import('../http.js').RequestOptions} [options]
- * @returns {Promise<{ post: Post, links: Link[] }>} `links`: the post's download buttons (isButton),
- *   in page order, whatever gateway or host they lead to. A quality button's
- *   label is its own text, which states its file ("720p x264 [850MB]"); an episode line's button
- *   names only its server, so its label is its file and then the button ("EPiSODE 1 720p ·
- *   Drive").
+ * @returns {Promise<{ post: Post, sections: Section[] }>} `sections`: the post's download buttons
+ *   (isButton), whatever gateway or host they lead to, as the page groups them (sectionsOf).
  * @throws {EngineError} `unrecognized` for a page without the post's title (a challenge page, a
  *   changed layout), and fetchHtml's errors (`notFound`: HDHub4u answers a missing post with
  *   HTTP 404).
@@ -91,7 +121,7 @@ export async function scrapeHdHub4uPost(url, options) {
       posterUrl: body.find('img[src]').first().prop('src') ?? null,
       publishedAt: isoDateOf(datePublished),
     },
-    links: body.find('a[href]').toArray().filter((a) => isButton($, a)).map((a) => linkOf($, a, fileOf($, a), buttonOf($, a))),
+    sections: sectionsOf($, body),
   };
 }
 
@@ -110,37 +140,6 @@ function buttonOf($, a) {
   const before = buttons[buttons.indexOf(a) - 1];
   const player = before && PLAYER.exec(textOf($(before)))?.[1];
   return player ? `${player}-${text}` : text;
-}
-
-/**
- * What the page says of a button's file when the button shares its line with others. A series
- * lists each episode as a heading and then a line per quality:
- * "EPiSODE 1", then "720p – Drive | Instant | WATCH" and "1080p – Drive | Instant" (live,
- * 2026-10-31: 480 links of 38 posts); or each episode as a line, "EPiSODE 1 | WATCH". A button
- * alone in its heading ("720p x264 [850MB]") states its file itself.
- *
- * @returns {string} Such as "EPiSODE 1 720p"; empty when the button states its file itself, or
- *   its line names none ("WATCH | PLAYER-2").
- */
-
-function fileOf($, a) {
-  const line = lineOf($, a);
-  if (!line) return '';
-  let episode = '';
-  // The episode's heading is the nearest heading above without links; anything else (an <hr>, the
-  // section's ": DOWNLOAD LINKS :" box) ends the search.
-  for (let above = line.prev(); above.is('h1, h2, h3, h4, h5, h6'); above = above.prev()) {
-    if (above.find('a[href]').length === 0) {
-      episode = textOf(above);
-      break;
-    }
-  }
-  const quality = lineStartOf(line);
-  if (episode || quality) return [episode, quality].filter(Boolean).join(' ');
-  // A line of its own episode: "EPiSODE 1 | WATCH" (live: 102 lines on 46 posts); its players are
-  // the episode's. A line of players only, "WATCH | PLAYER-2", names no file.
-  const first = line.find('a[href]').first();
-  return first[0] !== a && EPISODE.test(textOf(first)) ? textOf(first) : '';
 }
 
 /**

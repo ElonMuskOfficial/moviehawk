@@ -10,6 +10,7 @@ const MOVIE_URL = 'https://new10.hdhub4u.cl/wrong-turn-2003-hindi-bluray-full-mo
 // to sugarke.com, a post with the site's promo and genre links, a 2019 post with links in paragraphs.
 const fixture = (name) => readFileSync(new URL(`../../fixtures/hdhub4u-${name}.html`, import.meta.url), 'utf8');
 const hostnamesOf = (links) => links.map(({ url }) => new URL(url).hostname);
+const linksOf = (sections) => sections.flatMap(({ lines }) => lines.flatMap(({ links }) => links));
 
 describe('scrapeHdHub4uPost', () => {
   it('reads a movie post: title, year, IMDb id, poster and publication date', async () => {
@@ -26,40 +27,62 @@ describe('scrapeHdHub4uPost', () => {
     });
   });
 
-  it('gives the download buttons, the links in headings, in page order', async () => {
+  it('groups the download buttons as the page does: a heading with buttons is a line', async () => {
     // Left out: the promo in the first paragraph, "[How To Download]", WhatsApp, IMDb's rating.
-    const { links } = await scrapeHdHub4uPost(MOVIE_URL, answer(fixture('movie')));
+    const { sections } = await scrapeHdHub4uPost(MOVIE_URL, answer(fixture('movie')));
 
-    assert.deepEqual(hostnamesOf(links), ['greenmotors.club', 'greenmotors.club', 'greenmotors.club', 'hubdrive.bar', 'greenmotors.club']);
+    assert.deepEqual(sections.map(({ title }) => title), [': DOWNLOAD LINKS :']);
+    assert.deepEqual(hostnamesOf(linksOf(sections)), ['greenmotors.club', 'greenmotors.club', 'greenmotors.club', 'hubdrive.bar', 'greenmotors.club']);
+  });
+
+  it('titles a button alone in its heading with its own text, as its label', async () => {
+    const { sections } = await scrapeHdHub4uPost(MOVIE_URL, answer(fixture('movie')));
+
+    assert.deepEqual(sections[0].lines.map(({ title, links }) => [title, links.map(({ label }) => label)]), [
+      ['480p⚡[320MB]', ['480p⚡[320MB]']], ['720p x264 [850MB]', ['720p x264 [850MB]']],
+      ['1080p x264 [1.7GB]', ['1080p x264 [1.7GB]']], ['1080p BluRay [20.42GB]', ['1080p BluRay [20.42GB]']],
+      ['Watch Online', ['Watch Online']],
+    ]);
+  });
+
+  it('makes each heading without links the title of the lines under it: an episode is a section', async () => {
+    // The series' ": Single Episode x264 Links :" has no line of its own: its episodes do.
+    const { sections } = await scrapeHdHub4uPost(MOVIE_URL, answer(fixture('series')));
+
+    assert.deepEqual(sections.map(({ title }) => title), [': DOWNLOAD LINKS :', 'EPiSODE 1', 'EPiSODE 2', 'EPiSODE 3']);
+    assert.deepEqual(sections[1].lines.map(({ title, links }) => [title, links.map(({ label }) => label)]), [
+      ['720p', ['Drive', 'Instant', 'WATCH']],
+      ['1080p', ['Drive', 'Instant']],
+    ]);
   });
 
   it('gives a button to a host the engine does not know, as any other', async () => {
     // Main Te Bapu (2022), live 2026-11-02: every button leads to sugarke.com. The last line's
     // separators are inside its buttons' text, and stay in their labels.
-    const { links } = await scrapeHdHub4uPost(MOVIE_URL, answer(fixture('sugarke')));
+    const { sections } = await scrapeHdHub4uPost(MOVIE_URL, answer(fixture('sugarke')));
 
-    assert.deepEqual(links.map(({ label }) => label), [
-      '480p [300MB] · Instant', '480p [300MB] · HubDrive', '480p [300MB] · GDTOT',
-      '720p [1GB] · Instant', '720p [1GB] · HubDrive', '720p [1GB] · GDTOT',
-      '1080p [1.97GB] · Instant', '1080p [1.97GB] · |HubDrive', '1080p [1.97GB] · |GDTOT',
+    assert.deepEqual(sections[0].lines.map(({ title, links }) => [title, links.map(({ label }) => label)]), [
+      ['480p [300MB]', ['Instant', 'HubDrive', 'GDTOT']],
+      ['720p [1GB]', ['Instant', 'HubDrive', 'GDTOT']],
+      ['1080p [1.97GB]', ['Instant', '|HubDrive', '|GDTOT']],
     ]);
-    assert.deepEqual(new Set(hostnamesOf(links)), new Set(['sugarke.com']));
+    assert.deepEqual(new Set(hostnamesOf(linksOf(sections))), new Set(['sugarke.com']));
   });
 
   it('leaves out the site\'s promo, its genres and the screenshots, which GreenMotors leads to', async () => {
     // Beirut (2018), live 2026-11-02: "HDHub4u" in the first paragraph (the site's home page),
     // "Genre: Action | Crime" (a category page), the screenshots (images), then four buttons.
-    const { links } = await scrapeHdHub4uPost(MOVIE_URL, answer(fixture('promo')));
+    const { sections } = await scrapeHdHub4uPost(MOVIE_URL, answer(fixture('promo')));
 
-    assert.deepEqual(links.map(({ label }) => label), ['480p Links [350MB]', '720p Links [1GB]', '1080p Links [1.9GB]', '1080p Links [Untouch]']);
+    assert.deepEqual(linksOf(sections).map(({ label }) => label), ['480p Links [350MB]', '720p Links [1GB]', '1080p Links [1.9GB]', '1080p Links [Untouch]']);
   });
 
-  it('gives no button for a post whose links are all in paragraphs', async () => {
+  it('gives no section for a post whose links are all in paragraphs', async () => {
     // Drive (2011), posted in 2019, live 2026-11-02: its servers (9xplay, Openload, ClickNupload,
     // ...) are links in paragraphs, to hosts the engine does not know.
-    const { links } = await scrapeHdHub4uPost(MOVIE_URL, answer(fixture('prose')));
+    const { sections } = await scrapeHdHub4uPost(MOVIE_URL, answer(fixture('prose')));
 
-    assert.deepEqual(links, []);
+    assert.deepEqual(sections, []);
   });
 
   it('leaves out a link in a heading to the site on any domain, an image, and no web URL', async () => {
@@ -70,39 +93,25 @@ describe('scrapeHdHub4uPost', () => {
       <h3><a href="hhttps://hubdrive.bar/file/1">720p</a></h3>
       <h3><a href="https://streamwire.net/e/a">Watch Online</a></h3></main>`;
 
-    const { links } = await scrapeHdHub4uPost(MOVIE_URL, answer(page));
+    const { sections } = await scrapeHdHub4uPost(MOVIE_URL, answer(page));
 
-    assert.deepEqual(links, [{ url: 'https://streamwire.net/e/a', label: 'Watch Online' }]);
+    assert.deepEqual(sections, [{ title: null, lines: [{ title: 'Watch Online', links: [{ url: 'https://streamwire.net/e/a', label: 'Watch Online' }] }] }]);
   });
 
-  it('labels a button alone in its heading with its own text', async () => {
-    const { links } = await scrapeHdHub4uPost(MOVIE_URL, answer(fixture('movie')));
-
-    assert.deepEqual(links.map(({ label }) => label), [
-      '480p⚡[320MB]', '720p x264 [850MB]', '1080p x264 [1.7GB]', '1080p BluRay [20.42GB]', 'Watch Online',
-    ]);
-  });
-
-  it('labels an episode line\'s buttons with the episode, the line\'s quality and the button', async () => {
-    const { links } = await scrapeHdHub4uPost(MOVIE_URL, answer(fixture('series')));
-
-    assert.deepEqual(links.map(({ label }) => label).filter((label) => label?.startsWith('EPiSODE 1 ')), [
-      'EPiSODE 1 720p · Drive', 'EPiSODE 1 720p · Instant', 'EPiSODE 1 720p · WATCH',
-      'EPiSODE 1 1080p · Drive', 'EPiSODE 1 1080p · Instant',
-    ]);
-  });
-
-  it('labels a line\'s players with its episode, and leaves out a link in prose', async () => {
+  it('titles no line of buttons only, and starts no section at a heading with links but no button, or empty', async () => {
     // Shapes of live posts (2026-10-31): an episode's line right under the ": DOWNLOAD LINKS :" box,
-    // a movie's players, and a link in the post's prose.
+    // a movie's players, a heading of screenshots, an empty heading, and a link in the post's prose.
     const page = `<h1 class="page-title"><span class="material-text">Show</span></h1><main class="page-body">
-      <div>: DOWNLOAD LINKS :</div><h3><a href="https://greenmotors.club/?id=1">EPiSODE 1</a> | <a href="https://hubstream.art/#a">WATCH</a></h3>
+      <h2>: DOWNLOAD LINKS :</h2><h3><a href="https://greenmotors.club/?id=1">EPiSODE 1</a> | <a href="https://hubstream.art/#a">WATCH</a></h3>
+      <h3><a href="https://greenmotors.club/?id=3"><img src="https://extraimage.net/a.jpg"></a></h3><h4> </h4>
       <hr><h4><a href="https://hdstream4u.com/file/b">WATCH</a> | <a href="https://hubstream.art/#c">PLAYER-2</a></h4>
       <p>Download Show in Hindi <a href="https://greenmotors.club/?id=2">HDHub4u</a></p></main>`;
 
-    const { links } = await scrapeHdHub4uPost(MOVIE_URL, answer(page));
+    const { sections } = await scrapeHdHub4uPost(MOVIE_URL, answer(page));
 
-    assert.deepEqual(links.map(({ label }) => label), ['EPiSODE 1', 'EPiSODE 1 · WATCH', 'WATCH', 'PLAYER-2']);
+    assert.deepEqual(sections.map(({ title, lines }) => [title, lines.map((line) => [line.title, line.links.map(({ label }) => label)])]), [
+      [': DOWNLOAD LINKS :', [[null, ['EPiSODE 1', 'WATCH']], [null, ['WATCH', 'PLAYER-2']]]],
+    ]);
   });
 
   it('names a player that is only its number as the player before it', async () => {
@@ -112,18 +121,18 @@ describe('scrapeHdHub4uPost', () => {
       <h3><a href="https://greenmotors.club/?id=1">EPiSODE 1</a> | <a href="https://vidaraa.cc/e/a">WATCH-1</a> | <a href="https://hdstream4u.com/file/b"><span>2</span></a></h3>
       <h3><a href="https://greenmotors.club/?id=2">EPiSODE 2</a> | <a href="https://hdstream4u.com/file/c">2</a></h3></main>`;
 
-    const { links } = await scrapeHdHub4uPost(MOVIE_URL, answer(page));
+    const { sections } = await scrapeHdHub4uPost(MOVIE_URL, answer(page));
 
-    assert.deepEqual(links.map(({ label }) => label), ['EPiSODE 1', 'EPiSODE 1 · WATCH-1', 'EPiSODE 1 · WATCH-2', 'EPiSODE 2', 'EPiSODE 2 · 2']);
+    assert.deepEqual(linksOf(sections).map(({ label }) => label), ['EPiSODE 1', 'WATCH-1', 'WATCH-2', 'EPiSODE 2', '2']);
   });
 
   it('has no year and no IMDb id for a series that links TMDB in IMDb\'s box', async () => {
-    const { post, links } = await scrapeHdHub4uPost('https://new10.hdhub4u.cl/s/', answer(fixture('series')));
+    const { post, sections } = await scrapeHdHub4uPost('https://new10.hdhub4u.cl/s/', answer(fixture('series')));
 
     assert.equal(post.year, null);
     assert.equal(post.imdbId, null);
     assert.equal(post.publishedAt, '2026-10-31T08:32:59.000Z');
-    assert.equal(links.length, 21);
+    assert.equal(linksOf(sections).length, 21);
   });
 
   it('reads the JSON-LD past a script that is not JSON', async () => {

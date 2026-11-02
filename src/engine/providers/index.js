@@ -12,6 +12,13 @@ import { scrapeHdHub4uListing, scrapeHdHub4uPost, searchHdHub4u } from './hdhub4
  *   `url`: the post's address after redirects; `publishedAt`: ISO 8601, UTC.
  * @typedef {{ url: string, title: string, posterUrl: string | null }} PostCard
  *   A post as a listing page shows it: its card's title and image, as the card states them.
+ * @typedef {{ title: string | null, lines: Line[] }} Section
+ *   A group of a post's download links, as its site groups them: ": DOWNLOAD LINKS :", "EPiSODE 1",
+ *   "S01 1080p WEB-DL H264". `title`: the site's, as it writes it; null where it gives none. Every
+ *   provider reads its own page into this one shape; a section has at least one line.
+ * @typedef {{ title: string | null, links: import('../html.js').Link[] }} Line
+ *   A line of buttons: "720p – Drive | Instant". `title`: what the line names ("720p", a file);
+ *   null for a line of buttons only. A line has at least one link; a link's label is its button.
  */
 
 // Each provider's id is also the hostname label that identifies it. `post` reads one post page,

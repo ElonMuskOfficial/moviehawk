@@ -110,13 +110,13 @@ or null. The engine gives the pieces; the consumer makes its own flow of them (t
 
 - `scrape*` reads a page and returns what it states, which does not expire. `resolve` follows
   redirects to make `downloads`, which expire: a different job, so a different verb.
-- `scrapePost`'s links are the post's download links, as each site's provider reads its page
+- `scrapePost`'s `sections` hold the post's download links, as each site's provider reads its page
   (HDHub4u: a link in a heading; 4KHDHub: a block's buttons), whatever gateway or host they lead
   to; not WhatsApp, IMDb, the site's own pages, or a link in a paragraph. `identify` tells which
-  the engine can open. A link's label is what the page says: a button that states its file has its own
-  text (`720p x264 [850MB]`); a button that names only its server has the page's words for its
-  file, then the button (`EPiSODE 1 720p · Drive`, `Addicted (1080p WEB-DL H264 AVC) 7 GB English
-  WEB-DL · Download HubCloud`). A movie's players (`WATCH`, `PLAYER-2`) name no file.
+  the engine can open. A link's label is its button's text (`Drive`, `Download HubCloud`); what the
+  button is for is its line's title (`720p`, `Episode-01 4.01 GB`) and its section's (`EPiSODE 1`,
+  `S01 1080p WEB-DL H264`). A button that states its file (`720p x264 [850MB]`) is its line's title
+  too. A movie's players (`WATCH`, `PLAYER-2`) name no file.
 - `expand` gives a gateway page's links as the page gives them: a torrent, a host the engine does
   not know, HubCloud's Telegram link. Which to follow is the consumer's: `identify` is null for
   each of those. It reads one page, on its gateway's current domain.
@@ -238,34 +238,61 @@ site's search decides what matches and in what order.
 ### GetPost
 
 ```http
-GET /v1/sites/hdhub4u/posts/wrong-turn-2003-hindi-bluray-full-movie
+GET /v1/sites/hdhub4u/posts/how-to-ruin-diwali-meet-the-parents-season-1-hindi-webrip-all-episodes
 ```
 ```json
 {
-  "name": "sites/hdhub4u/posts/wrong-turn-2003-hindi-bluray-full-movie",
-  "url": "https://new10.hdhub4u.cl/wrong-turn-2003-hindi-bluray-full-movie/",
-  "title": "Wrong Turn (2003) BluRay [Hindi (DD5.1) & English] 1080p 720p & 480p Dual Audio [x264] | Full Movie",
-  "year": 2003,
-  "imdbId": "tt0295700",
-  "posterUrl": "https://imgshare.info/images/2026/08/19/Wrong-Turn-2003.jpg",
-  "publishTime": "2026-08-19T04:16:42.000Z",
-  "links": [
-    { "name": "links/aHR0cHM6Ly9ncmVlbm1vdG9ycy5jbHViLz9pZD1jVWs0...b1E9", "label": "480p⚡[320MB]" },
-    { "name": "links/aHR0cHM6Ly9ncmVlbm1vdG9ycy5jbHViLz9pZD1jVWs0...Wmc5", "label": "720p x264 [850MB]" }
+  "name": "sites/hdhub4u/posts/how-to-ruin-diwali-meet-the-parents-season-1-hindi-webrip-all-episodes",
+  "url": "https://new10.hdhub4u.cl/how-to-ruin-diwali-meet-the-parents-season-1-hindi-webrip-all-episodes/",
+  "title": "How to Ruin Diwali: Meet the Parents (Season 1) WEB-DL [Hindi (DD5.1) & English] 4K 1080p 720p & 480p Dual Audio [x264/ESubs] | NF Series",
+  "year": null,
+  "imdbId": null,
+  "posterUrl": "https://image.tmdb.org/t/p/w500/84CWUqIiQCfCyC7epKT8y24DGRd.jpg",
+  "publishTime": "2026-10-31T08:32:59.000Z",
+  "sections": [
+    {
+      "title": ": DOWNLOAD LINKS :",
+      "lines": [
+        { "title": "480p x264 [200MB]", "links": [{ "name": "links/aHR0cHM6Ly9ncmVlbm1vdG9ycy5jbHViLz9pZD1jVWs0...", "label": "480p x264 [200MB]" }] }
+      ]
+    },
+    {
+      "title": "EPiSODE 1",
+      "lines": [
+        { "title": "720p", "links": [
+          { "name": "links/aHR0cHM6Ly9odWJkcml2ZS5iYXIvZmlsZS8x...", "label": "Drive" },
+          { "name": "links/aHR0cHM6Ly9odWJjZG4uY2x1Yi9maWxlL2Nk...", "label": "Instant" },
+          { "name": "links/aHR0cHM6Ly9oZHN0cmVhbTR1LmNvbS9maWxl...", "label": "WATCH" }
+        ] },
+        { "title": "1080p", "links": ["..."] }
+      ]
+    }
   ]
 }
 ```
 
-The engine's `post` and `links`; `publishedAt` is `publishTime` (AIP-142). A post the site moved
+The engine's `post` and `sections`; `publishedAt` is `publishTime` (AIP-142). A post the site moved
 is named by the URL it answered at. The links come with the post: its screen shows both.
 
-`links` are the post's download links, as its site lays them out: on HDHub4u the links in a
-heading, on 4KHDHub the buttons of a block. They are every download link, whatever gateway or host
-it leads to, so a host the engine has no extractor for loses no link: GetLink answers it
-`external`, and the user opens it in the browser. The site's own links are left out (HDHub4u's
-promo, genres, screenshots and "[How To Download]"), and so are links in a post's paragraphs (live,
-2026-11-02: in 1 to 3 of 729 HDHub4u posts a real one, and the 2017–18 posts' servers, on hosts
-the engine does not know).
+`sections` are the post's download links, grouped as its site groups them, in page order:
+
+| | HDHub4u | 4KHDHub |
+|---|---|---|
+| A section | a heading without links: `: DOWNLOAD LINKS :`, `EPiSODE 1` | `Download Links`, `Download Complete Season`, a season's episodes (`S01 AVC 1080p WEB-DL H264`) |
+| A line | a heading with buttons: `720p – Drive \| Instant \| WATCH` | a block, titled by its file: `Episode-01 4.01 GB` |
+| A link | a button: `Drive`, `WATCH-2` | `Download HubDrive`, `Download HubCloud` |
+
+- A section's `title` is the site's, as it writes it; null where it gives none (a link before any
+  heading). A line's `title` is what it names (`720p`, a file); a button alone in its heading
+  (`720p x264 [850MB]`) is a line of that title and one link of that label; a line of buttons only
+  (`EPiSODE 1 | WATCH`) has none. Every section has a line, and every line a link.
+- The grouping is read from the page's structure, never from words: on HDHub4u an episode, a note
+  (`[HINDI – TAMIL – TELUGU]`) and a film of a collection are sections alike.
+- They are every download link, whatever gateway or host it leads to, so a host the engine has no
+  extractor for loses no link: GetLink answers it `external`, and the user opens it in the browser.
+  The site's own links are left out (HDHub4u's promo, genres, screenshots and "[How To Download]"),
+  and so are links in a post's paragraphs (live, 2026-11-02: in 1 to 3 of 729 HDHub4u posts a real
+  one, and the 2017–18 posts' servers, on hosts the engine does not know).
 
 ### GetLink
 

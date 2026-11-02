@@ -163,13 +163,20 @@ describe('GetPost', () => {
       posterUrl: 'https://imgshare.info/images/2026/08/19/Wrong-Turn-2003.jpg',
       publishedAt: '2026-08-19T04:16:42.000Z',
     },
-    links: [
-      { url: 'https://greenmotors.club/?id=cUk4cEpVbFU1NW8yUVR1ZVFUM3phNm5QS2Z3TTdCSkVpS1pqdjdkTHQ5bDlqUGNSMTVIWDk5d05BZDVIa3R2QnpzaG9sUGlWYWgyY3A5eVRVeVBaTlVwYVVuUkxNZXZBRG9rbDZqQldYWmc9', label: '720p x264 [850MB]' },
-      { url: 'https://hblinks.lol/archives/121857', label: 'EPiSODE 1 720p · Drive' },
+    sections: [
+      {
+        title: ': DOWNLOAD LINKS :',
+        lines: [{
+          title: '720p x264 [850MB]',
+          links: [{ url: 'https://greenmotors.club/?id=cUk4cEpVbFU1NW8yUVR1ZVFUM3phNm5QS2Z3TTdCSkVpS1pqdjdkTHQ5bDlqUGNSMTVIWDk5d05BZDVIa3R2QnpzaG9sUGlWYWgyY3A5eVRVeVBaTlVwYVVuUkxNZXZBRG9rbDZqQldYWmc9', label: '720p x264 [850MB]' }],
+        }],
+      },
+      { title: 'EPiSODE 1', lines: [{ title: '720p', links: [{ url: 'https://hblinks.lol/archives/121857', label: 'Drive' }] }] },
     ],
   };
+  const firstUrl = wrongTurn.sections[0].lines[0].links[0].url;
 
-  it("reads the post its name names, on its site's current domain, and names each link by its URL", async (t) => {
+  it("reads the post its name names, on its site's current domain, and names each link by its URL, in its sections", async (t) => {
     const { engine, calls } = fakeEngine(() => wrongTurn);
     const server = await app(engine);
     t.after(() => server.close());
@@ -185,16 +192,19 @@ describe('GetPost', () => {
       imdbId: 'tt0295700',
       posterUrl: wrongTurn.post.posterUrl,
       publishTime: '2026-08-19T04:16:42.000Z',
-      links: [
-        { name: `links/${Buffer.from(wrongTurn.links[0].url).toString('base64url')}`, label: '720p x264 [850MB]' },
-        { name: 'links/aHR0cHM6Ly9oYmxpbmtzLmxvbC9hcmNoaXZlcy8xMjE4NTc', label: 'EPiSODE 1 720p · Drive' },
+      sections: [
+        {
+          title: ': DOWNLOAD LINKS :',
+          lines: [{ title: '720p x264 [850MB]', links: [{ name: `links/${Buffer.from(firstUrl).toString('base64url')}`, label: '720p x264 [850MB]' }] }],
+        },
+        { title: 'EPiSODE 1', lines: [{ title: '720p', links: [{ name: 'links/aHR0cHM6Ly9oYmxpbmtzLmxvbC9hcmNoaXZlcy8xMjE4NTc', label: 'Drive' }] }] },
       ],
     });
-    assert.equal(Buffer.from(response.json().links[0].name.slice('links/'.length), 'base64url').toString(), wrongTurn.links[0].url);
+    assert.equal(Buffer.from(response.json().sections[0].lines[0].links[0].name.slice('links/'.length), 'base64url').toString(), firstUrl);
   });
 
   it('makes the URL of a post whose slug is not plain ASCII again, from the decoded name', async (t) => {
-    const { engine, calls } = fakeEngine((url) => ({ post: { ...wrongTurn.post, url }, links: [] }));
+    const { engine, calls } = fakeEngine((url) => ({ post: { ...wrongTurn.post, url }, sections: [] }));
     const server = await app(engine);
     t.after(() => server.close());
 
@@ -206,7 +216,7 @@ describe('GetPost', () => {
   });
 
   it('names a post by the URL the site answered at, when it moved the post', async (t) => {
-    const { engine } = fakeEngine(() => ({ post: { ...wrongTurn.post, url: 'https://new10.hdhub4u.cl/wrong-turn-2003-new-slug/' }, links: [] }));
+    const { engine } = fakeEngine(() => ({ post: { ...wrongTurn.post, url: 'https://new10.hdhub4u.cl/wrong-turn-2003-new-slug/' }, sections: [] }));
     const server = await app(engine);
     t.after(() => server.close());
 
@@ -233,7 +243,7 @@ describe('GetPost', () => {
   });
 
   it("gives ListPosts' path with a trailing slash as 400, and does not read the site's home page as a post", async (t) => {
-    const { engine, calls } = fakeEngine(() => ({ post: {}, links: [] }));
+    const { engine, calls } = fakeEngine(() => ({ post: {}, sections: [] }));
     const server = await app(engine);
     t.after(() => server.close());
 

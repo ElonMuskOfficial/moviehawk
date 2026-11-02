@@ -5,8 +5,8 @@ import { answer } from '../helpers.js';
 import { scrape4kHdHubListing, scrape4kHdHubPost, search4kHdHub } from '../../../src/engine/providers/4khdhub.js';
 
 const MOVIE_URL = 'https://4khdhub.one/addicted-movie-7869/';
-// Live pages (2026-10-31): a movie, a series (season packs and episodes), listing page 2, and the
-// search page for "dexter".
+// Live pages (2026-10-31): a movie, a series (season packs and episodes, in 3 seasons' groups),
+// listing page 2, and the search page for "dexter".
 const fixture = (name) => readFileSync(new URL(`../../fixtures/4khdhub-${name}.html`, import.meta.url), 'utf8');
 
 describe('scrape4kHdHubPost', () => {
@@ -24,34 +24,43 @@ describe('scrape4kHdHubPost', () => {
     });
   });
 
-  it('gives every block\'s buttons, in page order, labelled with their file and server', async () => {
-    const { links } = await scrape4kHdHubPost(MOVIE_URL, answer(fixture('movie')));
+  it('gives a movie\'s block as a line of its section, titled by its file, its buttons by their server', async () => {
+    const { sections } = await scrape4kHdHubPost(MOVIE_URL, answer(fixture('movie')));
 
-    assert.deepEqual(links.map(({ label }) => label), [
-      'Addicted (1080p WEB-DL H264 AVC) 7 GB English WEB-DL · Download HubCloud',
-      'Addicted (1080p WEB-DL H264 AVC) 7 GB English WEB-DL · Download HubDrive',
+    assert.deepEqual(sections.map(({ title, lines }) => [title, lines.map((line) => [line.title, line.links.map(({ label }) => label)])]), [
+      ['Download Links', [['Addicted (1080p WEB-DL H264 AVC) 7 GB English WEB-DL', ['Download HubCloud', 'Download HubDrive']]]],
     ]);
-    for (const { url } of links) assert.match(url, /^https:\/\/greenmotors\.club\/\?id=/);
+    for (const { url } of sections[0].lines[0].links) assert.match(url, /^https:\/\/greenmotors\.club\/\?id=/);
   });
 
-  it('reads a series: its year from startDate, and the buttons of its packs and episodes, labelled', async () => {
-    const { post, links } = await scrape4kHdHubPost('https://4khdhub.one/fallen-series-7872/', answer(fixture('series')));
+  it('reads a series: its year from startDate, its packs, and a section per season\'s episodes', async () => {
+    // "Download Individual Episodes" holds no block of its own: its seasons' groups do.
+    const { post, sections } = await scrape4kHdHubPost('https://4khdhub.one/fallen-series-7872/', answer(fixture('series')));
 
     assert.equal(post.title, 'Fallen');
     assert.equal(post.year, 2024);
-    assert.equal(links.length, 54);
-    assert.equal(links[0].label, 'Fallen S01 AVC (AMZN 1080p WEB-DL H264) 24.26 GB English WEB-DL · Download HubCloud');
-    assert.equal(links.at(-1).label, 'S01 1080p WEB-DL AV1 Episode-08 756.33 MB · Download HubDrive');
+    assert.deepEqual(sections.map(({ title, lines }) => [title, lines.length]), [
+      ['Download Complete Season', 3], ['S01 AVC 1080p WEB-DL H264', 8], ['S01 HEVC 1080p WEB-DL H265', 8], ['S01 1080p WEB-DL AV1', 8],
+    ]);
+    assert.equal(sections[0].lines[0].title, 'Fallen S01 AVC (AMZN 1080p WEB-DL H264) 24.26 GB English WEB-DL');
+    assert.deepEqual(sections.at(-1).lines.at(-1), {
+      title: 'Episode-08 756.33 MB',
+      links: sections.at(-1).lines.at(-1).links.map(({ url }, i) => ({ url, label: ['Download HubCloud', 'Download HubDrive'][i] })),
+    });
   });
 
-  it('gives the buttons of the blocks only, not the page\'s other links', async () => {
+  it('gives the buttons of the blocks only, not the page\'s other links; a block before any section in a null one', async () => {
     const page = `<h1 class="page-title">Show</h1><a href="https://new10.hdhub4u.cl/">HDHub4U Team</a>
-      <div class="season-item"><div class="episode-download-item"><a href="https://greenmotors.club/?id=e1">Download HubCloud</a></div></div>
-      <div class="download-item"><a href="https://greenmotors.club/?id=pack">Download HubCloud</a></div>`;
+      <div class="download-item"><a href="https://greenmotors.club/?id=first">Download HubCloud</a></div>
+      <div class="season-item"><h3 class="episode-title">S01</h3><div class="episode-download-item"><a href="https://greenmotors.club/?id=e1">Download HubCloud</a></div></div>
+      <h2 class="section-title">You May Also Like</h2><a href="https://4khdhub.one/other-movie-1/">Other</a>`;
 
-    const { links } = await scrape4kHdHubPost(MOVIE_URL, answer(page));
+    const { sections } = await scrape4kHdHubPost(MOVIE_URL, answer(page));
 
-    assert.deepEqual(links.map(({ url }) => url), ['https://greenmotors.club/?id=e1', 'https://greenmotors.club/?id=pack']);
+    assert.deepEqual(sections.map(({ title, lines }) => [title, lines.flatMap(({ links }) => links.map(({ url }) => url))]), [
+      [null, ['https://greenmotors.club/?id=first']],
+      ['S01', ['https://greenmotors.club/?id=e1']],
+    ]);
   });
 
   it('is notFound for 4KHDHub\'s answer to a post it does not have', async () => {

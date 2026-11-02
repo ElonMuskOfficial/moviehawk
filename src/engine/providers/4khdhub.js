@@ -12,7 +12,9 @@ import { jsonLdOf } from '../json-ld.js';
 
 /** @typedef {import('./index.js').Post} Post
  * @typedef {import('./index.js').PostCard} PostCard
- * @typedef {import('../html.js').Link} Link */
+ * @typedef {import('./index.js').Section} Section */
+
+const BLOCK = '.download-item, .episode-download-item';
 
 /**
  * Reads one 4KHDHub post page. 4KHDHub finds a post by the number at the end of its URL; for a
@@ -21,10 +23,8 @@ import { jsonLdOf } from '../json-ld.js';
  *
  * @param {string} url - On 4KHDHub's current domain.
  * @param {import('../http.js').RequestOptions} [options]
- * @returns {Promise<{ post: Post, links: Link[] }>} `links`: the buttons of every block, in page
- *   order, each labelled with its block's file and its own server, as the page states them:
- *   "Addicted (1080p WEB-DL H264 AVC) 7 GB English WEB-DL · Download HubCloud". The page states no
- *   publication date and no IMDb id.
+ * @returns {Promise<{ post: Post, sections: Section[] }>} `sections`: the buttons of every block, as
+ *   the page groups them (sectionsOf). The page states no publication date and no IMDb id.
  * @throws {EngineError} `notFound` for 4KHDHub's answer to a missing post; `unrecognized` for a
  *   page without the post's title (a challenge page, a changed layout); and fetchHtml's errors.
  */
@@ -49,8 +49,38 @@ export async function scrape4kHdHubPost(url, options) {
       posterUrl: media?.image ?? null,
       publishedAt: null,
     },
-    links: $('.download-item a[href], .episode-download-item a[href]').toArray().map((a) => linkOf($, a, fileOf($, a))),
+    sections: sectionsOf($),
   };
+}
+
+/**
+ * The page's blocks, as it groups them: a section per `h2.section-title` ("Download Links" for a
+ * movie, "Download Complete Season" for a series' packs), and per season's group of episodes
+ * (`.season-item`, titled by its `h3.episode-title`: "S01 AVC 1080p WEB-DL H264"); a line per block,
+ * titled by its file (fileOf), its buttons "Download HubDrive" and "Download HubCloud" (live,
+ * 2026-11-02: 100 posts, 4,836 blocks, each in a section, each with a file and 2 buttons). A section
+ * without blocks ("Download Individual Episodes", whose blocks are in its seasons' groups; "You May
+ * Also Like") is left out.
+ *
+ * @returns {Section[]} In page order.
+ */
+function sectionsOf($) {
+  const sections = [];
+  let section = null;
+  const open = (title) => {
+    section = { title: title || null, lines: [] };
+    sections.push(section);
+  };
+  for (const element of $(`h2.section-title, .season-item, ${BLOCK}`).toArray()) {
+    const $element = $(element);
+    if ($element.is('h2.section-title')) open(textOf($element));
+    else if ($element.is('.season-item')) open(textOf($element.find('.episode-title').first()));
+    else if ($element.parents(BLOCK).length === 0) {
+      if (!section) open(null);
+      section.lines.push({ title: fileOf($element) || null, links: $element.find('a[href]').toArray().map((a) => linkOf($, a)) });
+    }
+  }
+  return sections.filter(({ lines }) => lines.length > 0);
 }
 
 // A page's number in its URL: "/page/2/" is 2, "/" is 1 (listing and search pages alike).
@@ -122,18 +152,18 @@ function cardsOf($, url) {
 }
 
 /**
- * What a button's block says of its file; the button itself names only its server. A movie's or a
- * season pack's block: its header ("Addicted (1080p WEB-DL H264 AVC) 7 GB English WEB-DL"). An
- * episode's: its season's heading and its own number and size ("S02 1080p WEB-DL H264
- * Episode-01 4.01 GB"). Live, 2026-10-31: 154 of 154 blocks and 439 of 439 episodes of 30 posts.
+ * What a block says of its file; its buttons name only their server. A movie's or a season pack's
+ * block: its header ("Addicted (1080p WEB-DL H264 AVC) 7 GB English WEB-DL"). An episode's: its
+ * number and size ("Episode-01 4.01 GB"); its season is its section's title. Live, 2026-11-02:
+ * 4,836 of 4,836 blocks of 100 posts.
  *
+ * @param {import('cheerio').Cheerio<any>} block
  * @returns {string}
  */
-function fileOf($, a) {
-  const episode = $(a).closest('.episode-download-item');
-  if (episode.length === 0) return textOf($(a).closest('.download-item').find('.download-header .flex-1').first());
-  const season = textOf(episode.closest('.season-item').find('.episode-title').first());
-  return `${season} ${textOf(episode.find('.episode-file-info').first())}`;
+function fileOf(block) {
+  return block.is('.episode-download-item')
+    ? textOf(block.find('.episode-file-info').first())
+    : textOf(block.find('.download-header .flex-1').first());
 }
 
 /** @returns {boolean} Whether the page is 4KHDHub's answer for a post it does not have. */

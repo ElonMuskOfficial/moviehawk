@@ -12,28 +12,31 @@ const hdHub4uPost = (...links) => `<h1 class="page-title"><span class="material-
   <main class="page-body">${links.map((link, i) => `<h3><a href="${link}">Link ${i}</a></h3>`).join('')}</main>`;
 
 describe('scrapePost', () => {
-  it('reads the post page only, and gives its provider\'s download links, whatever they lead to', async () => {
+  it('reads the post page only, and gives its provider\'s sections of download links, whatever they lead to', async () => {
     const options = web({
       [POST_URL]: hdHub4uPost('https://greenmotors.cc/?id=a', 'https://sugarke.com/a', 'https://hubdrive.bar/file/9'),
     });
 
-    const { post, links } = await scrapePost(POST_URL, options);
+    const { post, sections } = await scrapePost(POST_URL, options);
 
     assert.equal(post.title, 'Show (2026)');
-    assert.deepEqual(links, [
-      { url: 'https://greenmotors.cc/?id=a', label: 'Link 0' },
-      { url: 'https://sugarke.com/a', label: 'Link 1' },
-      { url: 'https://hubdrive.bar/file/9', label: 'Link 2' },
-    ]);
+    assert.deepEqual(sections, [{
+      title: null,
+      lines: [
+        { title: 'Link 0', links: [{ url: 'https://greenmotors.cc/?id=a', label: 'Link 0' }] },
+        { title: 'Link 1', links: [{ url: 'https://sugarke.com/a', label: 'Link 1' }] },
+        { title: 'Link 2', links: [{ url: 'https://hubdrive.bar/file/9', label: 'Link 2' }] },
+      ],
+    }]);
     assert.deepEqual(options.requests, [POST_URL]);
   });
 
   it('gives links that identify knows', async () => {
     const options = web({ [POST_URL]: hdHub4uPost('https://hubcloud.ist/drive/a') });
 
-    const { links } = await scrapePost(POST_URL, options);
+    const { sections } = await scrapePost(POST_URL, options);
 
-    assert.deepEqual(links.map(({ url }) => identify(url)), [{ type: 'file', id: 'hubcloud', resolves: true }]);
+    assert.deepEqual(identify(sections[0].lines[0].links[0].url), { type: 'file', id: 'hubcloud', resolves: true });
   });
 
   it('reads the post on its site\'s current domain', async () => {

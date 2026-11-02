@@ -19,8 +19,8 @@ describe('the engine\'s entry', () => {
     const domains = { hdhub4u: 'https://new10.hdhub4u.cl', hubdrive: 'https://hubdrive.bar', hubcloud: 'https://hubcloud.ist' };
     const engine = createEngine({ domains, fetch });
 
-    const { links } = await engine.scrapePost('https://new9.hdhub4u.cl/show/');
-    const { links: servers } = await engine.expand(links[0].url);
+    const { sections } = await engine.scrapePost('https://new9.hdhub4u.cl/show/');
+    const { links: servers } = await engine.expand(sections[0].lines[0].links[0].url);
 
     assert.deepEqual(requests, ['https://new10.hdhub4u.cl/show/', 'https://hubdrive.bar/file/7']);
     assert.deepEqual(servers, [{ url: 'https://hubcloud.foo/drive/a', label: '[HubCloud Server]' }]);

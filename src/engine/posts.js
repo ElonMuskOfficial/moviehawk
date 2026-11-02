@@ -1,5 +1,5 @@
 /**
- * A post page, read by its provider: the post, and its download links.
+ * A post page, read by its provider: the post, and its download links in its site's sections.
  */
 import { EngineError } from './errors.js';
 import { retry } from './http.js';
@@ -12,9 +12,10 @@ import { onCurrentDomain, webUrlOf } from './urls.js';
  * @param {string} url - A post page, on any of its site's domains.
  * @param {import('./http.js').RequestOptions & { domains?: Record<string, string> }} [options]
  *   `domains`: as for onCurrentDomain (urls.js).
- * @returns {Promise<{ post: import('./providers/index.js').Post, links: import('./html.js').Link[] }>}
- *   `links`: the post's download links, in page order, as its provider tells them on its page;
- *   whatever gateway or host they lead to, so a host the engine does not know yet loses no link.
+ * @returns {Promise<{ post: import('./providers/index.js').Post, sections: import('./providers/index.js').Section[] }>}
+ *   `sections`: the post's download links, as its provider reads its page: grouped as the site
+ *   groups them, in page order; whatever gateway or host they lead to, so a host the engine does
+ *   not know yet loses no link.
  * @throws {EngineError} `unsupported` for a URL on no site the engine reads, and the provider's
  *   errors.
  * @throws {TypeError} For a string that is not a web URL.

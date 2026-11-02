@@ -42,7 +42,7 @@ const postPage = {
 
 const fullPost = {
   type: 'object',
-  required: ['name', 'url', 'title', 'year', 'imdbId', 'posterUrl', 'publishTime', 'links'],
+  required: ['name', 'url', 'title', 'year', 'imdbId', 'posterUrl', 'publishTime', 'sections'],
   properties: {
     name: { type: 'string' },
     url: { type: 'string' },
@@ -51,12 +51,33 @@ const fullPost = {
     imdbId: { type: ['string', 'null'] },
     posterUrl: { type: ['string', 'null'] },
     publishTime: { type: ['string', 'null'], format: 'date-time' },
-    links: {
+    // The site's sections of the post's download links: each a title and lines of buttons.
+    sections: {
       type: 'array',
       items: {
         type: 'object',
-        required: ['name', 'label'],
-        properties: { name: { type: 'string' }, label: { type: ['string', 'null'] } },
+        required: ['title', 'lines'],
+        properties: {
+          title: { type: ['string', 'null'] },
+          lines: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['title', 'links'],
+              properties: {
+                title: { type: ['string', 'null'] },
+                links: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    required: ['name', 'label'],
+                    properties: { name: { type: 'string' }, label: { type: ['string', 'null'] } },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     },
   },
@@ -122,7 +143,7 @@ export async function sitesRoutes(app, { engine, domains, cached }) {
     const { site, siteUrl } = siteOf(request);
     // A site adds links to a post (a series' new episodes).
     return cached(request, reply, 15 * 60_000, async () => {
-      const { post, links } = await engine.scrapePost(postUrl(siteUrl, request.params.post), { signal: request.signal });
+      const { post, sections } = await engine.scrapePost(postUrl(siteUrl, request.params.post), { signal: request.signal });
       return {
         // From the URL the site answered at: a post the site renamed is named by its new slug.
         name: postName(site, post.url),
@@ -132,7 +153,10 @@ export async function sitesRoutes(app, { engine, domains, cached }) {
         imdbId: post.imdbId,
         posterUrl: post.posterUrl,
         publishTime: post.publishedAt,
-        links: links.map(({ url, label }) => ({ name: linkName(url), label })),
+        sections: sections.map(({ title, lines }) => ({
+          title,
+          lines: lines.map((line) => ({ title: line.title, links: line.links.map(({ url, label }) => ({ name: linkName(url), label })) })),
+        })),
       };
     });
   });

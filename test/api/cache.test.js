@@ -12,7 +12,7 @@ const LINK = `/v1/links/${id('https://hblinks.lol/archives/1')}`;
 const answers = {
   scrapeListing: () => ({ posts: [], hasNextPage: false }),
   searchPosts: () => ({ posts: [], hasNextPage: false }),
-  scrapePost: () => ({ post: { url: 'https://new10.hdhub4u.cl/show/', title: 'Show', year: null, imdbId: null, posterUrl: null, publishedAt: null }, links: [] }),
+  scrapePost: () => ({ post: { url: 'https://new10.hdhub4u.cl/show/', title: 'Show', year: null, imdbId: null, posterUrl: null, publishedAt: null }, sections: [] }),
   expand: () => ({ links: [] }),
   resolve: () => ({ filename: 'a.mkv', sizeBytes: 1, downloads: [] }),
 };
