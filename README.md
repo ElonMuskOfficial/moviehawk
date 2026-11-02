@@ -446,7 +446,7 @@ running copy of the API has its own cache; two requests at once for one URL both
 
 ### Deploy
 
-**Vercel**, at https://moviehawk-api.vercel.app (project `moviehawk-api`, Hobby): the `main` branch
+**Vercel**, at https://moviehawk.vercel.app (project `moviehawk`, Hobby): the `main` branch
 of [moviehawk](https://github.com/ElonMuskOfficial/moviehawk) through Vercel's GitHub integration,
 every push deployed. Vercel's Fastify preset finds `src/server.js` (an entrypoint that imports
 Fastify) and serves its default export as one Vercel Function, in `bom1` (Mumbai, beside the web
