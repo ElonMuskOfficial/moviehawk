@@ -27,6 +27,9 @@ const DOWNLOAD_LINK = /atob\(\s*atob\(\s*'([A-Za-z0-9+/=]+)'\s*\)\s*\)/;
  *   (`notFound`: a deleted file answers HTTP 404).
  */
 export async function resolveVCloud(url, options) {
+  // V-Cloud's Cloudflare answers a datacenter's request HTTP 403 without a Referer and this cookie
+  // (live, 2026-11-03: Wasmer, 3 of 3 files with them, none without; Vercel's, none either way).
+  options = { ...options, headers: { ...options?.headers, Referer: `${new URL(url).origin}/`, Cookie: 'xla=sod' } };
   const filePage = await fetchHtml(url, options);
   const $ = cheerio.load(filePage.html, { baseURI: filePage.url });
   const details = detailsOf($, url, 'V-Cloud');

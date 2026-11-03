@@ -20,6 +20,9 @@ import { fetchHtml } from '../http.js';
  *   layout); and fetchHtml's errors.
  */
 export async function expandVCloud(url, options) {
+  // V-Cloud's Cloudflare answers a datacenter's request HTTP 403 without a Referer and this cookie
+  // (live, 2026-11-03: Wasmer, 3 of 3 files with them, none without; Vercel's, none either way).
+  options = { ...options, headers: { ...options?.headers, Referer: `${new URL(url).origin}/`, Cookie: 'xla=sod' } };
   const page = await fetchHtml(url, options);
   const $ = cheerio.load(page.html, { baseURI: page.url });
   const card = $('.card-body').first();

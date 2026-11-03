@@ -7,6 +7,7 @@ import Fastify from 'fastify';
 import { createCache } from './cache.js';
 import { PROBLEM_TYPE, problem, problemOf } from './problems.js';
 import { linksRoutes } from './links.js';
+import { relayRoutes } from './relay.js';
 import { sitesRoutes } from './sites.js';
 
 // Names are long: a GreenMotors link's is up to 540 characters, an HDHub4u post's up to 143
@@ -58,10 +59,11 @@ export function appOptions({ logger = false } = {}) {
  * a problem, and the routes.
  *
  * @param {import('fastify').FastifyInstance} app
- * @param {{ engine: ReturnType<typeof import('../engine/index.js').createEngine>, domains: Record<string, string> }} options
- *   `engine`: made with `domains`, the current domains (domains.js).
+ * @param {{ engine: ReturnType<typeof import('../engine/index.js').createEngine>, domains: Record<string, string>, relayFetch?: typeof fetch }} options
+ *   `engine`: made with `domains`, the current domains (domains.js). `relayFetch`: the relay's own
+ *   requests to the sites (relay.js; the tests' fake).
  */
-export async function setUpApp(app, { engine, domains }) {
+export async function setUpApp(app, { engine, domains, relayFetch: relayFetchFn }) {
   app.addHook('onRequest', async (request, reply) => {
     reply.header('request-id', request.id);
   });
@@ -80,15 +82,16 @@ export async function setUpApp(app, { engine, domains }) {
   const cached = createCache();
   await app.register(sitesRoutes, { engine, domains, cached });
   await app.register(linksRoutes, { engine, cached });
+  await app.register(relayRoutes, { fetch: relayFetchFn });
 }
 
 /**
  * The API's server, not yet listening, for requests a caller injects (the tests).
  *
- * @param {{ engine: ReturnType<typeof import('../engine/index.js').createEngine>, domains: Record<string, string>, logger?: boolean }} options
+ * @param {{ engine: ReturnType<typeof import('../engine/index.js').createEngine>, domains: Record<string, string>, relayFetch?: typeof fetch, logger?: boolean }} options
  */
-export async function buildApp({ engine, domains, logger = false }) {
+export async function buildApp({ engine, domains, relayFetch: relayFetchFn, logger = false }) {
   const app = Fastify(appOptions({ logger }));
-  await setUpApp(app, { engine, domains });
+  await setUpApp(app, { engine, domains, relayFetch: relayFetchFn });
   return app;
 }
