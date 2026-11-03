@@ -29,13 +29,14 @@ const DOWNLOAD_LINK = /atob\(\s*atob\(\s*'([A-Za-z0-9+/=]+)'\s*\)\s*\)/;
 export async function resolveVCloud(url, options) {
   // V-Cloud's Cloudflare answers a datacenter's request HTTP 403 without a Referer and this cookie
   // (live, 2026-11-03: Wasmer and Vercel's iad1 with them; none without, nor Vercel's bom1 with them).
-  options = { ...options, headers: { ...options?.headers, Referer: `${new URL(url).origin}/`, Cookie: 'xla=sod' } };
-  const filePage = await fetchHtml(url, options);
+  // V-Cloud's pages only: not its servers (10Gbps on HubCloud, Google).
+  const headers = { Referer: `${new URL(url).origin}/`, Cookie: 'xla=sod' };
+  const filePage = await fetchHtml(url, { ...options, headers: { ...options?.headers, ...headers } });
   const $ = cheerio.load(filePage.html, { baseURI: filePage.url });
   const details = detailsOf($, url, 'V-Cloud');
   const encoded = DOWNLOAD_LINK.exec(filePage.html)?.[1];
   const decoded = encoded && Buffer.from(Buffer.from(encoded, 'base64').toString(), 'base64').toString();
   const downloadUrl = webUrlOf(decoded ?? '')?.href;
   if (!downloadUrl) throw new EngineError('unrecognized', 'No link to the download page on the V-Cloud file page', { url });
-  return { ...details, downloads: await downloadsOf(downloadUrl, options, 'V-Cloud') };
+  return { ...details, downloads: await downloadsOf(downloadUrl, options, 'V-Cloud', headers) };
 }
