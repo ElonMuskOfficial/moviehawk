@@ -482,6 +482,8 @@ API on Vercel (`src/relay.js`):
   `https://moviehawk.wasmer.app`, every other one as it is; `RELAY_URL` names another relay, or
   `""` none. Elsewhere (Wasmer, a machine) the API reads V-Cloud itself. A V-Cloud file takes 1 to 2 s
   more on Vercel.
+- The relay was needed in `bom1`. Another Vercel project, in `iad1`, reads V-Cloud with the same
+  headers (live, 2026-11-03: 1 of 1 file not cached), so V-Cloud may refuse a region, not Vercel.
 
 ### Cache
 
