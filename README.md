@@ -469,9 +469,11 @@ into moviehawk-domains' `domains.json` before the API that needs it is deployed.
 
 ### V-Cloud and the region
 
-V-Cloud's Cloudflare answered Vercel's `bom1` HTTP 403 (live, 2026-11-03), and answers its `iad1`,
-where another Vercel project reads it. So the API's Vercel project runs in `iad1`, set in its
-settings, and asks V-Cloud as it asks every site.
+V-Cloud's Cloudflare answers datacenters HTTP 403. With its base URL as Referer and the cookie
+`xla=sod`, which the engine sends it, it answers Wasmer and Vercel's `iad1`, but not Vercel's
+`bom1`; without them, `iad1` too is 403 (live, 2026-11-03). So the API's Vercel project runs in
+`iad1`, set in its settings. A workaround: V-Cloud never sets `xla=sod` (a value another API sends),
+so it passes a rule of V-Cloud's Cloudflare that V-Cloud can change.
 
 ### Cache
 
