@@ -107,7 +107,8 @@ async function request(url, method, { fetch: fetchFn = fetch, timeoutMs = 8000, 
     const response = await fetchFn(url, {
       method,
       redirect: 'follow',
-      headers: { ...HEADERS, ...headers },
+      // A header set to null is not sent (EXPERIMENT, 2026-11-03: V-Cloud without the browser's User-Agent).
+      headers: Object.fromEntries(Object.entries({ ...HEADERS, ...headers }).filter(([, value]) => value != null)),
       signal: signal ? AbortSignal.any([timeout, signal]) : timeout,
     });
     if (!response.ok) {

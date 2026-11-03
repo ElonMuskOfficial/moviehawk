@@ -20,6 +20,8 @@ import { fetchHtml } from '../http.js';
  *   layout); and fetchHtml's errors.
  */
 export async function expandVCloud(url, options) {
+  // EXPERIMENT (2026-11-03): V-Cloud answers Vercel HTTP 403; asked without the browser's User-Agent.
+  options = { ...options, headers: { ...options?.headers, 'User-Agent': null } };
   const page = await fetchHtml(url, options);
   const $ = cheerio.load(page.html, { baseURI: page.url });
   const card = $('.card-body').first();
