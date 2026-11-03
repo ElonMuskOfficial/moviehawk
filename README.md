@@ -467,23 +467,11 @@ of 2026-11-03, and logs why. Every label the engine reads is one of them (the fo
 every gateway and host it opens: NexDrive, V-Cloud, FastDL and VegaDrive too), so a new label goes
 into moviehawk-domains' `domains.json` before the API that needs it is deployed.
 
-### Relay
+### V-Cloud and the region
 
 V-Cloud's Cloudflare answers datacenters HTTP 403. With its base URL as Referer and the cookie
-`xla=sod` (which the engine sends it), it answers Wasmer, but never Vercel (live, 2026-11-03: 3 of 3
-files each way; without them, Wasmer 403 too). So the API on Wasmer relays V-Cloud's pages for the
-API on Vercel (`src/relay.js`):
-
-- `GET /v1/relay?url=<a V-Cloud URL>` (and HEAD) reads the URL, following redirects, with the
-  request's User-Agent, Accept, Referer and Cookie, and answers as V-Cloud did: its status,
-  Content-Type and body, and `X-Relay-URL`, where it ended. Any other URL is HTTP 400: the relay is
-  open, and reads V-Cloud only. Nothing is kept.
-- On Vercel (`VERCEL` set), the engine's `fetch` sends V-Cloud's requests to the relay at
-  `https://moviehawk.wasmer.app`, every other one as it is; `RELAY_URL` names another relay, or
-  `""` none. Elsewhere (Wasmer, a machine) the API reads V-Cloud itself. A V-Cloud file takes 1 to 2 s
-  more on Vercel.
-- The relay was needed in `bom1`. Another Vercel project, in `iad1`, reads V-Cloud with the same
-  headers (live, 2026-11-03: 1 of 1 file not cached), so V-Cloud may refuse a region, not Vercel.
+`xla=sod`, which the engine sends it, it answers Wasmer and Vercel's `iad1`, but not Vercel's
+`bom1` (live, 2026-11-03). So the API's Vercel project runs in `iad1`, set in its settings.
 
 ### Cache
 
