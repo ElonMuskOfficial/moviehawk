@@ -85,7 +85,7 @@ describe('resolveHubCloud', () => {
     }
   });
 
-  it('gives every server button in page order, and only the buttons', async () => {
+  it("gives every server button in page order, and only the buttons; each by the link the page's script leaves in it", async () => {
     const resolved = await resolveHubCloud(URL_HC, sites({ downloadPage: fixture('download-servers') }));
 
     assert.deepEqual(serversOf(resolved.downloads), [
@@ -95,7 +95,18 @@ describe('resolveHubCloud', () => {
       ['watch', 'page', 'Watch Online'],
       ['telegram', 'page', 'Download From Telegram'],
     ]);
-    assert.equal(resolved.downloads[0].url, 'https://pixeldrain.dev/u/negn6f');
+    // Its `href` is a decoy, "pixeldrain.dev/u/negn6f" (no file), on every page: the script sets
+    // `document.getElementById("pxl-1").href = pxl`, the file's.
+    assert.equal(resolved.downloads[0].url, 'https://pixeldrain.dev/u/ZT863Edf');
+  });
+
+  it('leaves out a button without a link: V-Cloud\'s "Download [Server : 1]", href=""', async () => {
+    const downloadPage = '<div class="card-body"><h2><a class="btn" href="">Download [Server : 1]</a>'
+      + '<a class="btn" href="https://r2.example/a.mkv">Download [FSL Server]</a></h2></div>';
+
+    const resolved = await resolveHubCloud(URL_HC, sites({ downloadPage }));
+
+    assert.deepEqual(serversOf(resolved.downloads), [['fsl', 'direct', 'Download [FSL Server]']]);
   });
 
   it('knows the servers seen live by their text, and keeps any other as `other`', async () => {
@@ -106,6 +117,8 @@ describe('resolveHubCloud', () => {
       button('Download Part 2 [ZipDisk Server]', 'https://ddl2.example/2.zip'),
       button('Download [Buzz Server]', 'https://buzz.example/f/a'),
       button('Download [PixelServer:2]', 'https://pixeldrain.example/u/a'), // a /video/ file's
+      button('Download [Gofile Server]', 'https://gofile.example/d/a'), // V-Cloud's
+      button('Downoad From Telegram 🔥', 'https://hubcloud.example/tg/go?id=a'), // V-Cloud's
       button('Download [NewCloud Server]', 'https://new.example/a'),
     ].join('')}</div>`;
 
@@ -117,6 +130,8 @@ describe('resolveHubCloud', () => {
       ['zipdisk', 'direct', 'Download Part 2 [ZipDisk Server]'],
       ['buzz', 'page', 'Download [Buzz Server]'],
       ['pixeldrain', 'page', 'Download [PixelServer:2]'],
+      ['gofile', 'page', 'Download [Gofile Server]'],
+      ['telegram', 'page', 'Downoad From Telegram 🔥'],
       ['other', 'page', 'Download [NewCloud Server]'],
     ]);
   });

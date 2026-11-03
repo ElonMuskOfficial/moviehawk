@@ -1,6 +1,6 @@
 # MovieHawk
 
-An engine that reads movie and series sites (HDHub4u, 4KHDHub), and a read-only HTTP API over it
+An engine that reads movie and series sites (HDHub4u, 4KHDHub, Vegamovies, RogMovies), and a read-only HTTP API over it
 for web and mobile apps. Every request reads the live sites: there is no database.
 
 Written from scratch. The old crawler, API and bot stay in
@@ -37,6 +37,22 @@ What a user goes through, from finding a post to a download, and what does it.
 A link can skip gateways: 4KHDHub's HubCloud button is GreenMotors → HubCloud. Other hosts
 (HubCDN, GoFile, the players) are found the same way; HubCloud's and HubCDN's files are resolved.
 
+Vegamovies and RogMovies take one road: every button leads to a NexDrive page, which lists the
+servers of its file or of each episode; the user chooses there.
+
+```
+ Listing / search      Post              Gateway             Host
+┌────────────────┐   ┌────────────┐   ┌──────────┐   ┌──────────────────────────────────────┐
+│ /page/2/       │─▶ │ post page  │─▶ │ NexDrive │─▶ │ V-Cloud, FastDL (G-Direct), VegaDrive │
+│ ts-search.php  │   │ its links  │   └──────────┘   │ (V-Drive); GDToT, Filepress, ...      │
+└────────────────┘   └────────────┘                  └──────────────────────────────────────┘
+```
+
+V-Cloud is HubCloud's software (its file card, its download page and servers); FastDL is HubCDN's.
+NexDrive pages of 2021–22 link V-Cloud's older link page (`vcloud.beer/api/index.php?link=`), which
+leads to one V-Cloud file. V-Cloud's, FastDL's and VegaDrive's files are resolved; GDToT, Filepress,
+DropGalaxy and the mirrors are opened in the browser.
+
 The API goes the sites' way: it shows the pages where the user chooses, and opens on the way the
 pages that lead to one place. GreenMotors has one destination; a HubDrive file page, one HubCloud
 file, at times with a Telegram link (live, 2026-11-01: 327 GreenMotors pages and 224 HubDrive file
@@ -46,8 +62,8 @@ pages, of 100 posts). HUBLinks and a HubDrive pack list files: the user chooses 
 |---|---|---|---|---|
 | 0. Find | posters, a next page | `scrapeListing`, `searchPosts` | `GET /v1/sites/{site}/posts`, `/search?q=` | under 1 s |
 | 1. Post | the post, its links (`720p x264 [850MB]`) | `scrapePost` | `GET /v1/sites/{site}/posts/{post}` | up to 1 s |
-| 2. Files, where the sites list them | HUBLinks' or a pack's files, in its groups (`480p`: `Drive`, `Instant`) | `expand` | `GET /v1/links/{link}`: `files` | up to 2 s |
-| 3. Download | name, size, download servers | `resolve` | `GET /v1/links/{link}`: `file` | 1 to 6 s; 10 s when 10Gbps's redirects are slow; HubCDN 1 to 3 s |
+| 2. Files, where the sites list them | HUBLinks', a pack's or NexDrive's files, in its groups (`480p`: `Drive`, `Instant`; `-:Episodes: 1:-`: `V-Cloud`, `V-Drive`) | `expand` | `GET /v1/links/{link}`: `files` | up to 2 s |
+| 3. Download | name, size, download servers | `resolve` | `GET /v1/links/{link}`: `file` | 1 to 6 s; 10 s when 10Gbps's redirects are slow; HubCDN, FastDL 1 to 4 s; VegaDrive 4 to 14 s (live, 2026-11-03), Vegadrop's link being made |
 
 A link straight to a file (HubCloud, HubCDN, a HubDrive file page) opens at step 3. Downloads
 expire within minutes or hours, so step 3 is always live.
@@ -63,6 +79,9 @@ text.
 | 4KHDHub movie or pack | `Download Links`, `Download Complete Season` | its file: `A Story of Derry (1080p WEB-DL H264)` | `Download HubCloud`, `Download HubDrive` |
 | 4KHDHub episode | its season's group: `S02 1080p WEB-DL H264` | `Episode-01` | `Download HubCloud`, `Download HubDrive` |
 | A HUBLinks page (step 2) | `Watch Online`, or none | `480p`, or a server: `Instant⚡Download` | `Drive`, `Instant`, a mirror's URL |
+| Vegamovies or RogMovies movie (Spider-Man: Brand New Day) | `• iMAX – WEB-DL •`, or none | its file: `… 720p iMAX-WEB-DL x264 [1.3GB]` | `Download Now` |
+| Vegamovies or RogMovies series | `• Episodes 01 To 04 •`, or none | `Season 1 {Hindi-Korean} 480p WEB-DL x264 [160MB/E]` | `⚡ G-Direct [Instant]`, `⚡ V-Cloud [Resumable]`, `⚡ Batch/Zip [1.1GB]` |
+| A NexDrive page (step 2) | none; `Alternative Sources` | `-:Episodes: 1:-`, `-:Complete Zip Pack:-`; none for a movie | `⚡ V-Cloud [Resumable]`, `⚡ V-Drive [Multi]`, `G-Drive [Login]` |
 
 ## The engine
 
@@ -76,12 +95,15 @@ those belong to its consumers.
 | failure codes (`notFound`, ...) | where the configuration comes from |
 | file ids, moving URLs to current domains | logs |
 
-`createEngine({ domains, fetch, timeoutMs })` gives the functions below, each with that config, so
-no call can read dead domains for lack of `domains`. A call's own option is `signal`.
+`createEngine({ domains, fetch, timeoutMs, waitMs })` gives the functions below, each with that
+config, so no call can read dead domains for lack of `domains`. A call's own option is `signal`.
+`waitMs` is how long `resolve` waits for a download its host makes on request (Vegadrop: 90 s by
+default, as its page waits); the API, which answers within 30 s, waits 20 s. What a consumer
+does with the pieces (which link to follow, how long to keep an answer) is its own.
 New domains need a new engine: its config never changes. Beside them, `identify(url)` says what a
 link is, from its URL alone: `{ type: 'gateway', id }`, `{ type: 'file', id, resolves }`,
 `{ type: 'post', id }` (a post of a site the engine reads, its path one segment), or null; and
-`providerIds` names the sites it reads (`['hdhub4u', '4khdhub']`). The engine gives the pieces; the
+`providerIds` names the sites it reads (`['hdhub4u', '4khdhub', 'vegamovies', 'rogmovies']`). The engine gives the pieces; the
 consumer makes its own flow of them (the API's: GetLink).
 
 | Function | Reads | Returns |
@@ -100,19 +122,20 @@ consumer makes its own flow of them (the API's: GetLink).
 | `post` | one page of a provider: `{ provider, url, title, year, imdbId, posterUrl, publishedAt }` | Wrong Turn |
 | `listing` | a page that lists posts | `/page/2/` |
 | `link` | a link on a page, its destination not yet known: `{ url, label }` | `720p x264 [850MB]` |
-| `gateway` | a page that leads further | GreenMotors, HUBLinks, HubDrive |
+| `gateway` | a page that leads further | GreenMotors, HUBLinks, HubDrive, NexDrive |
 | `host` | a site a file is on | `hubcloud` |
 | `file` | one file on a host, named by its URL | |
 | `externalId` | the host's own file id | `xukqlp6jbsf8wja` |
 | `download` | one way to download a file: `{ server, kind, url, label }` | |
-| `server` | one server on HubCloud's download page, or `hubcdn` | `10gbps`, `fsl` |
+| `server` | one server on HubCloud's or V-Cloud's download page, `hubcdn`, `fastdl`, or one of VegaDrive's (`vegadrop`, its mirrors by name) | `10gbps`, `fsl`, `vegadrop`, `telegram` |
 
 ### Rules
 
 - `scrape*` reads a page and returns what it states, which does not expire. `resolve` follows
   redirects to make `downloads`, which expire: a different job, so a different verb.
 - `scrapePost`'s `sections` hold the post's download links, as each site's provider reads its page
-  (HDHub4u: a link in a heading, or alone in its paragraph; 4KHDHub: a block's buttons), whatever
+  (HDHub4u: a link in a heading, or alone in its paragraph; 4KHDHub: a block's buttons;
+  Vegamovies and RogMovies: a paragraph of buttons only, under the heading that names it), whatever
   gateway or host they lead to, a URL that is no web page too (a magnet); not WhatsApp, IMDb, the site's own pages, or a link in a sentence. `identify` tells which
   the engine can open. A link's label is its button's text (`Drive`, `Download HubCloud`); what the
   button is for is its line's title (`720p`, `Episode-01 4.01 GB`) and its section's (`EPiSODE 1`,
@@ -129,7 +152,20 @@ consumer makes its own flow of them (the API's: GetLink).
   `direct` when its URL answers with the file (FSL, FSLv2, ZipDisk, Download File, 10Gbps once
   followed), `page` when it leads to it (PixelDrain, Buzz, Telegram, Watch Online, a server not
   known yet: `other`). 10Gbps is the only server it follows; when that fails, the button's own
-  link is given, as a page. Some zip packs have no 10Gbps server.
+  link is given, as a page. Some zip packs have no 10Gbps server. A button is read by the link
+  the page's script leaves in it: PixelServer's `href` is a decoy (`pixeldrain.dev/u/negn6f`, no
+  file, on every page), which `var pxl = "…"` replaces; a button without a link (`href=""`) is
+  left out.
+- V-Cloud is read as HubCloud (its file card, its download page, its servers: GoFile and
+  `Downoad From Telegram` too); its download page's link is in its script, base64 of base64.
+  FastDL is read as HubCDN: its script's `reurl` holds the file's URL on Google, as it is.
+  VegaDrive states the file's name and size; its Vegadrop (10Gbps) is followed as its page's
+  script does, in the page's session (its cookie): "prepare" until ready, then "download-link",
+  for the file on Google. Its mirrors (Telegram, GoFile, Buzzheavier, ...) are pages, which lead
+  to the file in a browser. A zip has no Vegadrop.
+- Vegadrop's answer states `expires_in_seconds: 120`: how long its page keeps the button ready.
+  The file's URL still answered 20 minutes on (live, 2026-11-03), so it is a download as any
+  other, kept as long.
 - `domains`: the current domain of each site, gateway and host whose domain rotates, by hostname
   label (`{ hblinks: 'https://hblinks.lol' }`). Every URL is moved to it before it is read, files
   too (hubcloud.foo → hubcloud.ist), with nothing of its old origin (port, credentials). A label
@@ -306,7 +342,10 @@ is named by the URL it answered at. The links come with the post: its screen sho
   the hostname of one it does not know (`sugarke.com`), never null. A link that is no web URL (a magnet) has no
   name, so it is left out, as is a line or a section left without links.
 - The grouping is read from the page's structure, never from words: on HDHub4u an episode, a note
-  (`[HINDI – TAMIL – TELUGU]`) and a film of a collection are sections alike.
+  (`[HINDI – TAMIL – TELUGU]`) and a film of a collection are sections alike. A paragraph titles
+  nothing (the post's prose), but for one set apart as a heading: all bold, without links, alone
+  between two `<hr>` (`| BONUS EPiSODES |`, `New Episodes Every Week`; live, 2026-11-03: 5 of 261
+  posts).
 - They are every download link, whatever gateway or host it leads to, so a host the engine has no
   extractor for loses no link: GetLink answers it `external`, and the user opens it in the browser.
   The site's own links are left out (HDHub4u's promo, genres, screenshots and "[How To Download]"),
@@ -318,7 +357,7 @@ is named by the URL it answered at. The links come with the post: its screen sho
 ### GetLink
 
 What a link opens, past the pages that lead to one place: GreenMotors (decoded), then a HubDrive
-file page. The engine says which pages those are (`expand` gives no `sections` for them), and each
+file page; V-Cloud's older link page. The engine says which pages those are (`expand` gives no `sections` for them), and each
 is followed to its first link the engine resolves (a HubDrive file page's HubCloud server, wherever
 the page puts it), or else its first (a file on Telegram only); a page without links is HTTP 404,
 and a link through more than three gateway pages, 502 `unrecognized`. Then, by the page it reaches,
@@ -326,8 +365,8 @@ one of four `kind`s:
 
 | Reaches | `kind` | Its fields |
 |---|---|---|
-| HUBLinks, a HubDrive pack (any gateway page where the user chooses: the engine gives its `sections`) | `files` | `title`: what the page calls itself, as it is (HUBLinks: its `<title>`, `Lupin.S04E01 – HUBLinks`; a pack: its header's name, `Lupin - S04 1080p WEB-DL Packs`), or null; `tags`: what the page states of itself, as it gives it (a pack: `Includes 9 files`, `Total Size: 23.61 GB`; HUBLinks: none); `sections`: its groups, each `{ title, lines }`, a line `{ title, tags, links }` (`tags`: what the page states of the line's file beside it, a pack's `3.1 GB`), a link as on GetPost; every web link, as the page orders them (HUBLinks: groups split by `<hr>`; a pack: one group, a line per file); each is a link, read by GetLink again |
-| A file on HubCloud or HubCDN | `file` | `filename`: the file's own name, as its host states it; `sizeBytes`, `downloads` (`resolve`) |
+| HUBLinks, a HubDrive pack, NexDrive (any gateway page where the user chooses: the engine gives its `sections`) | `files` | `title`: what the page calls itself, as it is (HUBLinks: its `<title>`, `Lupin.S04E01 – HUBLinks`; a pack: its header's name, `Lupin - S04 1080p WEB-DL Packs`), or null; `tags`: what the page states of itself, as it gives it (a pack: `Includes 9 files`, `Total Size: 23.61 GB`; HUBLinks: none); `sections`: its groups, each `{ title, lines }`, a line `{ title, tags, links }` (`tags`: what the page states of the line's file beside it, a pack's `3.1 GB`), a link as on GetPost; every web link, as the page orders them (HUBLinks: groups split by `<hr>`; a pack: one group, a line per file); each is a link, read by GetLink again |
+| A file on HubCloud, HubCDN, V-Cloud, FastDL or VegaDrive | `file` | `filename`: the file's own name, as its host states it; `sizeBytes`, `downloads` (`resolve`) |
 | A post of a site the API reads (HDHub4u's link to the title's post on 4KHDHub) | `post` | `post`: the post's name, read by GetPost |
 | A file on another host, or a site the engine does not know | `external` | the page the user opens there |
 
@@ -373,7 +412,7 @@ GET /v1/links/aHR0cHM6Ly9odWJkcml2ZS5iYXIvZmlsZS81NzgyNDg0Mzc5
   "filename": "Wrong.Turn.2003.720p.BluRay.Hindi.English.DD5.1.x264.ESubs.mkv",
   "sizeBytes": 890922598,
   "downloads": [
-    { "server": "pixeldrain", "kind": "page", "url": "https://pixeldrain.dev/u/negn6f", "label": "Download [PixelServer : 2]" },
+    { "server": "pixeldrain", "kind": "page", "url": "https://pixeldrain.dev/u/ZT863Edf", "label": "Download [PixelServer : 2]" },
     { "server": "fsl", "kind": "direct", "url": "https://...r2.cloudflarestorage.com/...", "label": "Download [FSL Server]" },
     { "server": "10gbps", "kind": "direct", "url": "https://video-downloads.googleusercontent.com/...", "label": "Download [Server : 10Gbps]" }
   ]
@@ -385,8 +424,8 @@ GET /v1/links/aHR0cHM6Ly9odWJkcml2ZS5iYXIvZmlsZS81NzgyNDg0Mzc5
 ```
 
 A `files` label is the page's (`Drive`, under its line `480p`; a pack's `Lupin.S04E01....mkv`, its size its line's tag); a file's
-own name and size come when it is opened. A HubCDN file's `filename` and `sizeBytes` are null when
-its storage did not state them.
+own name and size come when it is opened. A HubCDN or FastDL file's `filename` and `sizeBytes` are
+null when its storage did not state them.
 
 ### Errors
 
@@ -424,7 +463,9 @@ old domain meanwhile, while it redirects.
 
 When GitHub does not answer, or gives domains that cannot be used (no domain for one of
 `FALLBACK_DOMAINS`' labels, a domain with a path), the API starts with `FALLBACK_DOMAINS`, those
-of 2026-11-01, and logs why.
+of 2026-11-03, and logs why. Every label the engine reads is one of them (the four sites, and
+every gateway and host it opens: NexDrive, V-Cloud, FastDL and VegaDrive too), so a new label goes
+into moviehawk-domains' `domains.json` before the API that needs it is deployed.
 
 ### Cache
 
@@ -438,7 +479,7 @@ it does not read is dropped), for as long as it stays true:
 | SearchPosts | 10 min | |
 | GetPost | 15 min | a site adds links to a post (a series' new episodes) |
 | GetLink, `files` or `external` | 1 hour | where a link leads hardly changes |
-| GetLink, `file` | 5 min | its downloads expire, but not within 5 minutes |
+| GetLink, `file` | 5 min | its downloads expire, but not within 5 minutes (Vegadrop's too: 20 minutes on, live) |
 
 A repeat answers without reading the sites. Errors are not kept: the next request tries again.
 `Cache-Control: public, max-age=<seconds left>` lets the client keep an answer as long. Each
@@ -470,7 +511,8 @@ it. Wasmer stops an instance idle for about 3 minutes, which empties its cache.
 - **No Get or List for every resource** (AIP-121): only the routes a consumer uses.
 - **`pageToken` is the site's page number**, not an opaque token (AIP-158): the sites number their
   pages, and nothing else finds a page. Clients still only pass back the `nextPageToken` given.
-- **No `pageSize`**: the sites fix it (HDHub4u 85 on its first page, then 15; 4KHDHub 18).
+- **No `pageSize`**: the sites fix it (HDHub4u 85 on its first page, then 15; 4KHDHub 18;
+  Vegamovies 18, RogMovies 20, 21 on their first page).
 - **GetLink's `files` have no pagination**: a page lists a few (the most seen was 25, a pack's).
 - **Errors are RFC 9457, not AIP-193**, which is made for gRPC.
 
@@ -480,25 +522,25 @@ it. Wasmer stops an instance idle for about 3 minutes, which empties its cache.
 |---|---|---|---|---|
 | HDHub4u | read | `/page/<n>/`, `ul.recent-movies`; 85 posts on page 1, then 15 | HTTP 404 | a Typesense API (`search.pingora.fyi`), 15 a page |
 | 4KHDHub | read | `/page/<n>/`, `.card-grid`; 18 | answers as its last page; the engine makes it `notFound` | `/page/<n>/?s=<q>`, 18 a page |
-| Vegamovies (`new1.vegamovies.lease`) | coming | `/page/<n>/`, `.movies-grid`; 18 to 22 | HTTP 404 | `/ts-search.php?q=&page=` (Typesense), 15 a page |
-| RogMovies (`rogmovies.im`) | coming | as Vegamovies | HTTP 404 | as Vegamovies |
+| Vegamovies (`vegamovies.lease`) | read | `/page/<n>/`, `.movies-grid`; 21 on page 1, then 18 | HTTP 404 | `/ts-search.php?q=&page=` (Typesense), 15 a page |
+| RogMovies (`rogmovies.im`) | read | as Vegamovies; 21, then 20 | HTTP 404 | as Vegamovies |
 
 - 4KHDHub finds a post by the number at the end of its URL and ignores the slug, but needs one.
   It states no publication date or IMDb id. A series' title states no year, on both sites; HDHub4u
   posts from before 2022 write it without brackets (`The Jackal 1997 Hindi ...`), and the engine
   reads none from them. Those old posts mostly link hosts that are gone (Openload, ClickNupload):
   their links give no files.
-- Vegamovies and RogMovies are WordPress sites on one template: posts at `/download-<slug>/`, the
-  body in `.post-content`, an IMDb link. Their `/?s=` goes to an empty page whose script calls
-  `/ts-search.php`. Every download button leads to a NexDrive page (`nexdrive.beer/...`), a gateway
-  that lists the hosts of the file or of every episode: VCloud (`vcloud.beer/<id>`), VegaDrive,
-  G-Direct, Filepress; zip packs also GoFile, 1fichier, VikingFile, MegaUp. VCloud's and VegaDrive's
-  pages state the filename and size, like HubCloud's. The route has HDHub4u's shape (post →
-  gateway → host), so they are new modules (a provider, NexDrive, VCloud), and nothing in the API:
-  ListSites names the engine's providers, and GetLink's flow takes them as it takes HDHub4u's.
-- They state their data differently: Vegamovies' date is in its `Movie` JSON-LD (`dateCreated`),
-  RogMovies' in `BlogPosting` and `article:published_time`. One provider or two is decided when
-  they are added.
+- Vegamovies and RogMovies are two sites of one WordPress theme (`vegamoviesofficial`,
+  `rogmoviesofficial`), read by one provider (`providers/vegamovies.js`), each under its own id
+  (live, 2026-11-03: 168 posts of 2020 to 2026 across both catalogs, Vegamovies' 785 listing
+  pages and RogMovies' 397, the same structure on each). A post's title is `h1.post-title`, its
+  body `main.page-body`, its date `.post-date time[datetime]`, its poster `og:image`: on the
+  site's image proxy (`img.vegamovies.lease`, `img.rogmovies.im`), which no longer resolves, the
+  proxy's `u`, base64 of the image's TMDB URL. Their JSON-LD differs (Vegamovies' date is its
+  `Movie`'s `dateCreated`, RogMovies' its `datePublished`), and is not read. Vegamovies' cards
+  load their images late, from `data-src`. Their `/?s=` goes to `/search.html`, whose script asks
+  `/ts-search.php`. Every download button of the 168 posts (590) leads to NexDrive.
+- Some posts link hosts that are gone: vegadrive.xyz (2020–21, not VegaDrive), RogMovies.art.
 
 ## Not decided yet
 

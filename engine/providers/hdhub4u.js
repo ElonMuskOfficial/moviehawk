@@ -55,7 +55,11 @@ function isButton($, a) {
  * 5,076 buttons in 3,500 lines, each line under such a heading). What a heading says plays no part:
  * an episode, a note ("[HINDI – TAMIL – TELUGU]") and a film of a collection are titles alike. A
  * heading with links but no button ("[How To Download]", the screenshots) is neither, nor is an
- * empty one.
+ * empty one. A paragraph titles nothing (it is the post's prose: its plot, its notes), but for one
+ * that the page sets apart as a heading: all bold, without links, alone between two rules,
+ * `<hr><p><strong>| BONUS EPiSODES |</strong></p><hr>` (live, 2026-11-03: 261 posts of 2017 to
+ * 2026, 5 such paragraphs over lines: "| BONUS EPiSODES |", "New Episodes Every Week",
+ * "[DS4K – Encoded from 4K]"; a storyline alone between rules is not bold).
  *
  * @returns {Section[]} In page order; a line's title is its text before its first button ("720p"),
  *   or, for a button alone in its heading, its text ("720p x264 [850MB]"), or null for a line of
@@ -65,11 +69,16 @@ function sectionsOf($, body) {
   const sections = [];
   let section = newSection();
   sections.push(section);
-  for (const element of body.find(LINE).toArray()) {
-    if ($(element).parents(LINE).length > 0) continue; // part of the line around it
+  // The page's blocks, rules too, without the empty ones: a rule's neighbours are what is next to it.
+  const blocks = body.find(`${LINE}, hr`).toArray()
+    .filter((element) => $(element).parents(LINE).length === 0) // part of the line around it
+    .filter((element) => $(element).is('hr') || textOf($(element)) || $(element).find('img, a[href]').length > 0);
+  for (const [index, element] of blocks.entries()) {
+    if ($(element).is('hr')) continue;
     const links = $(element).find('a[href]').toArray();
     if (links.length === 0) {
-      if ($(element).is('p') || !textOf($(element))) continue; // a paragraph titles nothing
+      if ($(element).is('p') && !isSetApart($, element, blocks[index - 1], blocks[index + 1])) continue;
+      if (!textOf($(element))) continue;
       section = newSection({ title: textOf($(element)) });
       sections.push(section);
       continue;
@@ -81,6 +90,18 @@ function sectionsOf($, body) {
     section.lines.push(newLine(title, buttons.map((a) => linkOf($, a, buttonOf($, a)))));
   }
   return sections.filter(({ lines }) => lines.length > 0);
+}
+
+/**
+ * Whether a paragraph without links is set apart as a heading: all its text in one bold element,
+ * and a rule on each side of it.
+ *
+ * @returns {boolean}
+ */
+function isSetApart($, paragraph, before, after) {
+  const text = textOf($(paragraph));
+  const bold = $(paragraph).find('strong, b').toArray().some((element) => textOf($(element)) === text);
+  return Boolean(text) && bold && $(before).is('hr') && $(after).is('hr');
 }
 
 // The post's IMDb id, from the one link in the box of its ratings: IMDb's title page

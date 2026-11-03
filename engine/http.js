@@ -21,13 +21,14 @@ const ATTEMPTS = 3;
  *
  * @param {string} url
  * @param {RequestOptions} [options]
- * @returns {Promise<{ html: string, url: string }>} `url`: the page's address after redirects.
+ * @returns {Promise<{ html: string, url: string, headers: Headers }>} `url`: the page's address
+ *   after redirects; `headers`: its answer's (a session's cookies, `getSetCookie()`).
  * @throws {EngineError} `notFound` on HTTP 404 or 410; `transient` on any other HTTP error, a
  *   network error or the timeout.
  * @throws {unknown} The caller's own reason, as it is, when the caller cancels (`signal`).
  */
 export function fetchHtml(url, options) {
-  return request(url, 'GET', options, async (response) => ({ html: await response.text(), url: response.url || url }));
+  return request(url, 'GET', options, async (response) => ({ html: await response.text(), url: response.url || url, headers: response.headers }));
 }
 
 /**

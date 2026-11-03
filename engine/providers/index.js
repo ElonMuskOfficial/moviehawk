@@ -5,6 +5,7 @@
 import { hasLabel, webUrlOf } from '../urls.js';
 import { scrape4kHdHubListing, scrape4kHdHubPost, search4kHdHub } from './4khdhub.js';
 import { scrapeHdHub4uListing, scrapeHdHub4uPost, searchHdHub4u } from './hdhub4u.js';
+import { scrapeVegamoviesListing, scrapeVegamoviesPost, searchVegamovies } from './vegamovies.js';
 
 /**
  * @typedef {{ provider: string, url: string, title: string, year: number | null,
@@ -33,9 +34,16 @@ import { scrapeHdHub4uListing, scrapeHdHub4uPost, searchHdHub4u } from './hdhub4
 const PROVIDERS = [
   { id: 'hdhub4u', post: scrapeHdHub4uPost, listing: scrapeHdHub4uListing, search: searchHdHub4u },
   { id: '4khdhub', post: scrape4kHdHubPost, listing: scrape4kHdHubListing, search: search4kHdHub },
+  // Two sites of one theme, read by one provider (vegamovies.js).
+  ...[{ id: 'vegamovies', name: 'Vegamovies' }, { id: 'rogmovies', name: 'RogMovies' }].map((site) => ({
+    id: site.id,
+    post: (url, options) => scrapeVegamoviesPost(site, url, options),
+    listing: (url, options) => scrapeVegamoviesListing(site, url, options),
+    search: (siteUrl, query, page, options) => searchVegamovies(site, siteUrl, query, page, options),
+  })),
 ];
 
-/** The ids of the providers the engine reads: "hdhub4u", "4khdhub". */
+/** The ids of the providers the engine reads: "hdhub4u", "4khdhub", "vegamovies", "rogmovies". */
 export const providerIds = Object.freeze(PROVIDERS.map(({ id }) => id));
 
 /**

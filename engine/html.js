@@ -66,3 +66,20 @@ function textBefore(node, stop) {
 export function linkOf($, a, label = textOf($(a))) {
   return { url: $(a).prop('href'), label: label || null };
 }
+
+/**
+ * Whether a block is a line of buttons and nothing else: it has links, and its whole text is
+ * theirs ("Download Now"; "⚡ G-Direct [Instant] ⚡ V-Cloud [Resumable]"; mirrors' URLs, one a
+ * line). A link in a sentence is not one: "IMDb Rating:- 6.7/10", "Please Bookmark …
+ * Vegamovies VgList.cv".
+ *
+ * @param {import('cheerio').CheerioAPI} $
+ * @param {object} block
+ * @returns {boolean}
+ */
+export function isButtonsBlock($, block) {
+  const links = $(block).find('a[href]').toArray();
+  if (links.length === 0) return false;
+  const squash = (text) => text.replace(/\s+/g, '');
+  return squash($(block).text()) === squash(links.map((a) => $(a).text()).join(''));
+}

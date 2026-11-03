@@ -8,7 +8,7 @@ const { createEngine } = entry;
 describe('the engine\'s entry', () => {
   it('gives a consumer createEngine, EngineError, identify and providerIds, and nothing else', () => {
     assert.deepEqual(Object.keys(entry).sort(), ['EngineError', 'createEngine', 'identify', 'providerIds']);
-    assert.deepEqual(entry.providerIds, ['hdhub4u', '4khdhub']);
+    assert.deepEqual(entry.providerIds, ['hdhub4u', '4khdhub', 'vegamovies', 'rogmovies']);
   });
 
   it('makes an engine whose every call has its config', async () => {

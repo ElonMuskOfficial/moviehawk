@@ -130,6 +130,27 @@ describe('scrapeHdHub4uPost', () => {
     ]);
   });
 
+  it('titles a section by a paragraph set apart as a heading: all bold, alone between two rules', async () => {
+    // India's Got Latent S02 (live, 2026-11-03): "| BONUS EPiSODES |" is a bold paragraph between
+    // rules, over the bonus episodes' lines. A storyline between rules is not bold, and a bold note
+    // between two lines has no rules: neither titles anything.
+    const page = `<h1 class="page-title"><span class="material-text">Show</span></h1><main class="page-body">
+      <h2>: DOWNLOAD LINKS :</h2><h3><a href="https://greenmotors.club/?id=1">EPiSODE 1</a> | <a href="https://hubstream.art/#a">WATCH</a></h3>
+      <p><strong>Audio issue Fixed ✔️</strong></p>
+      <h3><a href="https://greenmotors.club/?id=2">EPiSODE 2</a></h3>
+      <hr><p><span><strong>| BONUS <strong>EPiSODES</strong> |</strong></span></p><hr>
+      <h3><a href="https://greenmotors.club/?id=3">BONUS EP 1</a> | <a href="https://hubstream.art/#b">WATCH</a></h3>
+      <hr><p>Storyline : a writer, caught in an imagination</p><hr>
+      <h3><a href="https://greenmotors.club/?id=4">BONUS EP 2</a></h3></main>`;
+
+    const { sections } = await scrapeHdHub4uPost(MOVIE_URL, answer(page));
+
+    assert.deepEqual(sections.map(({ title, lines }) => [title, lines.map((line) => line.links[0].label)]), [
+      [': DOWNLOAD LINKS :', ['EPiSODE 1', 'EPiSODE 2']],
+      ['| BONUS EPiSODES |', ['BONUS EP 1', 'BONUS EP 2']],
+    ]);
+  });
+
   it('names a player that is only its number as the player before it', async () => {
     // The Great Indian Kapil Show S05 (live, 2026-11-01): "EPiSODE 1 | WATCH-1 | 2". A number that
     // follows no player keeps its text.

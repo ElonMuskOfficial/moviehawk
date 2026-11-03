@@ -5,11 +5,17 @@ import { FALLBACK_DOMAINS, readDomains, startDomains } from '../../src/domains.j
 const GITHUB = {
   hdhub4u: 'https://new11.hdhub4u.cl',
   '4khdhub': 'https://4khdhub.one',
+  vegamovies: 'https://vegamovies.lease',
+  rogmovies: 'https://rogmovies.im',
   greenmotors: 'https://greenmotors.cc',
   hblinks: 'https://hblinks.lol',
   hubdrive: 'https://hubdrive.bar',
+  nexdrive: 'https://nexdrive.beer',
   hubcloud: 'https://hubcloud.ist',
   hubcdn: 'https://hubcdn.wiki',
+  vcloud: 'https://vcloud.beer',
+  fastdl: 'https://fastdl.beer',
+  vegadrive: 'https://one.vegadrive.me',
 };
 // GitHub, answering with `answer`: a domains object, an HTTP status, or an Error.
 function github(answer) {
@@ -41,7 +47,7 @@ describe('startDomains', () => {
   });
 
   it('takes no domains without one of a gateway or host: its URLs would be read on any domain', async () => {
-    for (const label of ['greenmotors', 'hblinks', 'hubdrive', 'hubcloud', 'hubcdn']) {
+    for (const label of ['greenmotors', 'hblinks', 'hubdrive', 'nexdrive', 'hubcloud', 'hubcdn', 'vcloud', 'fastdl', 'vegadrive']) {
       const { [label]: _, ...without } = GITHUB;
 
       const { domains, fallbackBecause } = await startDomains(github(without));

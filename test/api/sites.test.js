@@ -12,7 +12,7 @@ describe('ListSites', () => {
 
     const response = await server.inject('/v1/sites');
 
-    assert.deepEqual(response.json(), { sites: [{ name: 'sites/hdhub4u' }, { name: 'sites/4khdhub' }] });
+    assert.deepEqual(response.json(), { sites: [{ name: 'sites/hdhub4u' }, { name: 'sites/4khdhub' }, { name: 'sites/vegamovies' }, { name: 'sites/rogmovies' }] });
   });
 });
 
@@ -84,10 +84,10 @@ describe('ListPosts', () => {
     const server = await app(engine);
     t.after(() => server.close());
 
-    const response = await server.inject('/v1/sites/vegamovies/posts');
+    const response = await server.inject('/v1/sites/moviesdrive/posts');
 
     assert.equal(response.statusCode, 404);
-    assert.deepEqual(response.json(), { type: 'about:blank', title: 'Not Found', status: 404, detail: 'No site vegamovies', code: 'notFound' });
+    assert.deepEqual(response.json(), { type: 'about:blank', title: 'Not Found', status: 404, detail: 'No site moviesdrive', code: 'notFound' });
     assert.deepEqual(calls, []);
   });
 
@@ -305,12 +305,12 @@ describe('GetPost', () => {
     t.after(() => server.close());
 
     const gone = await server.inject('/v1/sites/4khdhub/posts/the-strangers-chapter-3-movie-6020');
-    const noSite = await server.inject('/v1/sites/rogmovies/posts/download-akka-2026-season-1-hindi-dubbed-org');
+    const noSite = await server.inject('/v1/sites/moviesdrive/posts/download-akka-2026-season-1-hindi-dubbed-org');
 
     assert.equal(gone.statusCode, 404);
     assert.equal(gone.json().detail, '4KHDHub says the post does not exist');
     assert.equal(noSite.statusCode, 404);
-    assert.equal(noSite.json().detail, 'No site rogmovies');
+    assert.equal(noSite.json().detail, 'No site moviesdrive');
     assert.equal(calls.length, 1);
   });
 

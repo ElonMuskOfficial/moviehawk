@@ -20,6 +20,14 @@ const LIVE = [
   ['https://play4u.org/series/tt29625288/s-01/', 'play4u', 'tt29625288/s-01'],
   ['https://new3.multicloudlinks.com/view/sh6ob8', 'multicloudlinks', 'sh6ob8'],
   ['https://new.multicloudlinks.com/player.php/?v=ncp0ta', 'multicloudlinks', 'ncp0ta'],
+  // 2026-11-03, behind NexDrive's pages.
+  ['https://vcloud.beer/uthhuboxjuitfuz', 'vcloud', 'uthhuboxjuitfuz'],
+  ['https://vcloud.zip/gheyw_bhhk1y1zj', 'vcloud', 'gheyw_bhhk1y1zj'],
+  ['https://fastdl.beer/embed?download=3fYRoUWkPzx9aRumlzniXEjG0', 'fastdl', '3fYRoUWkPzx9aRumlzniXEjG0'],
+  ['https://fastdl.beer/embed.php?download=qc1yQwPih2N6nukpUb7dz0rOw', 'fastdl', 'qc1yQwPih2N6nukpUb7dz0rOw'],
+  ['https://fastdl.beer//embed?download=Abc123', 'fastdl', 'Abc123'],
+  ['https://one.vegadrive.app/s/M3danEMD6gKon9hbQ5s9ElbFkehQcGpENgrB78Mb5MkMadfv', 'vegadrive', 'M3danEMD6gKon9hbQ5s9ElbFkehQcGpENgrB78Mb5MkMadfv'],
+  ['https://one.vegadrive.me/s/2WdhhFFQ9qvp', 'vegadrive', '2WdhhFFQ9qvp'],
 ];
 
 describe('hostOf and externalIdOf', () => {
@@ -69,6 +77,10 @@ describe('hostOf and externalIdOf', () => {
       'https://play4u.org/',
       'https://strtape.tech/',
       'https://streamtape.com/v/abc/name/extra',
+      // V-Cloud's home and a download page's path; FastDL's page without a file; VegaDrive's
+      // mirror link; the older vegadrive.xyz's "/<id>", another site's, gone.
+      'https://vcloud.beer/', 'https://vcloud.beer/a/b', 'https://fastdl.beer/embed.php', 'https://fastdl.beer/dl.php?download=a',
+      'https://one.vegadrive.me/d/2WdhhFFQ9qvp/telegram', 'https://vegadrive.xyz/cd37pw4k90xh',
     ];
     for (const url of noFile) {
       assert.notEqual(hostOf(url), null, url);

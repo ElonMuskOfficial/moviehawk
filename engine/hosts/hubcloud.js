@@ -1,7 +1,8 @@
 /**
  * HubCloud's file page (hubcloud.ist/drive/<id>, /video/<id>): the file's name and size, as the
  * page states them in its file card, and the link to its download page (gamerxyt.com/hubcloud.php),
- * which lists the file's servers.
+ * which lists the file's servers. V-Cloud (vcloud.js) is the same software: its file card and
+ * download page are read here too (detailsOf, downloadsOf).
  */
 import * as cheerio from 'cheerio';
 import { EngineError } from '../errors.js';
@@ -15,10 +16,11 @@ import { fetchHtml, followRedirects } from '../http.js';
 const UNITS = { KB: 1024, MB: 1024 ** 2, GB: 1024 ** 3 };
 const SIZE = /^(\d+(?:\.\d+)?)\s*(KB|MB|GB)$/;
 
-// The download page's server buttons, by their text as HubCloud writes it (130 pages, 2026-10-31).
-// `direct`: the button's link answers with the file itself (checked live for each, with a ranged
-// GET); `page`: a page that leads to it. A button not listed here is server `other`, a page.
-// 10Gbps's link is a page, which downloadOf follows to the file.
+// The download page's server buttons, by their text as HubCloud and V-Cloud write it (130
+// HubCloud pages, 2026-10-31; 25 V-Cloud pages, 2026-11-03). `direct`: the button's link answers
+// with the file itself (checked live for each, with a ranged GET); `page`: a page that leads to it.
+// A button not listed here is server `other`, a page. 10Gbps's link is a page, which downloadOf
+// follows to the file.
 const SERVERS = [
   { server: '10gbps', kind: 'page', pattern: /^Download \[Server : 10Gbps\]$/ },
   { server: 'fsl', kind: 'direct', pattern: /^Download \[FSL Server\]$/ },
@@ -28,7 +30,10 @@ const SERVERS = [
   // "[PixelServer : 2]", and "[PixelServer:2]" on a /video/ file's page (live, 2026-10-31).
   { server: 'pixeldrain', kind: 'page', pattern: /^Download \[PixelServer\s*:\s*\d+\]$/ },
   { server: 'buzz', kind: 'page', pattern: /^Download \[Buzz Server\]$/ },
-  { server: 'telegram', kind: 'page', pattern: /^Download From Telegram$/ },
+  // V-Cloud's: the file's folder on GoFile (live, 2026-11-03).
+  { server: 'gofile', kind: 'page', pattern: /^Download \[Gofile Server\]$/ },
+  // V-Cloud writes "Downoad From Telegram 🔥" (live, 2026-11-03).
+  { server: 'telegram', kind: 'page', pattern: /^Downl?oad From Telegram\b/ },
   { server: 'watch', kind: 'page', pattern: /^Watch Online$/ },
 ];
 
@@ -52,30 +57,71 @@ const FILE_PARAM = 'link';
 export async function resolveHubCloud(url, options) {
   const filePage = await fetchHtml(url, options);
   const $file = cheerio.load(filePage.html, { baseURI: filePage.url });
-  const details = detailsOf($file, url);
+  const details = detailsOf($file, url, 'HubCloud');
   // The link to the download page is the file card's one primary button: `#download` on a
   // /drive/ page, without the id on a /video/ page (live, 2026-10-31: 40 of 40 and 8 of 8).
   const downloadUrl = $file('a.btn-primary[href]').first().prop('href');
   if (!downloadUrl) throw new EngineError('unrecognized', 'No link to the download page on the HubCloud file page', { url });
+  return { ...details, downloads: await downloadsOf(downloadUrl, options, 'HubCloud') };
+}
 
-  const downloadPage = await fetchHtml(downloadUrl, options);
-  const $ = cheerio.load(downloadPage.html, { baseURI: downloadPage.url });
+/**
+ * The file's name and size, from the file card of a HubCloud or V-Cloud page.
+ *
+ * @param {import('cheerio').CheerioAPI} $
+ * @param {string} url - The page, for the error.
+ * @param {string} host - Its name, for the error: "HubCloud".
+ * @returns {{ filename: string, sizeBytes: number }}
+ * @throws {EngineError} `unrecognized` for a page without the file's name or a size it can read.
+ */
+export function detailsOf($, url, host) {
+  const filename = $('.card-header').first().text().trim();
+  const [, amount, unit] = SIZE.exec($('#size').first().text().trim()) ?? [];
+  if (!filename || !unit) throw new EngineError('unrecognized', `No file name or size on the ${host} file page`, { url });
+  return { filename, sizeBytes: Math.round(Number(amount) * UNITS[unit]) };
+}
+
+/**
+ * Reads a HubCloud or V-Cloud download page: every server button, in page order, each by its link
+ * as the page's script leaves it. The page writes a decoy into a button and sets the real link
+ * from its script: PixelServer's `href` is "pixeldrain.dev/u/negn6f" on every page, a file that
+ * is not there, and `var pxl = "<the file's>"; document.getElementById("pxl-1").href = pxl;`
+ * replaces it (live, 2026-11-03: HubCloud and V-Cloud alike). A button without a link
+ * (V-Cloud's "Download [Server : 1]", `href=""`) leads nowhere, and is left out.
+ *
+ * @param {string} url - The download page.
+ * @param {import('../http.js').RequestOptions} [options]
+ * @param {string} host - Its name, for the error: "HubCloud".
+ * @returns {Promise<Download[]>}
+ * @throws {EngineError} `unrecognized` for a page without servers; and fetchHtml's errors.
+ */
+export async function downloadsOf(url, options, host) {
+  const page = await fetchHtml(url, options);
+  const $ = cheerio.load(page.html, { baseURI: page.url });
+  const scripted = scriptedHrefsOf($);
   // The page's other links (VPN, a tutorial, the site's new domain) sit in the same headings,
   // but are not buttons.
   const buttons = $('.card-body h2 a.btn[href]').toArray()
-    .map((a) => ({ label: textOf($(a)), url: $(a).prop('href') }));
-  if (buttons.length === 0) {
-    throw new EngineError('unrecognized', 'No servers on the HubCloud download page', { url: downloadUrl });
-  }
-  return { ...details, downloads: await Promise.all(buttons.map((button) => downloadOf(button, options))) };
+    .filter((a) => $(a).attr('href').trim())
+    .map((a) => ({ label: textOf($(a)), url: scripted.get($(a).attr('id')) ?? $(a).prop('href') }));
+  if (buttons.length === 0) throw new EngineError('unrecognized', `No servers on the ${host} download page`, { url });
+  return Promise.all(buttons.map((button) => downloadOf(button, options)));
 }
 
-/** @returns {{ filename: string, sizeBytes: number }} */
-function detailsOf($, url) {
-  const filename = $('.card-header').first().text().trim();
-  const [, amount, unit] = SIZE.exec($('#size').first().text().trim()) ?? [];
-  if (!filename || !unit) throw new EngineError('unrecognized', 'No file name or size on the HubCloud file page', { url });
-  return { filename, sizeBytes: Math.round(Number(amount) * UNITS[unit]) };
+/**
+ * The links the page's script puts in its buttons, by the button's id: `var pxl = "<URL>";` then
+ * `document.getElementById("pxl-1").href = pxl;`.
+ *
+ * @returns {Map<string, string>}
+ */
+function scriptedHrefsOf($) {
+  const script = $('script').toArray().map((element) => $(element).text()).join('\n');
+  const values = new Map([...script.matchAll(/\bvar\s+(\w+)\s*=\s*"(https?:\/\/[^"]+)"/g)].map(([, name, value]) => [name, value]));
+  const hrefs = new Map();
+  for (const [, id, name] of script.matchAll(/getElementById\(\s*["']([^"']+)["']\s*\)\.href\s*=\s*(\w+)\s*;/g)) {
+    if (values.has(name)) hrefs.set(id, values.get(name));
+  }
+  return hrefs;
 }
 
 /** @returns {Promise<Download>} */

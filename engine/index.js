@@ -38,11 +38,13 @@ export { providerIds } from './providers/index.js';
  * Makes the engine with the consumer's config, so every call has the same: a call without
  * `domains` would read dead domains (hblinks.pro, hubcloud.foo) and fail as if the sites were down.
  *
- * @param {{ domains?: Record<string, string>, fetch?: typeof fetch, timeoutMs?: number }} [config]
+ * @param {{ domains?: Record<string, string>, fetch?: typeof fetch, timeoutMs?: number, waitMs?: number }} [config]
  *   `domains`: the current domain of each site whose domain rotates, by its hostname label
  *   (`{ hdhub4u: 'https://new10.hdhub4u.cl', hubcloud: 'https://hubcloud.ist' }`); every URL is
  *   moved to it before it is read. When a domain changes, make a new engine. `fetch`, `timeoutMs`:
- *   for every request (http.js).
+ *   for every request (http.js). `waitMs`: how long `resolve` waits for a download its host makes
+ *   on request (VegaDrive's Vegadrop: 90 s by default, as its page waits); past it, the download
+ *   is its button's link, a page. A consumer that must answer sooner waits less.
  * @returns The engine's functions. A call's own option goes with the call: `signal`.
  */
 export function createEngine(config = {}) {

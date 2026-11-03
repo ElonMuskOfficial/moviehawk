@@ -19,7 +19,7 @@ const FILE_PARAM = 'link';
 // HubCDN answers a deleted file with HTTP 200 and this page: "No URL found.Failed to get data from
 // gserver", then "File is Deleted or UnAvailable....Re.Trying to Reload Page" (live, 2026-10-28
 // and 2026-11-01, unchanged for hours and in a browser).
-const DELETED = /File is Deleted or UnAvailable/i;
+export const DELETED = /File is Deleted or UnAvailable/i;
 
 /**
  * Reads a HubCDN file page, and the headers of the file's URL. The file has one download, direct.
@@ -44,17 +44,20 @@ export async function resolveHubCdn(url, options) {
   if (!fileUrl) throw new EngineError('unrecognized', 'No file URL in the HubCDN download link', { url });
 
   return {
-    ...(await detailsOf(fileUrl, options)),
+    ...(await detailsFromHeaders(fileUrl, options)),
     downloads: [{ server: 'hubcdn', kind: 'direct', url: fileUrl, label: 'Download [HubCDN]' }],
   };
 }
 
 /**
- * The file's name and size, from its URL's headers.
+ * The file's name and size, from its URL's headers (FastDL's files too, fastdl.js).
  *
- * @returns {Promise<{ filename: string | null, sizeBytes: number | null }>}
+ * @param {string} fileUrl
+ * @param {import('../http.js').RequestOptions} [options]
+ * @returns {Promise<{ filename: string | null, sizeBytes: number | null }>} null for what the
+ *   headers do not state, or for both when the HEAD request fails.
  */
-async function detailsOf(fileUrl, options) {
+export async function detailsFromHeaders(fileUrl, options) {
   let headers;
   try {
     ({ headers } = await fetchHead(fileUrl, options));

@@ -11,7 +11,9 @@ import { createEngine } from '../engine/index.js';
 
 const { domains, fallbackBecause } = await startDomains();
 const app = Fastify(appOptions({ logger: true }));
-await setUpApp(app, { engine: createEngine({ domains }), domains });
+// Vegadrop's link is waited for 20 s at most, so a file's other downloads come within the 30 s a
+// request may take (README.md, Errors).
+await setUpApp(app, { engine: createEngine({ domains, waitMs: 20_000 }), domains });
 if (fallbackBecause) app.log.warn(`Started with the fallback domains: the domains URL could not be used (${fallbackBecause})`);
 await app.ready();
 

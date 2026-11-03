@@ -36,7 +36,8 @@ describe('fetchHtml', () => {
 
     const page = await fetchHtml(URL_A, { fetch: fetchFn });
 
-    assert.deepEqual(page, { html: '<h1>File</h1>', url: 'https://hubcloud.ist/drive/abc?moved' });
+    assert.deepEqual({ html: page.html, url: page.url }, { html: '<h1>File</h1>', url: 'https://hubcloud.ist/drive/abc?moved' });
+    assert.ok(page.headers instanceof Headers);
   });
 
   it('asks as a browser, following redirects', async () => {

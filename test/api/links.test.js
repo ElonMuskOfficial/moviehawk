@@ -212,4 +212,23 @@ describe('GetLink', () => {
     }
     assert.deepEqual(calls, []);
   });
+
+  it('opens a NexDrive page as a page of files: its title and its lines of servers', async (t) => {
+    const NEXDRIVE = 'https://nexdrive.beer/genxfm784776189733/';
+    const VCLOUD = 'https://vcloud.beer/kkjqqdb1b0o1rnw';
+    const { engine, calls } = fakeEngine(() => ({
+      title: 'Killer Ratings (Season-1) Hindi 720p (Episode 1-7) [550MB]',
+      tags: [],
+      links: [{ url: VCLOUD, label: '⚡ V-Cloud [Resumable]' }],
+      sections: [{ title: null, lines: [{ title: '-:Episodes: 1:-', links: [{ url: VCLOUD, label: '⚡ V-Cloud [Resumable]' }], tags: [] }] }],
+    }));
+    const server = await app(engine);
+    t.after(() => server.close());
+
+    const page = (await get(server, NEXDRIVE)).json();
+
+    assert.deepEqual([page.kind, page.host, page.title], ['files', 'nexdrive', 'Killer Ratings (Season-1) Hindi 720p (Episode 1-7) [550MB]']);
+    assert.deepEqual(page.sections[0].lines[0].links, [{ name: `links/${id(VCLOUD)}`, url: VCLOUD, label: '⚡ V-Cloud [Resumable]', host: 'vcloud' }]);
+    assert.deepEqual(calls, [['expand', NEXDRIVE]]);
+  });
 });

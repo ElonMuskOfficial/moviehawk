@@ -7,6 +7,8 @@ import { hasLabel, webUrlOf } from '../urls.js';
 import { expandGreenMotors } from './greenmotors.js';
 import { expandHubDrive } from './hubdrive.js';
 import { expandHubLinks } from './hublinks.js';
+import { expandNexDrive } from './nexdrive.js';
+import { expandVCloud } from './vcloud.js';
 
 // Each gateway's id is also the hostname label that identifies it. Shapes seen on live posts
 // (2026-10-31): greenmotors.club/?id=<token>, hblinks.lol/archives/<n>, hubdrive.bar/file/<id>,
@@ -15,6 +17,11 @@ const GATEWAYS = [
   { id: 'greenmotors', matches: (url) => url.pathname === '/' && url.searchParams.has('id'), expand: expandGreenMotors },
   { id: 'hblinks', matches: (url) => /^\/archives\/\d+\/?$/.test(url.pathname), expand: expandHubLinks },
   { id: 'hubdrive', matches: (url) => /^\/(?:file|packs)\/[\w-]+\/?$/.test(url.pathname), expand: expandHubDrive },
+  // Vegamovies' and RogMovies' (live, 2026-11-03): nexdrive.beer/genxfm<n>/, every one of 590
+  // buttons; V-Cloud's older link page, vcloud.beer/api/index.php?link=<...>, whose files are V-Cloud's
+  // own (hosts/index.js).
+  { id: 'nexdrive', matches: (url) => /^\/genxfm\d+\/?$/.test(url.pathname), expand: expandNexDrive },
+  { id: 'vcloud', matches: (url) => url.pathname === '/api/index.php' && url.searchParams.has('link'), expand: expandVCloud },
 ];
 
 /**
