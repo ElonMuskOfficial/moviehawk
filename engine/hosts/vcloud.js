@@ -27,6 +27,9 @@ const DOWNLOAD_LINK = /atob\(\s*atob\(\s*'([A-Za-z0-9+/=]+)'\s*\)\s*\)/;
  *   (`notFound`: a deleted file answers HTTP 404).
  */
 export async function resolveVCloud(url, options) {
+  // EXPERIMENT (2026-11-03): V-Cloud answers Vercel and Wasmer HTTP 403; asked with its base URL
+  // as Referer and the cookie "xla=sod".
+  options = { ...options, headers: { ...options?.headers, Referer: `${new URL(url).origin}/`, Cookie: 'xla=sod' } };
   const filePage = await fetchHtml(url, options);
   const $ = cheerio.load(filePage.html, { baseURI: filePage.url });
   const details = detailsOf($, url, 'V-Cloud');

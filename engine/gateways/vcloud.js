@@ -20,6 +20,9 @@ import { fetchHtml } from '../http.js';
  *   layout); and fetchHtml's errors.
  */
 export async function expandVCloud(url, options) {
+  // EXPERIMENT (2026-11-03): V-Cloud answers Vercel and Wasmer HTTP 403; asked with its base URL
+  // as Referer and the cookie "xla=sod".
+  options = { ...options, headers: { ...options?.headers, Referer: `${new URL(url).origin}/`, Cookie: 'xla=sod' } };
   const page = await fetchHtml(url, options);
   const $ = cheerio.load(page.html, { baseURI: page.url });
   const card = $('.card-body').first();
