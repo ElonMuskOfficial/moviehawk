@@ -24,7 +24,7 @@ describe('resolveVCloud', () => {
     const requests = [];
     const fetchFn = async (url, init) => {
       const parsed = new URL(url);
-      requests.push([parsed.hostname, parsed.searchParams.has('token') ? 'download page' : parsed.pathname, init.method, init.headers]);
+      requests.push([parsed.hostname, parsed.searchParams.has('token') ? 'download page' : parsed.pathname, init.method]);
       if (parsed.hostname === 'vcloud.beer') return new Response(parsed.searchParams.has('token') ? downloadPage : fixture('vcloud-file.html'));
       if (parsed.hostname === 'gpdl2.hubcloud.ist') return redirectedTo(`https://cryptonewz.online/dl.php?link=${GOOGLE}`);
       throw new Error(`No fake answer for ${url}`);
@@ -49,18 +49,6 @@ describe('resolveVCloud', () => {
     assert.equal(file.downloads[2].url, GOOGLE);
     assert.deepEqual(options.requests.map(([host, page]) => [host, page]), [
       ['vcloud.beer', '/uthhuboxjuitfuz'], ['vcloud.beer', 'download page'], ['gpdl2.hubcloud.ist', '/'],
-    ]);
-  });
-
-  it('sends V-Cloud its Referer and cookie, and not its servers (10Gbps)', async () => {
-    const options = vcloud();
-
-    await resolveVCloud(URL_VC, options);
-
-    assert.deepEqual(options.requests.map(([host, , , headers]) => [host, headers.Referer, headers.Cookie]), [
-      ['vcloud.beer', 'https://vcloud.beer/', 'xla=sod'],
-      ['vcloud.beer', 'https://vcloud.beer/', 'xla=sod'],
-      ['gpdl2.hubcloud.ist', undefined, undefined],
     ]);
   });
 

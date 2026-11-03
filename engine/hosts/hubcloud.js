@@ -92,13 +92,11 @@ export function detailsOf($, url, host) {
  * @param {string} url - The download page.
  * @param {import('../http.js').RequestOptions} [options]
  * @param {string} host - Its name, for the error: "HubCloud".
- * @param {Record<string, string>} [pageHeaders] - Headers for the download page only, not for its
- *   servers (V-Cloud's Referer and cookie).
  * @returns {Promise<Download[]>}
  * @throws {EngineError} `unrecognized` for a page without servers; and fetchHtml's errors.
  */
-export async function downloadsOf(url, options, host, pageHeaders) {
-  const page = await fetchHtml(url, pageHeaders ? { ...options, headers: { ...options?.headers, ...pageHeaders } } : options);
+export async function downloadsOf(url, options, host) {
+  const page = await fetchHtml(url, options);
   const $ = cheerio.load(page.html, { baseURI: page.url });
   const scripted = scriptedHrefsOf($);
   // The page's other links (VPN, a tutorial, the site's new domain) sit in the same headings,
