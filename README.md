@@ -19,7 +19,7 @@ Node 22 or later. Dependencies: [Fastify](https://fastify.dev) 5 (the API), chee
 |---|---|
 | `engine/` | The engine. Consumers import only `engine/index.js` |
 | `src/` | The API: `server.js` (runs it: `npm start`, Vercel's entrypoint), `setup.js` (its Fastify options and setup), `sites.js` and `links.js` (routes), `names.js`, `problems.js` (errors), `domains.js`, `cache.js` |
-| `vercel.json` | Vercel's config: the region ([Deploy](#deploy)) |
+| `vercel.json` | Vercel's config ([Deploy](#deploy)) |
 | `test/` | `test/engine/`, `test/api/`; `test/fixtures/` holds saved live pages |
 
 ## The user flow
@@ -506,8 +506,8 @@ running copy of the API has its own cache; two requests at once for one URL both
 **Vercel**, at https://moviehawk.vercel.app (project `moviehawk`, Hobby): the `main` branch
 of [moviehawk](https://github.com/ElonMuskOfficial/moviehawk) through Vercel's GitHub integration,
 every push deployed. Vercel's Fastify preset finds `src/server.js` (an entrypoint that imports
-Fastify) and serves its default export as one Vercel Function, in `bom1` (Mumbai, beside the web
-app; `vercel.json`). Each instance starts the app once and has its own cache; Vercel stops it when
+Fastify) and serves its default export as one Vercel Function, in the region the project's
+settings name. Each instance starts the app once and has its own cache; Vercel stops it when
 traffic stops. A client that disconnects does not end its request there: the API reads on, 30 s
 at most. HubCDN answers HTTP 429 to many requests at once from Vercel (live, 2026-11-02); one at a
 time they pass.
