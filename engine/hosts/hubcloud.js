@@ -62,7 +62,7 @@ export async function resolveHubCloud(url, options) {
   // /drive/ page, without the id on a /video/ page (live, 2026-10-31: 40 of 40 and 8 of 8).
   const downloadUrl = $file('a.btn-primary[href]').first().prop('href');
   if (!downloadUrl) throw new EngineError('unrecognized', 'No link to the download page on the HubCloud file page', { url });
-  return { ...details, downloads: await downloadsOf(downloadUrl, options, 'HubCloud') };
+  return { ...details, downloads: await downloadsOf(await fetchHtml(downloadUrl, options), options, 'HubCloud') };
 }
 
 /**
@@ -89,17 +89,15 @@ export function detailsOf($, url, host) {
  * replaces it (live, 2026-11-03: HubCloud and V-Cloud alike). A button without a link
  * (V-Cloud's "Download [Server : 1]", `href=""`) leads nowhere, and is left out.
  *
- * @param {string} url - The download page.
- * @param {import('../http.js').RequestOptions} [options]
+ * @param {{ html: string, url: string }} page - The download page, as fetchHtml read it.
+ * @param {import('../http.js').RequestOptions} [options] - For its servers (10Gbps's redirects).
  * @param {string} host - Its name, for the error: "HubCloud".
- * @param {Record<string, string>} [pageHeaders] - Headers for the download page only, not for its
- *   servers (V-Cloud's Referer and cookie).
  * @returns {Promise<Download[]>}
- * @throws {EngineError} `unrecognized` for a page without servers; and fetchHtml's errors.
+ * @throws {EngineError} `unrecognized` for a page without servers.
  */
-export async function downloadsOf(url, options, host, pageHeaders) {
-  const page = await fetchHtml(url, pageHeaders ? { ...options, headers: { ...options?.headers, ...pageHeaders } } : options);
-  const $ = cheerio.load(page.html, { baseURI: page.url });
+export async function downloadsOf(page, options, host) {
+  const { url } = page;
+  const $ = cheerio.load(page.html, { baseURI: url });
   const scripted = scriptedHrefsOf($);
   // The page's other links (VPN, a tutorial, the site's new domain) sit in the same headings,
   // but are not buttons.
