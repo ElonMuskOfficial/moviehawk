@@ -472,8 +472,9 @@ into moviehawk-domains' `domains.json` before the API that needs it is deployed.
 V-Cloud's Cloudflare answers datacenters HTTP 403. With its base URL as Referer and the cookie
 `xla=sod`, which the engine sends it, it answers Wasmer and Vercel's `iad1`, but not Vercel's
 `bom1`; without them, `iad1` too is 403 (live, 2026-11-03). So the API's Vercel project runs in
-`iad1`, set in its settings. A workaround: V-Cloud never sets `xla=sod` (a value another API sends),
-so it passes a rule of V-Cloud's Cloudflare that V-Cloud can change.
+`iad1`, set in its settings. Both are a workaround, values another API sends: V-Cloud never sets
+`xla=sod`, and a browser comes to a file page from NexDrive, not from V-Cloud. They pass a rule of
+V-Cloud's Cloudflare that V-Cloud can change.
 
 ### Cache
 
