@@ -502,7 +502,7 @@ Vercel's CDN keeps it too, in each of its regions.
   a deployment that changes an answer's shape never reads the old one, which expires on its own.
 - Redis that fails, or does not answer within 1 s, is a miss: the API reads the sites, and logs
   why. It is not retried.
-- The database: `upstash-kv-aero-enginemoviehawk-cache`, through Vercel's Upstash integration, in
+- The database: `moviehawk-cache`, through Vercel's Upstash integration, in
   `iad1` with the API, Free plan (500,000 commands a month), eviction on. The integration sets
   `KV_REST_API_URL` and `KV_REST_API_TOKEN` on the project; without them (Wasmer, a machine without
   them in `.env`) the API runs with no cache, and says so at start.
