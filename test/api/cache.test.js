@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { EngineError } from '../../engine/index.js';
-import { appWith as app, fakeEngine } from './helpers.js';
+import { appWith as app, fakeEngine, fakeRedis } from './helpers.js';
+import { redisFromEnv } from '../../src/cache.js';
 
 const id = (url) => Buffer.from(url).toString('base64url');
 // A link to a file, and one to a page of files: each kind is kept as long as it says.
@@ -98,5 +99,50 @@ describe('the cache', () => {
     assert.equal(failed.headers['cache-control'], undefined);
     assert.equal(retried.statusCode, 200);
     assert.equal(calls.length, 2);
+  });
+
+  it('reads the sites when Redis fails: a cache that fails is a miss, not an error', async (t) => {
+    const { engine, calls } = engineFor();
+    const down = { get: async () => { throw new Error('fetch failed'); }, set: async () => { throw new Error('fetch failed'); } };
+    const server = await app(engine, { redis: down });
+    t.after(() => server.close());
+
+    const first = await server.inject(FILE);
+    const repeat = await server.inject(FILE);
+
+    assert.deepEqual([first.statusCode, repeat.statusCode], [200, 200]);
+    assert.match(first.headers['cache-control'], /^public, max-age=(299|300)$/);
+    assert.equal(calls.length, 2);
+  });
+
+  it('reads the sites on every request without Redis', async (t) => {
+    const { engine, calls } = engineFor();
+    const server = await app(engine, { redis: null });
+    t.after(() => server.close());
+
+    for (let i = 0; i < 2; i++) assert.equal((await server.inject(FILE)).statusCode, 200);
+
+    assert.equal(calls.length, 2);
+  });
+
+  it('keeps each answer until it expires, under the deployment\'s keys only', async (t) => {
+    const { engine } = engineFor();
+    const redis = fakeRedis();
+    const server = await app(engine, { redis });
+    t.after(() => server.close());
+
+    await server.inject(FILE);
+
+    const [[key, value]] = redis.kept;
+    assert.match(key, /^local:\["\/v1\/links\/:link",/);
+    assert.ok(Math.abs(JSON.parse(value).expiresAt - (Date.now() + 300_000)) < 5000);
+  });
+});
+
+describe('redisFromEnv', () => {
+  it('is Upstash with the Vercel integration\'s variables, and none without them', () => {
+    assert.equal(redisFromEnv({}), null);
+    assert.equal(redisFromEnv({ KV_REST_API_URL: 'https://a.upstash.io' }), null);
+    assert.equal(typeof redisFromEnv({ KV_REST_API_URL: 'https://a.upstash.io', KV_REST_API_TOKEN: 't' }).get, 'function');
   });
 });

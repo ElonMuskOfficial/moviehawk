@@ -9,11 +9,12 @@ replacements use the engine.
 
 ```bash
 npm test                              # every test, on saved pages (test/fixtures/)
-npm start                             # the API on http://127.0.0.1:3000
+npm start                             # the API on http://127.0.0.1:3000; .env's variables (the cache's) if there is one
 PORT=8080 HOST=0.0.0.0 npm start
 ```
 
-Node 22 or later. Dependencies: [Fastify](https://fastify.dev) 5 (the API), cheerio (HTML).
+Node 22.9 or later. Dependencies: [Fastify](https://fastify.dev) 5 (the API), cheerio (HTML),
+[@upstash/redis](https://github.com/upstash/redis-js) (the cache).
 
 | Folder | What |
 |---|---|
@@ -478,7 +479,7 @@ V-Cloud's Cloudflare that V-Cloud can change.
 
 ### Cache
 
-Each route's answer is kept in memory (`src/cache.js`, `lru-cache`, 500 answers at most), by
+Each route's answer is kept in [Upstash Redis](https://upstash.com) (`src/cache.js`), by
 what the request asks (its route, its names, and the query the route reads, in any order: a query
 it does not read is dropped), for as long as it stays true:
 
@@ -491,8 +492,20 @@ it does not read is dropped), for as long as it stays true:
 | GetLink, `file` | 5 min | its downloads expire, but not within 5 minutes (Vegadrop's too: 20 minutes on, live) |
 
 A repeat answers without reading the sites. Errors are not kept: the next request tries again.
-`Cache-Control: public, max-age=<seconds left>` lets the client keep an answer as long. Each
-running copy of the API has its own cache; two requests at once for one URL both read the site.
+`Cache-Control: public, max-age=<seconds left>` lets the client keep an answer as long, and
+Vercel's CDN keeps it too, in each of its regions.
+
+- Every running copy of the API shares the cache: a new one starts with it full. Two requests at
+  once for one URL both read the site.
+- An answer is kept with the time it expires (Redis's `PXAT` too), so a request is one `GET`, and
+  a miss one `SET` more. Keys start with the deployment (`VERCEL_DEPLOYMENT_ID`, `local` elsewhere):
+  a deployment that changes an answer's shape never reads the old one, which expires on its own.
+- Redis that fails, or does not answer within 1 s, is a miss: the API reads the sites, and logs
+  why. It is not retried.
+- The database: `upstash-kv-aero-enginemoviehawk-cache`, through Vercel's Upstash integration, in
+  `iad1` with the API, Free plan (500,000 commands a month), eviction on. The integration sets
+  `KV_REST_API_URL` and `KV_REST_API_TOKEN` on the project; without them (Wasmer, a machine without
+  them in `.env`) the API runs with no cache, and says so at start.
 
 ### Deploy
 
@@ -507,7 +520,7 @@ time they pass.
 
 **Wasmer Edge**, at https://moviehawk.wasmer.app, deployed from `main` too while it stays: its
 start command `npm start`, the API on its defaults, 127.0.0.1:3000, where Wasmer's proxy reaches
-it. Wasmer stops an instance idle for about 3 minutes, which empties its cache.
+it. It has no cache (Cache): it reads the sites on every request.
 
 ### Departures from AIP
 

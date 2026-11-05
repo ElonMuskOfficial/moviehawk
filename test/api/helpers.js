@@ -26,9 +26,26 @@ export function fakeEngine(answer) {
   return { engine, calls };
 }
 
-/** The app on `engine` and DOMAINS, ready for requests. */
-export async function appWith(engine) {
-  const app = await buildApp({ engine, domains: DOMAINS });
+/**
+ * Redis as the cache uses it: get, and set with an expiry, which the tests do not wait for. A value
+ * is kept as JSON, as Upstash keeps it, so an answer read back is a copy.
+ */
+export function fakeRedis() {
+  const kept = new Map();
+  return {
+    kept,
+    get: async (key) => (kept.has(key) ? JSON.parse(kept.get(key)) : null),
+    set: async (key, value, { pxat }) => {
+      if (!(pxat > Date.now())) throw new Error(`set ${key} without an expiry to come`);
+      kept.set(key, JSON.stringify(value));
+      return 'OK';
+    },
+  };
+}
+
+/** The app on `engine` and DOMAINS, with a cache (a fake Redis, or `redis`), ready for requests. */
+export async function appWith(engine, { redis = fakeRedis() } = {}) {
+  const app = await buildApp({ engine, domains: DOMAINS, redis });
   await app.ready();
   return app;
 }

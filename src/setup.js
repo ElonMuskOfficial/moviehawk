@@ -58,10 +58,11 @@ export function appOptions({ logger = false } = {}) {
  * a problem, and the routes.
  *
  * @param {import('fastify').FastifyInstance} app
- * @param {{ engine: ReturnType<typeof import('../engine/index.js').createEngine>, domains: Record<string, string> }} options
- *   `engine`: made with `domains`, the current domains (domains.js).
+ * @param {{ engine: ReturnType<typeof import('../engine/index.js').createEngine>, domains: Record<string, string>, redis?: Parameters<typeof createCache>[0] }} options
+ *   `engine`: made with `domains`, the current domains (domains.js). `redis`: the cache's
+ *   (cache.js); none, no cache.
  */
-export async function setUpApp(app, { engine, domains }) {
+export async function setUpApp(app, { engine, domains, redis = null }) {
   app.addHook('onRequest', async (request, reply) => {
     reply.header('request-id', request.id);
   });
@@ -77,7 +78,7 @@ export async function setUpApp(app, { engine, domains }) {
 
   app.setNotFoundHandler((request, reply) => sendProblem(reply, problem(404, 'notFound', `No route ${request.method} ${request.url}`)));
 
-  const cached = createCache();
+  const cached = createCache(redis);
   await app.register(sitesRoutes, { engine, domains, cached });
   await app.register(linksRoutes, { engine, cached });
 }
@@ -85,10 +86,10 @@ export async function setUpApp(app, { engine, domains }) {
 /**
  * The API's server, not yet listening, for requests a caller injects (the tests).
  *
- * @param {{ engine: ReturnType<typeof import('../engine/index.js').createEngine>, domains: Record<string, string>, logger?: boolean }} options
+ * @param {{ engine: ReturnType<typeof import('../engine/index.js').createEngine>, domains: Record<string, string>, redis?: Parameters<typeof createCache>[0], logger?: boolean }} options
  */
-export async function buildApp({ engine, domains, logger = false }) {
+export async function buildApp({ engine, domains, redis = null, logger = false }) {
   const app = Fastify(appOptions({ logger }));
-  await setUpApp(app, { engine, domains });
+  await setUpApp(app, { engine, domains, redis });
   return app;
 }
