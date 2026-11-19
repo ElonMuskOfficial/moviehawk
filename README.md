@@ -518,6 +518,9 @@ traffic stops. A client that disconnects does not end its request there: the API
 at most. HubCDN answers HTTP 429 to many requests at once from Vercel (live, 2026-11-02); one at a
 time they pass.
 
+`main` is protected by the GitHub ruleset `protect-main`: no force push, no deletion, for anyone.
+A history rewrite (a clean-up) needs it disabled first, then enabled again.
+
 **Wasmer Edge**, at https://moviehawk.wasmer.app, deployed from `main` too while it stays: its
 start command `npm start`, the API on its defaults, 127.0.0.1:3000, where Wasmer's proxy reaches
 it. It has no cache (Cache): it reads the sites on every request.
