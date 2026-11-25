@@ -282,6 +282,12 @@ describe('searchHdHub4u', () => {
     assert.equal((await searchHdHub4u(SITE, 'love', 12, api(answerOf(180, 15)))).hasNextPage, false);
   });
 
+  it('keeps a post on the site\'s domain for a permalink whose path starts with "//"', async () => {
+    const hits = JSON.stringify({ found: 1, page: 1, hits: [{ document: { permalink: 'https://new2.hdhub4u.free//127.0.0.1/a/', post_title: 'A' } }] });
+    const { posts: [post] } = await searchHdHub4u(SITE, 'love', 1, api(hits));
+    assert.equal(new URL(post.url).origin, new URL(SITE).origin);
+  });
+
   it('gives no posts when nothing matches, and is notFound for a page after the last', async () => {
     const none = JSON.stringify({ found: 0, page: 1, hits: [] });
     assert.deepEqual(await searchHdHub4u(SITE, 'zzzqqqxxx', 1, api(none)), { posts: [], hasNextPage: false });

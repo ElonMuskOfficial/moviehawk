@@ -154,5 +154,9 @@ describe('searchVegamovies', () => {
     assert.deepEqual(await searchVegamovies(VEGA, 'https://vegamovies.lease', 'zzqq', 1, json({ found: 0, hits: [] })), { posts: [], hasNextPage: false });
     await assert.rejects(searchVegamovies(VEGA, 'https://vegamovies.lease', 'a', 3, json({ found: 29, hits: [] })), { code: 'notFound' });
     await assert.rejects(searchVegamovies(VEGA, 'https://vegamovies.lease', 'a', 1, json({ error: 'x' })), { code: 'unrecognized' });
+
+    // A permalink whose path starts with "//" stays on the site's domain.
+    const { posts: [post] } = await searchVegamovies(VEGA, 'https://vegamovies.lease', 'a', 1, json({ found: 1, hits: [{ document: { post_title: 'P', permalink: 'https://vegamovies.lease//127.0.0.1/p/' } }] }));
+    assert.equal(new URL(post.url).origin, 'https://vegamovies.lease');
   });
 });

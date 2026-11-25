@@ -28,7 +28,9 @@ async function linkOf(engine, url, options) {
     if (kind?.type === 'post') return { kind: 'post', post: postName(kind.id, target) };
     if (kind?.type === 'file' && kind.resolves) {
       const { filename, sizeBytes, downloads } = await engine.resolve(target, options);
-      return { kind: 'file', host: linkHost(target), url: target, filename, sizeBytes, downloads };
+      // The engine gives each download as the host's page gives it; one that is no web URL
+      // ("javascript:...") is no download, as a section's link that is none goes (namedSections).
+      return { kind: 'file', host: linkHost(target), url: target, filename, sizeBytes, downloads: downloads.filter(({ url }) => isWebUrl(url)) };
     }
     // A host the engine does not read, or a site it does not know: the user opens it there.
     if (kind?.type !== 'gateway') return { kind: 'external', host: linkHost(target), url: target };

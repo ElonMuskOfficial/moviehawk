@@ -137,6 +137,15 @@ describe('GetLink', () => {
     assert.deepEqual(calls, [['resolve', HUBCLOUD], ['resolve', 'https://hubcdn.wiki/file/cdn1']]);
   });
 
+  it('leaves out a download that is no web URL', async (t) => {
+    const script = { server: 'other', kind: 'page', url: 'javascript:alert(1)', label: 'Download' };
+    const { engine } = fakeEngine(() => ({ ...FILE, downloads: [script, ...FILE.downloads] }));
+    const server = await app(engine);
+    t.after(() => server.close());
+
+    assert.deepEqual((await get(server, HUBCLOUD)).json().downloads, FILE.downloads);
+  });
+
   it('gives a file the engine does not resolve, or a site it does not know, as external: its host the id, or the hostname', async (t) => {
     const { engine, calls } = sites();
     const server = await app(engine);

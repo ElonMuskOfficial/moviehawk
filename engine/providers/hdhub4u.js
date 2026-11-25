@@ -247,7 +247,7 @@ export async function searchHdHub4u(siteUrl, query, page, options) {
   }
   return {
     posts: answer.hits.map(({ document }) => ({
-      url: new URL(new URL(document.permalink).pathname, siteUrl).href,
+      url: `${siteUrl}${new URL(document.permalink).pathname}`,
       title: document.post_title,
       posterUrl: document.post_thumbnail ?? null,
     })),

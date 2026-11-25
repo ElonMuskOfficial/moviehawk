@@ -8,6 +8,7 @@ import * as cheerio from 'cheerio';
 import { EngineError } from '../errors.js';
 import { textOf } from '../html.js';
 import { fetchHtml, followRedirects } from '../http.js';
+import { webUrlOf } from '../urls.js';
 
 /** @typedef {import('./index.js').Download} Download */
 
@@ -129,7 +130,8 @@ async function downloadOf({ label, url }, options) {
   const { server, kind } = SERVERS.find((entry) => entry.pattern.test(label)) ?? { server: 'other', kind: 'page' };
   if (server !== '10gbps') return { server, kind, url, label };
   try {
-    const fileUrl = new URL(await followRedirects(url, options)).searchParams.get(FILE_PARAM);
+    // A web URL only: anything else ("javascript:...") is no file.
+    const fileUrl = webUrlOf(new URL(await followRedirects(url, options)).searchParams.get(FILE_PARAM) ?? '')?.href;
     if (fileUrl) return { server, kind: 'direct', url: fileUrl, label };
   } catch (error) {
     // The redirects stalled, or ended on a 404 (one zip's, live): the button stays as it is.

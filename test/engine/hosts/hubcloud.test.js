@@ -141,6 +141,8 @@ describe('resolveHubCloud', () => {
       async () => redirectedTo('https://video-downloads.googleusercontent.com/gone', 404), // a zip's, live
       async () => { throw new TypeError('fetch failed'); },
       async () => redirectedTo('https://cryptonewz.online/dl.php'),
+      // A `link` that is no web URL is no file.
+      async () => redirectedTo('https://cryptonewz.online/dl.php?link=javascript:alert(1)'),
     ];
     for (const tenGbps of endings) {
       const [download] = (await resolveHubCloud(URL_HC, sites({ tenGbps }))).downloads;

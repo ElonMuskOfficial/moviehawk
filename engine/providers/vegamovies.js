@@ -219,7 +219,7 @@ export async function searchVegamovies(site, siteUrl, query, page, options) {
   }
   return {
     posts: answer.hits.map(({ document }) => ({
-      url: new URL(new URL(document.permalink, siteUrl).pathname, siteUrl).href,
+      url: `${siteUrl}${new URL(document.permalink, siteUrl).pathname}`,
       title: document.post_title,
       posterUrl: webUrlOf(document.post_thumbnail ?? '')?.href ?? null,
     })),
