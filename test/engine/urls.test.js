@@ -32,6 +32,11 @@ describe('onCurrentDomain', () => {
     assert.equal(onCurrentDomain(new URL('http://user:pass@hubcloud.127.0.0.1.nip.io:8080/drive/a#x'), domains), 'https://hubcloud.ist/drive/a#x');
   });
 
+  it('keeps the current origin for a path that starts with "//", which would name another host', () => {
+    assert.equal(onCurrentDomain(new URL('https://hubcloud.x//2130706433'), domains), 'https://hubcloud.ist//2130706433');
+    assert.equal(onCurrentDomain(new URL('https://hblinks.x//localhost?a=1'), domains), 'https://hblinks.lol//localhost?a=1');
+  });
+
   it('leaves a URL of any other site as it is', () => {
     assert.equal(onCurrentDomain(new URL('https://hubcdn.club/file/a'), domains), 'https://hubcdn.club/file/a');
   });
